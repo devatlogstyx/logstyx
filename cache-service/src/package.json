@@ -1,0 +1,32 @@
+{
+  "name": "cache-service",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "build": "node esbuild.config.js",
+    "start:production": "pm2 start processes.json --no-daemon",
+    "start:local": "node ./cmd/server.js",
+    "test": "jest --coverage --forceExit"
+  },
+  "keywords": [],
+  "private": true,
+  "author": {
+    "name": "Rizka Sanggar Darmawan",
+    "email": "angga2oioi@gmail.com"
+  },
+  "license": "UNLICENSED",
+  "packageManager": "pnpm@10.7.0",
+  "dependencies": {
+    "amqplib": "^0.10.8",
+    "common": "workspace:*",
+    "dotenv": "^16.5.0",
+    "jsonrpc-ws": "gitlab:angga2oioi/jsonrpc-ws",
+    "node-cache": "^5.1.2"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.3",
+    "javascript-obfuscator": "^4.1.1",
+    "jest": "^30.0.2"
+  }
+}

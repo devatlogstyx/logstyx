@@ -88,6 +88,34 @@ importers:
         specifier: ^30.0.2
         version: 30.2.0(@types/node@24.9.1)
 
+  cache-service/src:
+    dependencies:
+      amqplib:
+        specifier: ^0.10.8
+        version: 0.10.9
+      common:
+        specifier: workspace:*
+        version: link:../../common
+      dotenv:
+        specifier: ^16.5.0
+        version: 16.6.1
+      jsonrpc-ws:
+        specifier: gitlab:angga2oioi/jsonrpc-ws
+        version: https://gitlab.com/api/v4/projects/angga2oioi%2Fjsonrpc-ws/repository/archive.tar.gz?sha=1c8b940994f880aea2f72903b4abdc08df839bf3
+      node-cache:
+        specifier: ^5.1.2
+        version: 5.1.2
+    devDependencies:
+      esbuild:
+        specifier: ^0.25.3
+        version: 0.25.11
+      javascript-obfuscator:
+        specifier: ^4.1.1
+        version: 4.1.1
+      jest:
+        specifier: ^30.0.2
+        version: 30.2.0(@types/node@24.9.1)
+
   common: {}
 
   frontend:

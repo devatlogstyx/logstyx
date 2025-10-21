@@ -1,5 +1,6 @@
 FROM node:22-alpine
 WORKDIR /app
+
 RUN apk add --no-cache git
 # Install pnpm AND pm2
 RUN corepack enable && \
@@ -9,16 +10,16 @@ RUN corepack enable && \
 # Copy workspace files from root
 COPY pnpm-workspace.yaml pnpm-lock.yaml ./
 COPY common/package.json ./common/
-COPY utility-service/src/package.json ./utility-service/src/
+COPY cache-service/src/package.json ./cache-service/src/
 
 # Install dependencies
-RUN pnpm install --filter "utility-service/src" --prod --frozen-lockfile
+RUN pnpm install --filter "cache-service/src" --prod --frozen-lockfile
 
 # Copy source code
 COPY common ./common
-COPY utility-service/src ./utility-service/src
+COPY cache-service/src ./cache-service/src
 
-WORKDIR /app/utility-service/src
+WORKDIR /app/cache-service/src
 
 RUN pnpm add pm2
 
