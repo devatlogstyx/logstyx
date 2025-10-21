@@ -1,0 +1,77 @@
+x-microservice-base: &microservice-base
+  environment: &microservice-base-env
+    AUTH_WSHOST: ws://auth-service:5001/rpc
+    CACHE_WSHOST: ws://cache-service:5002/rpc
+    AMQP_HOST: amqp://rabbitmq
+  depends_on:
+    rabbitmq:
+      condition: service_healthy
+  logging:
+    driver: "json-file"
+    options:
+      max-file: "3"
+      max-size: "500k"
+  restart: unless-stopped
+  deploy:
+    resources:
+      limits:
+        cpus: "1"
+        memory: "512M"
+
+services:
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  gateway-service:
+    image: nginx:alpine
+    container_name: gateway-service
+    ports:
+      - "5000:80"
+    volumes:
+      - ./gateway-service/include.d:/etc/nginx/include.d:ro
+      - ./gateway-service/proxy_settings.conf:/etc/nginx/proxy_settings.conf:ro
+      - ./gateway-service/default.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - auth-service
+      
+  auth-service:
+    build:
+      context: .
+      dockerfile: auth-service/Dockerfile
+    container_name: auth-service
+    <<: *microservice-base
+    environment:
+      <<: *microservice-base-env
+      PORT: 5001
+
+  cache-service:
+    build:
+      context: .  # Build from root
+      dockerfile: cache-service/Dockerfile
+    container_name: cache-service
+    <<: *microservice-base
+    environment:
+      <<: *microservice-base-env
+      PORT: 5002
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    container_name: frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - auth-service
+      
+volumes:
+  mongo-data:
+  rabbitmq-data:

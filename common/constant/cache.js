@@ -1,0 +1,6 @@
+module.exports={
+    USER_CACHE_KEY:"USER",
+    USER_LOGIN_CACHE_KEY:"USER_LOGIN",
+    
+    FLASH_SALE_CACHE_KEY:"FLASH_SALE"
+}

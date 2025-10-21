@@ -1,0 +1,54 @@
+{
+  "name": "utility-service",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "build": "node esbuild.config.js",
+    "start:production": "pm2 start processes.json --no-daemon",
+    "start:local": "node ./cmd/server.js",
+    "start:archive": "node ./cmd/archive.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "private": true,
+  "author": {
+    "name": "Rizka Sanggar Darmawan",
+    "email": "angga2oioi@gmail.com"
+  },
+  "license": "UNLICENSED",
+  "packageManager": "pnpm@10.7.0",
+  "dependencies": {
+    "agenda": "^5.0.0",
+    "amqplib": "^0.10.7",
+    "axios": "^1.9.0",
+    "bcryptjs": "^3.0.2",
+    "body-parser": "^2.2.0",
+    "common": "workspace:*",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "device-detector-js": "^3.0.3",
+    "dotenv": "^16.4.7",
+    "express": "^5.1.0",
+    "handlebars": "^4.7.8",
+    "jsonrpc-ws": "gitlab:angga2oioi/jsonrpc-ws",
+    "jsonwebtoken": "^9.0.2",
+    "mime-types": "^3.0.1",
+    "mjml": "^4.16.1",
+    "moment-timezone": "^0.5.48",
+    "mongoose": "^8.14.2",
+    "mongoose-aggregate-paginate": "^2.0.2",
+    "mongoose-field-encryption": "^7.0.1",
+    "morgan": "^1.10.0",
+    "multer": "^2.0.2",
+    "node-cron": "^4.2.1",
+    "node-input-validator": "^4.5.1",
+    "pm2": "^6.0.5",
+    "socket.io": "^4.8.1",
+    "striptags": "^3.2.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.3",
+    "javascript-obfuscator": "^4.1.1"
+  }
+}

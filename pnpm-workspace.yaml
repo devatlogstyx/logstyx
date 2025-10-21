@@ -1,0 +1,6 @@
+packages:
+  - 'auth-service/src'
+  - 'cache-service/src'
+  - 'gateway-service'
+  - 'common'
+  - 'frontend'

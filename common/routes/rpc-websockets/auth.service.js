@@ -1,0 +1,7 @@
+// @ts-check 
+
+module.exports = {
+    VALIDATE_BEARER_TOKEN_WSROUTE: "VALIDATE_BEARER_TOKEN",
+    FIND_ADMIN_BY_ID_WSROUTE: "FIND_ADMIN_BY_ID",
+
+}

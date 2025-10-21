@@ -1,0 +1,19 @@
+{
+  "name": "common",
+  "version": "1.0.0",
+  "main": "./index.js",
+  "private": true,
+  "author": {
+    "name": "Rizka Sanggar Darmawan",
+    "email": "angga2oioi@gmail.com"
+  },
+  "license": "UNLICENSED",
+  "exports": {
+    "./constant": "./constant/index.js",
+    "./function": "./function/index.js",
+    "./hooks": "./hooks/index.js",
+    "./routes/mq-queue": "./routes/mq-queue/index.js",
+    "./routes/rpc-websockets": "./routes/rpc-websockets/index.js",
+    "./*": "./*/index.js"
+  }
+}
