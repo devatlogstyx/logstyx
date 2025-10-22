@@ -1,5 +1,5 @@
 //@ts-check
-const { INVALID_INPUT_ERR_CODE, NOT_FOUND_ERR_CODE, USER_NOT_FOUND_ERR_MESSAGE, PROJECT_NOT_FOUND_ERR_MESSAGE, ALREADY_A_MEMBER_ERR_MESSAGE, NOT_A_MEMBER_ERR_MESSAGE } = require("common/constant");
+const { INVALID_INPUT_ERR_CODE, NOT_FOUND_ERR_CODE, USER_NOT_FOUND_ERR_MESSAGE, PROJECT_NOT_FOUND_ERR_MESSAGE, ALREADY_A_MEMBER_ERR_MESSAGE, NOT_A_MEMBER_ERR_MESSAGE, NOT_FOUND_ERR_MESSAGE } = require("common/constant");
 const { HttpError, num2Ceil, num2Floor, parseSortBy } = require("common/function");
 const { Validator } = require("node-input-validator");
 const { findUserById } = require("../../shared/provider/auth.service");
@@ -13,18 +13,22 @@ const { updateProjectCache, getProjectFromCache } = require("../../shared/cache"
 const logModel = require("../model/log.model");
 const logstampModel = require("../model/logstamp.model");
 const { mapProjectUser } = require("../utils/mapper");
+const { validateCustomIndex } = require("../utils/helper");
+const { initLogger } = require("./logger");
 
 /**
  * 
  * @param {object} params 
  * @param {string} params.creator 
- * @param {string} params.title 
+ * @param {string} params.title
+ * @param {string[]} [params.indexes] 
  */
 const createProject = async (params) => {
 
     const v = new Validator(params, {
         title: "required|string",
-        creator: "required|string"
+        creator: "required|string",
+        indexes: "arrayUnique"
     });
 
     let match = await v.check();
@@ -46,7 +50,8 @@ const createProject = async (params) => {
         const projects = await projectModel.create([
             {
                 title: striptags(params?.title),
-                secret
+                secret,
+                indexes: params?.indexes?.filter((n) => validateCustomIndex(n))
             }
         ], { session })
 
@@ -62,7 +67,9 @@ const createProject = async (params) => {
 
         await session.commitTransaction()
 
-        return updateProjectCache(projects?.[0]?._id?.toString())
+        const project = await updateProjectCache(projects?.[0]?._id?.toString())
+        initLogger(project)
+        return project
 
     } catch (e) {
         await session.abortTransaction();
@@ -70,6 +77,48 @@ const createProject = async (params) => {
     } finally {
         session.endSession()
     }
+
+}
+
+/**
+ * 
+ * @param {string} id 
+ * @param {object} params 
+ * @param {string} params.title
+ * @param {string[]} [params.indexes] 
+ */
+const updateProject = async (id, params) => {
+    const project = await getProjectFromCache(id)
+    if (!project) {
+        throw HttpError(NOT_FOUND_ERR_CODE, NOT_FOUND_ERR_MESSAGE)
+    }
+
+    const v = new Validator(params, {
+        title: "required|string",
+        indexes: "arrayUnique"
+    });
+
+    let match = await v.check();
+    if (!match) {
+        throw HttpError(INVALID_INPUT_ERR_CODE, v.errors);
+    }
+
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
+    await projectModel.findByIdAndUpdate(id,
+        {
+            $set: {
+                title: striptags(params?.title),
+                indexes: params?.indexes?.filter((n) => validateCustomIndex(n))
+            }
+        }
+    )
+
+    const updated = await updateProjectCache(id)
+    initLogger(updated)
+
+    return updated
 
 }
 
@@ -274,6 +323,7 @@ const listUserFromProject = async (projectId) => {
 
 module.exports = {
     createProject,
+    updateProject,
     canUserModifyProject,
     removeProject,
     paginateProject,

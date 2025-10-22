@@ -12,6 +12,10 @@ const projectSchema = new mongoose.Schema(
             index: true,
             maxLength: 128,
         },
+        indexes: {
+            type: [String],
+            index: true,
+        },
         secret: {
             type: String,
         },

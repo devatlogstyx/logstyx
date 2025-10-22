@@ -12,7 +12,7 @@ const {
     SUCCESS_ERR_MESSAGE,
 
 } = require("common/constant");
-const { createProject, canUserModifyProject, removeProject, paginateProject, addUserToProject, removeUserFromProject, listUserFromProject } = require("../service/project");
+const { createProject, canUserModifyProject, removeProject, paginateProject, addUserToProject, removeUserFromProject, listUserFromProject, updateProject } = require("../service/project");
 
 module.exports = {
 
@@ -37,6 +37,31 @@ module.exports = {
             data,
         });
     },
+
+    /**
+     * 
+     * @param {*} req 
+     * @param {*} res 
+     */
+    async ProjectUpdate(req, res) {
+        if (!req?.user) {
+            throw HttpError(NO_ACCESS_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
+        }
+
+        const canAccess = await canUserModifyProject(req?.user?.id, req?.params?.id)
+        if (!canAccess) {
+            throw HttpError(NO_ACCESS_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
+        }
+
+        const data = await updateProject(req?.params?.id, req?.body)
+
+        HttpResponse(res).json({
+            error: SUCCESS_ERR_CODE,
+            message: SUCCESS_ERR_MESSAGE,
+            data,
+        });
+    },
+
     /**
      * 
      * @param {*} req 

@@ -4,10 +4,11 @@ const express = require("express");
 
 const router = express.Router();
 const { asyncHandler } = require("common/function");
-const { ProjectCreate, ProjectRemove, ProjectPaginate, ProjectAddUser, ProjectRemoveUser, ProjectListUser } = require("../express.controller/project");
+const { ProjectCreate, ProjectRemove, ProjectPaginate, ProjectAddUser, ProjectRemoveUser, ProjectListUser, ProjectUpdate } = require("../express.controller/project");
 
 
 router.post("/", asyncHandler(ProjectCreate));
+router.put("/:id", asyncHandler(ProjectUpdate));
 router.delete("/:id", asyncHandler(ProjectRemove));
 router.get("/", asyncHandler(ProjectPaginate));
 
