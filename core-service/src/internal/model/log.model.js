@@ -9,7 +9,6 @@ const logSchema = new mongoose.Schema(
     {
         project: {
             type: ObjectId,
-            required: true,
             index: true,
         },
         key: {
@@ -25,15 +24,12 @@ const logSchema = new mongoose.Schema(
         },
         device: {
             type: Mixed,
-            required: true
         },
         context: {
             type: Mixed,
-            required: true
         },
         data: {
             type: Mixed,
-            required: true
         },
     },
     {

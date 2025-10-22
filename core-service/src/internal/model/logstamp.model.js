@@ -6,15 +6,14 @@ const {
 
 const logstampSchema = new mongoose.Schema(
     {
+        project: {
+            type: ObjectId,
+            index: true,
+        },
         key: {
             type: String,
             required: true,
             trim: true,
-            index: true,
-        },
-        project: {
-            type: ObjectId,
-            required: true,
             index: true,
         },
         level: {
