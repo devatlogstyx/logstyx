@@ -9,8 +9,6 @@ const {
 exports.init = (rpc) => {
 
     rpc.use(CACHE_READ_WSROUTE, async ({ key, id }) => {
-        console.log(key, id)
-
         let res = await readCache(key, id);
         if (!res) {
             return null;

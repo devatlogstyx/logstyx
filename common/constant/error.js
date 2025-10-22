@@ -17,6 +17,11 @@ module.exports={
     INVALID_INPUT_ERR_MESSAGE:"Bad Request",
     MQ_NOT_READY_ERR_MESSAGE:"MQ Not Ready",
 
+    USER_NOT_FOUND_ERR_MESSAGE:"User Not Found",
+    PROJECT_NOT_FOUND_ERR_MESSAGE:"Project Not Found",
+    ALREADY_A_MEMBER_ERR_MESSAGE:"Already a member",
+    NOT_A_MEMBER_ERR_MESSAGE:"Not a member",
+
     ERROR_LOG_LEVEL:"ERROR",
     INFO_LOG_LEVEL:"INFO",
     WARNING_LOG_LEVEL:"WARNING",
