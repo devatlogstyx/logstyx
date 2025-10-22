@@ -31,4 +31,4 @@ const logstampSchema = new mongoose.Schema(
 logstampSchema.index({ createdAt: 1 });
 logstampSchema.index({ updatedAt: 1 });
 
-module.exports = mongoose.model("logstamp", logstampSchema);
+module.exports = logstampSchema
