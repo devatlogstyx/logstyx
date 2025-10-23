@@ -16,6 +16,10 @@ const projectSchema = new mongoose.Schema(
             type: [String],
             index: true,
         },
+        allowedOrigin: {
+            type: [String],
+            index: true,
+        },
         secret: {
             type: String,
         },

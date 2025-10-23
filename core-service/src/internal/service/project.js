@@ -1,6 +1,6 @@
 //@ts-check
 const { INVALID_INPUT_ERR_CODE, NOT_FOUND_ERR_CODE, USER_NOT_FOUND_ERR_MESSAGE, PROJECT_NOT_FOUND_ERR_MESSAGE, ALREADY_A_MEMBER_ERR_MESSAGE, NOT_A_MEMBER_ERR_MESSAGE, NOT_FOUND_ERR_MESSAGE } = require("common/constant");
-const { HttpError, num2Ceil, num2Floor, parseSortBy } = require("common/function");
+const { HttpError, num2Ceil, num2Floor, parseSortBy, sanitizeObject } = require("common/function");
 const { Validator } = require("node-input-validator");
 const { findUserById } = require("../../shared/provider/auth.service");
 const mongoose = require("mongoose");
@@ -22,13 +22,15 @@ const { initLogger } = require("./logger");
  * @param {string} params.creator 
  * @param {string} params.title
  * @param {string[]} [params.indexes] 
+ * @param {string[]} [params.allowedOrigin]
  */
 const createProject = async (params) => {
 
     const v = new Validator(params, {
         title: "required|string",
         creator: "required|string",
-        indexes: "arrayUnique"
+        indexes: "arrayUnique",
+        allowedOrigin: "arrayUnique"
     });
 
     let match = await v.check();
@@ -48,11 +50,12 @@ const createProject = async (params) => {
 
         const secret = randomstring.generate(32)
         const projects = await projectModel.create([
-            {
+            sanitizeObject({
                 title: striptags(params?.title),
                 secret,
-                indexes: params?.indexes?.filter((n) => validateCustomIndex(n))
-            }
+                indexes: params?.indexes?.filter((n) => validateCustomIndex(n)),
+                allowedOrigin: params?.allowedOrigin?.map((n) => striptags(n))
+            })
         ], { session })
 
         await projectUserModel.create([
@@ -86,6 +89,7 @@ const createProject = async (params) => {
  * @param {object} params 
  * @param {string} params.title
  * @param {string[]} [params.indexes] 
+ * @param {string[]} [params.allowedOrigin]
  */
 const updateProject = async (id, params) => {
     const project = await getProjectFromCache(id)
@@ -95,7 +99,8 @@ const updateProject = async (id, params) => {
 
     const v = new Validator(params, {
         title: "required|string",
-        indexes: "arrayUnique"
+        indexes: "arrayUnique",
+        allowedOrigin: "arrayUnique"
     });
 
     let match = await v.check();
@@ -110,7 +115,8 @@ const updateProject = async (id, params) => {
         {
             $set: {
                 title: striptags(params?.title),
-                indexes: params?.indexes?.filter((n) => validateCustomIndex(n))
+                indexes: params?.indexes?.filter((n) => validateCustomIndex(n)),
+                allowedOrigin: params?.allowedOrigin?.map((n) => striptags(n))
             }
         }
     )

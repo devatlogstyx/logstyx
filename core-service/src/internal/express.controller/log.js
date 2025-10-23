@@ -10,9 +10,9 @@ const {
     NO_ACCESS_ERR_MESSAGE,
     SUCCESS_ERR_CODE,
     SUCCESS_ERR_MESSAGE,
+    BROWSER_CLIENT_TYPE,
 
 } = require("common/constant");
-const { createProject, canUserModifyProject, removeProject, paginateProject, addUserToProject, removeUserFromProject, listUserFromProject, updateProject } = require("../service/project");
 const { submitWriteLog } = require("../../shared/provider/mq-producer");
 
 module.exports = {
@@ -26,12 +26,12 @@ module.exports = {
 
         let origin = null;
 
-        if (req?.headers?.origin) {
-            origin = new URL(req.headers.origin).hostname;
-            // "https://example.com" → "example.com"
-        } else if (req?.headers?.referer) {
-            origin = new URL(req.headers.referer).hostname;
-            // "https://example.com/page?query=1" → "example.com"
+        if (req?.device?.client?.type === BROWSER_CLIENT_TYPE) {
+            if (req?.headers?.origin) {
+                origin = new URL(req.headers.origin).hostname;
+            } else if (req?.headers?.referer) {
+                origin = new URL(req.headers.referer).hostname;
+            }
         }
 
         submitWriteLog({
@@ -39,6 +39,7 @@ module.exports = {
                 signature: req?.headers?.signature,
                 timestamp: req?.headers?.timestamp,
                 origin,
+                deviceClientType: req?.device?.client?.type
             },
             body: req?.body
         })
