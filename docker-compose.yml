@@ -73,6 +73,15 @@ services:
     environment:
       <<: *microservice-base-env
       PORT: 5003
+  core-service:
+    build:
+      context: .
+      dockerfile: core-service/Dockerfile
+    container_name: core-service
+    <<: *microservice-base
+    environment:
+      <<: *microservice-base-env
+      PORT: 5004
 
 volumes:
   rabbitmq-data:
