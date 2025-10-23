@@ -76,7 +76,12 @@ const getLogModel = async (projectId) => {
  * @param {object} param0.data
  * @returns 
  */
-const writeLog = async ({ timestamp, level, projectId, device, context, data }) => {
+const processWriteLog = async ({ headers, body }) => {
+
+    const { level, projectId, device, context, data, appid } = body
+    const { timestamp, signature, origin } = body
+
+    // validate origin, appid , signature based on projectId
 
     const project = await getProjectFromCache(projectId)
     if (!project) {
@@ -124,5 +129,5 @@ const writeLog = async ({ timestamp, level, projectId, device, context, data }) 
 module.exports = {
     initLogger,
     getLogModel,
-    writeLog
+    processWriteLog
 }

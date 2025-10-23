@@ -2,4 +2,5 @@
 
 module.exports = {
     ...require("./cache.service"),
+    ...require("./core.service"),
 }

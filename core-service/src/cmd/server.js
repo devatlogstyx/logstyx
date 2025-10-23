@@ -43,5 +43,6 @@ const { useRPCWebsocket } = require("common/hooks");
         Log: logger
     });
 
+    require("./mq.queue.js")
     require("./rpc-websockets.js").init(rpc({ port: process?.env?.PORT, path: "/rpc" }));
 })();
