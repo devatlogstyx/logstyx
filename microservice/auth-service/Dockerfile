@@ -8,17 +8,17 @@ RUN corepack enable && \
 
 # Copy workspace files from root
 COPY pnpm-workspace.yaml pnpm-lock.yaml ./
-COPY common/package.json ./common/
-COPY auth-service/src/package.json ./auth-service/src/
+COPY microservice/common/package.json ./microservice/common/
+COPY microservice/auth-service/src/package.json ./microservice/auth-service/src/
 
 # Install dependencies
 RUN pnpm install --filter "auth-service/src" --prod --frozen-lockfile
 
 # Copy source code
-COPY common ./common
-COPY auth-service/src ./auth-service/src
+COPY microservice/common ./microservice/common
+COPY microservice/auth-service/src ./microservice/auth-service/src
 
-WORKDIR /app/auth-service/src
+WORKDIR /app/microservice/auth-service/src
 
 RUN pnpm add pm2
 

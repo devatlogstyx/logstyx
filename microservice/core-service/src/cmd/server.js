@@ -1,7 +1,7 @@
 //@ts-check
 
 require("dotenv").config()
-const { connectToDB } = require("./../shared/mongoose");
+const { connectToDB } = require("../shared/mongoose/index.js");
 const { logger } = require("../shared/logger/index.js");
 const { Server } = require("jsonrpc-ws");
 const { useRPCWebsocket } = require("common/hooks");
@@ -9,9 +9,8 @@ const { useRPCWebsocket } = require("common/hooks");
 
 (async () => {
     await connectToDB();
-    const { seedUser } = require("../internal/service/user.js");
     const { num2Floor } = require("common/function")
-    const app = require("./../shared/express/app.js");
+    const app = require("../shared/express/app.js");
     const http = require('http');
 
     /**
@@ -35,13 +34,12 @@ const { useRPCWebsocket } = require("common/hooks");
     server.on('error', logger.error);
     server.on('listening', () => console.log("server up", port));
 
-    seedUser().catch(console.error)
-
     // @ts-ignore
     const { server: rpc } = useRPCWebsocket({
         Server,
         Log: logger
     });
 
-    require("./rpc-websockets").init(rpc({ port: process?.env?.PORT, path: "/rpc" }));
+    require("./mq.queue.js")
+    require("./rpc-websockets.js").init(rpc({ port: process?.env?.PORT, path: "/rpc" }));
 })();

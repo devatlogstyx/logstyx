@@ -1,7 +1,7 @@
 FROM node:22-alpine
 WORKDIR /app
 
-RUN apk add --no-core git
+RUN apk add --no-cache git
 # Install pnpm AND pm2
 RUN corepack enable && \
     corepack prepare pnpm@latest --activate && \
@@ -9,17 +9,17 @@ RUN corepack enable && \
 
 # Copy workspace files from root
 COPY pnpm-workspace.yaml pnpm-lock.yaml ./
-COPY common/package.json ./common/
-COPY core-service/src/package.json ./core-service/src/
+COPY microservice/common/package.json ./microservice/common/
+COPY microservice/core-service/src/package.json ./microservice/core-service/src/
 
 # Install dependencies
 RUN pnpm install --filter "core-service/src" --prod --frozen-lockfile
 
 # Copy source code
-COPY common ./common
-COPY core-service/src ./core-service/src
+COPY microservice/common ./microservice/common
+COPY microservice/core-service/src ./microservice/core-service/src
 
-WORKDIR /app/core-service/src
+WORKDIR /app/microservice/core-service/src
 
 RUN pnpm add pm2
 

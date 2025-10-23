@@ -186,7 +186,7 @@ const createUserToken = async (user, refreshToken) => {
 
 
 const seedUser = async () => {
-    if (USER_NAME || USER_EMAIL || USER_PASSWORD) {
+    if (!USER_NAME ||!USER_EMAIL || !USER_PASSWORD) {
         throw new Error("USER_NAME, USER_EMAIL, and USER_PASSWORD must be set in env");
     }
 

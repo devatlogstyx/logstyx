@@ -8,17 +8,17 @@ RUN corepack enable && \
 
 # Copy workspace files from root
 COPY pnpm-workspace.yaml pnpm-lock.yaml ./
-COPY common/package.json ./common/
-COPY utility-service/src/package.json ./utility-service/src/
+COPY microservice/common/package.json ./microservice/common/
+COPY microservice/utility-service/src/package.json ./microservice/utility-service/src/
 
 # Install dependencies
 RUN pnpm install --filter "utility-service/src" --prod --frozen-lockfile
 
 # Copy source code
-COPY common ./common
-COPY utility-service/src ./utility-service/src
+COPY microservice/common ./microservice/common
+COPY microservice/utility-service/src ./microservice/utility-service/src
 
-WORKDIR /app/utility-service/src
+WORKDIR /app/microservice/utility-service/src
 
 RUN pnpm add pm2
 

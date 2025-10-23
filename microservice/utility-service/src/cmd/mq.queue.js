@@ -12,9 +12,6 @@ const {
 
 const { createAgendaJob, cancelAgendaJob } = require("../internal/service/agenda");
 const { logger } = require("../shared/logger");
-const { sendEmailNotification } = require("../internal/service/mailer");
-const { getIO } = require("./socket.io");
-const { pushToCloudfront } = require("../shared/provider/aws.cloudfront");
 
 const consumer = useMQConsumer({
     amqp,

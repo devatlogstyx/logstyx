@@ -9,17 +9,17 @@ RUN corepack enable && \
 
 # Copy workspace files from root
 COPY pnpm-workspace.yaml pnpm-lock.yaml ./
-COPY common/package.json ./common/
-COPY cache-service/src/package.json ./cache-service/src/
+COPY microservice/common/package.json ./microservice/common/
+COPY microservice/cache-service/src/package.json ./microservice/cache-service/src/
 
 # Install dependencies
 RUN pnpm install --filter "cache-service/src" --prod --frozen-lockfile
 
 # Copy source code
-COPY common ./common
-COPY cache-service/src ./cache-service/src
+COPY microservice/common ./microservice/common
+COPY microservice/cache-service/src ./microservice/cache-service/src
 
-WORKDIR /app/cache-service/src
+WORKDIR /app/microservice/cache-service/src
 
 RUN pnpm add pm2
 

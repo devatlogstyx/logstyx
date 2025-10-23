@@ -5,7 +5,7 @@ const { SUBMIT_MESSAGE_QUEUE_AGENDA_JOB, SUBMIT_MESSAGE_FANOUT_AGENDA_JOB } = re
 
 const { CREATE_AGENDA_JOB_MQ_QUEUE } = require("./../routes/mq-queue/utility.service")
 
-const { JSONParseX, createSlug,  } = require("./../function");
+const { JSONParseX, createSlug, decryptSecret,  } = require("./../function");
 const crypto = require("crypto");
 
 function stableId(payload = {}) {
@@ -23,7 +23,7 @@ function useMQConsumer({ amqp, log, prefetch: defaultPrefetch = 5 }) {
     let connection = null;
     let isReconnecting = false;
     const consumers = [];
-    const AMQP_HOST = process?.env?.AMQP_HOST
+    const AMQP_HOST = decryptSecret(process?.env?.ENC_AMQP_HOST)
 
     const use = (queue, fn, options = {}) => {
         if (typeof fn === "function") {

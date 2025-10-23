@@ -5,7 +5,7 @@ const {
     MQ_NOT_READY_ERR_MESSAGE,
 } = require("./../constant");
 
-const { HttpError } = require("../function");
+const { HttpError, decryptSecret } = require("../function");
 
 /**
  * @typedef {Object} MQProducerOptions
@@ -26,7 +26,7 @@ function useMQProducer({ amqp, log, exchanges = [], queues = [] }) {
     const connect = async () => {
         if (isReconnecting) return;
         isReconnecting = true;
-        const AMQP_HOST = process?.env?.AMQP_HOST
+        const AMQP_HOST = decryptSecret(process?.env?.ENC_AMQP_HOST)
 
         try {
             connection = await amqp.connect(AMQP_HOST || "");

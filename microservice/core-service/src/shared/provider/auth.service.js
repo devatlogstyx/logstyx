@@ -12,8 +12,8 @@ const { client } = useRPCWebsocket({
 
 const ws = client(process.env.AUTH_WSHOST);
 
-ws.on("open", () => console.log("WebSocket to cache service connected"));
-ws.on("error", () => console.error("WebSocket to cache service error"));
-ws.on("close", () => console.error("WebSocket to cache service closed"));
+ws.on("open", () => console.log("WebSocket to auth service connected"));
+ws.on("error", () => console.error("WebSocket to auth service error"));
+ws.on("close", () => console.error("WebSocket to auth service closed"));
 
 exports.findUserById = ws.createCall(FIND_USER_BY_ID_WSROUTE);
