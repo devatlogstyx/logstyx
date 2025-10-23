@@ -1,0 +1,94 @@
+# docker-compose.dev.yml - Full development environment
+x-microservice-base: &microservice-base
+  env_file: .env.encrypted
+  environment: &microservice-base-env
+    AUTH_WSHOST: ws://auth-service:5001/rpc
+    CACHE_WSHOST: ws://cache-service:5002/rpc
+    UTILITY_WSHOST: ws://utility-service:5003/rpc
+    CORE_WSHOST: ws://core-service:5004/rpc
+  logging:
+    driver: "json-file"
+    options:
+      max-file: "3"
+      max-size: "500k"
+  restart: unless-stopped
+  deploy:
+    resources:
+      limits:
+        cpus: "1"
+        memory: "512M"
+
+services:
+  gateway-service:
+    image: nginx:alpine
+    container_name: gateway-service
+    ports:
+      - "3000:80"
+    volumes:
+      - ./microservice/gateway-service/include.d:/etc/nginx/include.d:ro
+      - ./microservice/gateway-service/proxy_settings.conf:/etc/nginx/proxy_settings.conf:ro
+      - ./microservice/gateway-service/default.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./microservice/frontend/dist:/usr/share/nginx/html:ro
+    depends_on:
+      - auth-service
+      - utility-service
+      
+  auth-service:
+    build:
+      context: .
+      dockerfile: microservice/auth-service/Dockerfile
+    container_name: auth-service
+    <<: *microservice-base
+    environment:
+      <<: *microservice-base-env
+      PORT: 5001
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+
+  cache-service:
+    build:
+      context: .
+      dockerfile: microservice/cache-service/Dockerfile
+    container_name: cache-service
+    <<: *microservice-base
+    environment:
+      <<: *microservice-base-env
+      PORT: 5002
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+
+  utility-service:
+    build:
+      context: .
+      dockerfile: microservice/utility-service/Dockerfile
+    container_name: utility-service
+    <<: *microservice-base
+    environment:
+      <<: *microservice-base-env
+      PORT: 5003
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+
+  core-service:
+    build:
+      context: .
+      dockerfile: microservice/core-service/Dockerfile
+    container_name: core-service
+    <<: *microservice-base
+    environment:
+      <<: *microservice-base-env
+      PORT: 5004
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy

@@ -32,7 +32,7 @@ app.use(ValidateSignature)
 app.use(ValidateBearer)
 app.use(ValidateCookies)
 app.use(ExpressSuccessHandler)
-app.use('/v1', require("./routes/v1"));
+app.use('/api/v1', require("./routes/v1"));
 
 app.use(ExpressNotFoundHandler)
 app.use(ExpressErrorHandler);
