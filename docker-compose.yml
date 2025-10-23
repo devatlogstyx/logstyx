@@ -3,7 +3,7 @@ x-microservice-base: &microservice-base
     AUTH_WSHOST: ws://auth-service:5001/rpc
     CACHE_WSHOST: ws://cache-service:5002/rpc
     UTILITY_WSHOST: ws://cache-service:5003/rpc
-    AMQP_HOST: amqp://rabbitmq
+    CORE_WSHOST: ws://core-service:5004/rpc
   depends_on:
     rabbitmq:
       condition: service_healthy
