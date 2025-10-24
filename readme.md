@@ -1,6 +1,6 @@
-# Project README
+# README
 
-Welcome to the Loga Project! This project comprises several interdependent services, including authentication, caching, core processing, a frontend application, and utility functionalities, which communicate via HTTP and RPC protocols.
+Welcome to the Loga Project! An open-source server implementation of the LOGSTYX logging platform that compatible with [logstyx SDK](https://github.com/devatlogstyx/logstyx-js-core). This project comprises several interdependent services, including authentication, caching, core processing, a frontend application, and utility functionalities, which communicate via HTTP and RPC protocols.
 
 ## Table of Contents
 - [Overview](#overview)
@@ -50,7 +50,7 @@ Each service has its own Docker configuration (`Dockerfile` and `docker-compose`
 - **MongoDB**: Database used for persistent data storage.
 - **RabbitMQ**: Message broker for managing communication between services.
 - **Docker**: For containerization of services.
-- **React**: For building the frontend application.
+- **React** + **Vite**: For building the frontend application.
 
 ## Setup Instructions
 1. Clone the repository:
@@ -65,7 +65,7 @@ Each service has its own Docker configuration (`Dockerfile` and `docker-compose`
    ```
 
 3. Set up your environment variables:
-   - Create a `.env` file in the script directory then run it to generate an encrypted `.env.encrypted` file.
+   - Create a `.env` file in the script directory then run it to generate an encrypted `.env.encrypted` file and build the frontend.
    - Make sure to set the required environment variables in `.env`.
 
 4. To run the services locally, use the following command:

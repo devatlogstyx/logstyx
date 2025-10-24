@@ -5,6 +5,44 @@ const randomstring = require("randomstring")
 const MASTER_KEY = randomstring.generate(32)
 const algorithm = "aes-256-ctr";
 const crypto = require("crypto")
+const { spawn } = require('child_process');
+
+const buildFrontend = () => {
+    return new Promise((resolve, reject) => {
+        const npmProcess = spawn('npm', ['run', 'build'], {
+            cwd: "./../microservice/frontend",
+            stdio: 'inherit',
+            shell: true // Required for Windows compatibility
+        });
+
+        npmProcess.on('close', (code) => {
+            if (code === 0) {
+                console.log('Build completed successfully!');
+                resolve();
+            } else {
+                reject(new Error(`Build failed with exit code ${code}`));
+            }
+        });
+
+        npmProcess.on('error', (error) => {
+            reject(error);
+        });
+    });
+}
+
+
+const setupFrontend = async () => {
+    try {
+        const sourceFile = './../microservice/frontend/.env.sample';
+        const destFile = './../microservice/frontend/.env.local';
+
+        fs.copyFileSync(sourceFile, destFile);
+        await buildFrontend()
+
+    } catch (error) {
+        console.error('Error copying file:', error);
+    }
+}
 
 const encryptSecret = (secret) => {
 
@@ -14,6 +52,7 @@ const encryptSecret = (secret) => {
     return [iv, encrypted]?.map((n) => n?.toString("hex"))?.join(":")
 
 }
+
 
 const setupEncryptedENV = () => {
     const envConfig = dotenv.parse(fs.readFileSync('.env'));
@@ -47,9 +86,8 @@ const setupEncryptedENV = () => {
 }
 
 const start = async () => {
-
     setupEncryptedENV()
-
+    await setupFrontend();
 }
 
 start()
