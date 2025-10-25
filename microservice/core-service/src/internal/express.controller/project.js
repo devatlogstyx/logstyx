@@ -154,6 +154,11 @@ module.exports = {
             message: SUCCESS_ERR_MESSAGE,
         });
     },
+    /**
+     * 
+     * @param {*} req 
+     * @param {*} res 
+     */
     async ProjectListUser(req, res) {
         if (!req?.user) {
             throw HttpError(NO_ACCESS_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
