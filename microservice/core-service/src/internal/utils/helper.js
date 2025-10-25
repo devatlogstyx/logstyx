@@ -156,7 +156,6 @@ const getLogModel = async (projectId) => {
  */
 const generateIndexedHashes = (log, project) => {
     const hashes = {};
-    const projectId = project._id.toString();
 
     // Loop through project's indexed fields
     for (const fieldPath of project.settings.indexes) {

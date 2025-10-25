@@ -55,14 +55,13 @@ const processWriteLog = async ({ headers, body }) => {
         ...data
     });
 
-    const key = hashString(params, `:${projectId}`)
+    const key = hashString(params)
     const { log, logstamp } = await getLogModel(projectId)
 
     const hashes = generateIndexedHashes({
         context,
         data
     }, project);
-
 
     await log.findOneAndUpdate(
         { key },
