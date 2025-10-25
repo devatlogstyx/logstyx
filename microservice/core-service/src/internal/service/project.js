@@ -1,6 +1,6 @@
 //@ts-check
 const { INVALID_INPUT_ERR_CODE, NOT_FOUND_ERR_CODE, USER_NOT_FOUND_ERR_MESSAGE, PROJECT_NOT_FOUND_ERR_MESSAGE, ALREADY_A_MEMBER_ERR_MESSAGE, NOT_A_MEMBER_ERR_MESSAGE, NOT_FOUND_ERR_MESSAGE } = require("common/constant");
-const { HttpError, num2Ceil, num2Floor, parseSortBy, sanitizeObject } = require("common/function");
+const { HttpError, num2Ceil, num2Floor, parseSortBy, sanitizeObject, createSlug } = require("common/function");
 const { Validator } = require("node-input-validator");
 const { findUserById } = require("../../shared/provider/auth.service");
 const mongoose = require("mongoose");
@@ -21,6 +21,7 @@ const { initLogger } = require("./../utils/helper");
  * @param {object} params 
  * @param {string} params.creator 
  * @param {string} params.title
+ * @param {string} [params.slug]
  * @param {string[]} [params.indexes] 
  * @param {string[]} [params.allowedOrigin]
  */
@@ -28,6 +29,7 @@ const createProject = async (params) => {
 
     const v = new Validator(params, {
         title: "required|string",
+        slug: "string",
         creator: "required|string",
         indexes: "arrayUnique",
         allowedOrigin: "arrayUnique"
@@ -52,6 +54,7 @@ const createProject = async (params) => {
         const projects = await projectModel.create([
             sanitizeObject({
                 title: striptags(params?.title),
+                slug: createSlug(params?.slug || params?.title),
                 secret,
                 indexes: params?.indexes?.filter((n) => validateCustomIndex(n)),
                 allowedOrigin: params?.allowedOrigin?.map((n) => striptags(n))
@@ -88,6 +91,7 @@ const createProject = async (params) => {
  * @param {string} id 
  * @param {object} params 
  * @param {string} params.title
+ * @param {string} [params.slug]
  * @param {string[]} [params.indexes] 
  * @param {string[]} [params.allowedOrigin]
  */
@@ -99,6 +103,7 @@ const updateProject = async (id, params) => {
 
     const v = new Validator(params, {
         title: "required|string",
+        slug: "string",
         indexes: "arrayUnique",
         allowedOrigin: "arrayUnique"
     });
@@ -115,6 +120,7 @@ const updateProject = async (id, params) => {
         {
             $set: {
                 title: striptags(params?.title),
+                slug: createSlug(params?.slug || params?.title),
                 indexes: params?.indexes?.filter((n) => validateCustomIndex(n)),
                 allowedOrigin: params?.allowedOrigin?.map((n) => striptags(n))
             }

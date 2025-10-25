@@ -1,6 +1,6 @@
 //@ts-check
 
-const { HttpError, hashString, num2Ceil, num2Floor, sanitizeObject, encrypt, decryptSecret } = require("common/function")
+const { HttpError, hashString, num2Ceil, num2Floor, sanitizeObject, encrypt, decryptSecret, createSlug } = require("common/function")
 const { getUserFromCache } = require("../../shared/cache")
 const { mapUser, } = require("../utils/mapper")
 const { Validator } = require("node-input-validator")
@@ -17,7 +17,7 @@ const {
 
 const striptags = require("striptags")
 const userLoginModel = require("../model/user.login.model")
-const { submitRemoveCache } = require("../../shared/provider/mq-producer")
+const { submitRemoveCache, submitCreateProject } = require("../../shared/provider/mq-producer")
 
 const { mongoose } = require("../../shared/mongoose")
 const userModel = require("../model/user.model")
@@ -186,49 +186,95 @@ const createUserToken = async (user, refreshToken) => {
 
 
 const seedUser = async () => {
-    if (!USER_NAME ||!USER_EMAIL || !USER_PASSWORD) {
-        throw new Error("USER_NAME, USER_EMAIL, and USER_PASSWORD must be set in env");
+    if (!USER_NAME || !USER_EMAIL || !USER_PASSWORD) {
+        console.warn("Skipping user seed: USER_NAME, USER_EMAIL, or USER_PASSWORD not set");
+        return null;
     }
 
-    const totalUser = await userModel.countDocuments({});
-    if (totalUser > 0) {
-        throw new Error("User already set");
+    const hashedEmail = hashString(USER_EMAIL);
+
+    // Check if user already exists
+    let user = await userModel.findOne({ 'hash.email': hashedEmail });
+
+    if (!user) {
+        // Create user if doesn't exist
+        const session = await mongoose.connection.startSession();
+        session.startTransaction();
+
+        try {
+            const [newUser] = await userModel.create([sanitizeObject({
+                fullname: USER_NAME,
+                email: USER_EMAIL,
+                hash: { email: hashedEmail }
+            })], { session });
+
+            const salt = bcrypt.genSaltSync(10);
+            const hash = bcrypt.hashSync(USER_PASSWORD, salt);
+
+            await userLoginModel.create([{
+                user: newUser._id,
+                key: USER_EMAIL,
+                type: EMAIL_PASSWORD_LOGIN_TYPE,
+                credentials: encrypt(JSON.stringify({ password: hash })),
+                hash: { key: hashedEmail }
+            }], { session });
+
+            await session.commitTransaction();
+            console.log("✓ User created successfully");
+
+            user = newUser;
+
+        } catch (e) {
+            await session.abortTransaction();
+            console.error("Failed to create user:", e);
+            throw e;
+        } finally {
+            await session.endSession();
+        }
+    } else {
+        console.log("✓ User already exists");
     }
 
-    const session = await mongoose.connection.startSession();
-    session.startTransaction();
-    try {
+    // Always try to create self-project (whether user was just created or already existed)
+    await ensureSelfProject(user._id);
 
+    return user;
+};
 
-        const hashedEmail = hashString(USER_EMAIL);
+/**
+ * Ensure self-project exists for internal logging
+ */
+/**
+ * 
+ * @param {string} userId 
+ * @returns 
+ */
+const ensureSelfProject = async (userId) => {
+    const projectTitle = decryptSecret(process.env.ENC_SELF_PROJECT_TITLE);
 
-        const [newUser] = await userModel.create([sanitizeObject({
-            fullname: USER_NAME,
-            email: USER_EMAIL,
-            hash: { email: hashedEmail }
-        })], { session });
-
-        const salt = bcrypt.genSaltSync(10);
-        const hash = bcrypt.hashSync(USER_PASSWORD, salt);
-
-        const [res] = await userLoginModel.create([{
-            user: newUser._id,
-            key: USER_EMAIL,
-            type: EMAIL_PASSWORD_LOGIN_TYPE,
-            credentials: encrypt(JSON.stringify({ password: hash })),
-            hash: { key: hashedEmail }
-        }], { session });
-
-        await session.commitTransaction();
-        console.log("User created successfully");
-
-    } catch (e) {
-        await session.abortTransaction();
-        console.error("Failed to create user:", e);
-    } finally {
-        await session.endSession();
+    if (!projectTitle) {
+        console.log("  No ENC_SELF_PROJECT_TITLE set, skipping self-project");
+        return null;
     }
-}
+
+    const projectSlug = createSlug(projectTitle);
+
+    if (!projectSlug) {
+        console.error("  Failed to create slug from project title");
+        return null;
+    }
+
+    submitCreateProject({
+        title: projectTitle,
+        slug: projectSlug,
+        creator: userId.toString(),
+        indexes: [
+            "context.service",
+            "data.title"
+        ],
+        allowedOrigin: [] // internal backend only
+    });
+};
 
 module.exports = {
     findUserById,

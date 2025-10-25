@@ -6,47 +6,85 @@ const {
     CRITICAL_LOG_LEVEL,
     WARNING_LOG_LEVEL,
 } = require("../constant");
-const { normalizeError } = require("../function");
+const { normalizeError, decryptSecret, createSlug } = require("../function");
+const os = require("os");
 
 //@ts-check
 const useLogger = ({
-    Sender
+    Context = {},
+    Sender,
 }) => {
+
+    const device = {
+        type: "node",
+        origin: null,
+        os: os.type(),
+        platform: os.platform(),
+        browser: null,
+        screen: null
+    };
+
+    const projectTitle = decryptSecret(process?.env?.ENC_SELF_PROJECT_TITLE)
+    const projectId = createSlug(projectTitle || "")
+
     return {
         error: (e) => {
             const { title, message, stack } = normalizeError(e)
             return Sender({
+                timestamp: new Date().toISOString(),
                 level: ERROR_LOG_LEVEL,
-                title,
-                message,
-                context: { stack },
+                projectId,
+                device,
+                context: Context,
+                data: {
+                    title,
+                    message,
+                    stack,
+                }
             })
         },
         info: (e) => {
-            const { title, message, stack } = normalizeError(e)
+            const { title, message } = normalizeError(e)
             return Sender({
+                timestamp: new Date().toISOString(),
                 level: INFO_LOG_LEVEL,
-                title,
-                message,
-                context: null,
+                projectId,
+                device,
+                context: Context,
+                data: {
+                    title,
+                    message,
+                }
             })
         },
         critical: (e) => {
             const { title, message, stack } = normalizeError(e)
             return Sender({
+                timestamp: new Date().toISOString(),
                 level: CRITICAL_LOG_LEVEL,
-                title,
-                message,
-                context: { stack },
+                projectId,
+                device,
+                context: Context,
+                data: {
+                    title,
+                    message,
+                    stack,
+                }
             })
         },
         warn: (e) => {
             const { title, message, stack } = normalizeError(e)
             return Sender({
+                timestamp: new Date().toISOString(),
                 level: WARNING_LOG_LEVEL,
-                title,
-                message,
-                context: null,
+                projectId,
+                device,
+                context: Context,
+                data: {
+                    title,
+                    message,
+                    stack,
+                }
             })
         },
         custom: (level, {
@@ -55,10 +93,19 @@ const useLogger = ({
             context
         }) => {
             return Sender({
+                timestamp: new Date().toISOString(),
                 level,
-                title,
-                message,
-                context,
+                projectId,
+                device,
+                context: {
+                    ...Context,
+                    context
+                },
+                data: {
+                    title,
+                    message,
+                    stack,
+                }
             })
         },
     }

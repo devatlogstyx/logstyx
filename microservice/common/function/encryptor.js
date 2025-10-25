@@ -66,7 +66,7 @@ const hashString = (text, salt = "") => {
 
 /**
  * 
- * @param {string} secret 
+ * @param {string|undefined} secret 
  * @returns 
  */
 const decryptSecret = (secret) => {

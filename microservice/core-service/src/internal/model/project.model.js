@@ -28,6 +28,13 @@ const projectSchema = new mongoose.Schema(
             index: true,
             maxLength: 128,
         },
+        slug: {
+            type: String,
+            required: true,
+            trim: true,
+            index: true,
+            unique: true
+        },
         secret: {
             type: String,
         },
