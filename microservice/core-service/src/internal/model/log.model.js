@@ -4,13 +4,11 @@ const {
     ObjectId,
     Mixed
 } = mongoose.Schema.Types
+const { fieldEncryption } = require("../../shared/mongoose/plugins");
+const { decryptSecret } = require("common/function");
 
 const logSchema = new mongoose.Schema(
     {
-        project: {
-            type: ObjectId,
-            index: true,
-        },
         key: {
             type: String,
             required: true,
@@ -31,6 +29,15 @@ const logSchema = new mongoose.Schema(
         data: {
             type: Mixed,
         },
+        hash: {
+            type: Mixed,
+        },
+        count: {
+            type: Number,
+            default: 1,
+            min: 1
+        }
+
     },
     {
         timestamps: true,
@@ -39,5 +46,9 @@ const logSchema = new mongoose.Schema(
 
 logSchema.index({ createdAt: 1 });
 logSchema.index({ updatedAt: 1 });
+logSchema.plugin(fieldEncryption, {
+    fields: ["context", "data"],
+    secret: () => decryptSecret(process?.env?.ENC_CRYPTO_SECRET),
+});
 
 module.exports = logSchema

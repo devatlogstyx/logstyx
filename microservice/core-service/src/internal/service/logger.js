@@ -1,70 +1,12 @@
 //@ts-check
 
-const logSchema = require("./../model/log.model");
-const logstampSchema = require("./../model/logstamp.model");
 const { mongoose } = require("./../../shared/mongoose");
 const { getProjectFromCache } = require("../../shared/cache");
 const { HttpError, hashString } = require("common/function");
 const { NOT_FOUND_ERR_CODE, NOT_FOUND_ERR_MESSAGE, BROWSER_CLIENT_TYPE, INVALID_INPUT_ERR_CODE, INVALID_INPUT_ERR_MESSAGE } = require("common/constant");
-const { validateOrigin, validateSignature } = require("../utils/helper");
+const { validateOrigin, validateSignature, getLogModel, generateIndexedHashes } = require("../utils/helper");
 const { ObjectId } = mongoose.Types
 
-const Registry = {};
-
-/**
- * 
- * @param {object} project 
- * @param {string} project.id 
- * @param {string[]} project.indexes 
- */
-const initLogger = (project) => {
-    const schema = logSchema.clone();
-    for (const field of project.indexes) {
-        schema.index({ [field]: 1 });
-    }
-
-    const logModel = mongoose.model(`Log_${project?.id}`, schema, `logs_${project?.id}`);
-    const logStampModel = mongoose.model(`Logstamp_${project?.id}`, logstampSchema.clone(), `logstamp_${project?.id}`);
-
-
-    // @ts-ignore
-    Registry[project?.id] = {
-        log: logModel,
-        logstamp: logStampModel
-    };
-
-    return null;
-
-}
-
-/**
- * 
- * @param {string} projectId 
- * @returns 
- */
-const getLogModel = async (projectId) => {
-    // @ts-ignore
-    if (Registry[projectId]) return Registry[projectId];
-
-    const project = await getProjectFromCache(projectId)
-    if (!project) {
-        throw HttpError(NOT_FOUND_ERR_CODE, NOT_FOUND_ERR_MESSAGE)
-    }
-
-    const schema = logSchema.clone();
-    const logModel = mongoose.model(`Log_${project?.id}`, schema, `logs_${project?.id}`);
-    const logStampModel = mongoose.model(`Logstamp_${project?.id}`, logstampSchema.clone(), `logstamp_${project?.id}`);
-
-    // @ts-ignore
-    Registry[project?.id] = {
-        log: logModel,
-        logstamp: logStampModel
-    };
-    return {
-        log: logModel,
-        logstamp: logStampModel
-    };
-}
 
 /**
  * 
@@ -107,25 +49,33 @@ const processWriteLog = async ({ headers, body }) => {
         throw HttpError(INVALID_INPUT_ERR_CODE, INVALID_INPUT_ERR_MESSAGE)
     }
 
-
-    const key = hashString(JSON.stringify({
+    let params = JSON.stringify({
         ...device,
         ...context,
         ...data
-    }))
+    });
 
+    const key = hashString(params, `:${projectId}`)
     const { log, logstamp } = await getLogModel(projectId)
+
+    const hashes = generateIndexedHashes({
+        context,
+        data
+    }, project);
+
 
     await log.findOneAndUpdate(
         { key },
         {
             $set: { updatedAt: new Date() },
+            $inc: { occurrenceCount: 1 },
             $setOnInsert: {
                 project: ObjectId.createFromHexString(projectId),
                 level,
                 device,
                 context,
                 data,
+                hash: hashes,
                 createdAt: new Date(timestamp)
             }
         },
@@ -146,7 +96,5 @@ const processWriteLog = async ({ headers, body }) => {
 }
 
 module.exports = {
-    initLogger,
-    getLogModel,
     processWriteLog
 }

@@ -3,6 +3,22 @@ const { fieldEncryption } = require("mongoose-field-encryption");
 const { mongoose } = require("../../shared/mongoose");
 const { decryptSecret } = require("common/function");
 
+const SettingSchema = new mongoose.Schema(
+    {
+        indexes: {
+            type: [String],
+            index: true,
+        },
+        allowedOrigin: {
+            type: [String],
+            index: true,
+        },
+        retentionDays: {
+            type: Number,
+            index: true,
+        },
+    }
+)
 const projectSchema = new mongoose.Schema(
     {
         title: {
@@ -12,17 +28,12 @@ const projectSchema = new mongoose.Schema(
             index: true,
             maxLength: 128,
         },
-        indexes: {
-            type: [String],
-            index: true,
-        },
-        allowedOrigin: {
-            type: [String],
-            index: true,
-        },
         secret: {
             type: String,
         },
+        settings: {
+            type: SettingSchema
+        }
     },
     {
         timestamps: true,

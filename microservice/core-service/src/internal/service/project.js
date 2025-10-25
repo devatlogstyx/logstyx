@@ -14,7 +14,7 @@ const logModel = require("../model/log.model");
 const logstampModel = require("../model/logstamp.model");
 const { mapProjectUser } = require("../utils/mapper");
 const { validateCustomIndex } = require("../utils/helper");
-const { initLogger } = require("./logger");
+const { initLogger } = require("./../utils/helper");
 
 /**
  * 

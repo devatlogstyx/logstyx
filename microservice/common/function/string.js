@@ -97,6 +97,10 @@ const parseSortBy = (sortBy) => {
     return sortField;
 };
 
+const getNestedValue = (obj, path) => {
+    return path.split('.').reduce((current, key) => current?.[key], obj);
+}
+
 module.exports = {
     parseSortBy,
     sanitizeForHTML,
@@ -104,5 +108,6 @@ module.exports = {
     createSlug,
     sanitizeObject,
     redactObject,
-    sanitizeEmail
+    sanitizeEmail,
+    getNestedValue
 }

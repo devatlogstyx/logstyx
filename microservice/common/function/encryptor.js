@@ -3,9 +3,16 @@
 const crypto = require("crypto")
 const algorithm = "aes-256-ctr";
 
+/**
+ * 
+ * @param {string} text 
+ * @returns 
+ */
 const encrypt = (text) => {
+    // @ts-ignore
     const secretKey = decryptSecret(process?.env?.ENC_CRYPTO_SECRET)
     const iv = crypto.randomBytes(16);
+    // @ts-ignore
     const cipher = crypto.createCipheriv(algorithm, secretKey, iv);
 
     const encrypted = Buffer.concat([cipher.update(text), cipher.final()]);
@@ -16,6 +23,13 @@ const encrypt = (text) => {
     };
 };
 
+/**
+ * 
+ * @param {object} hash 
+ * @param {string} hash.iv
+ * @param {string} hash.content
+ * @returns 
+ */
 const decrypt = (hash) => {
     const secretKey = decryptSecret(process?.env?.ENC_CRYPTO_SECRET)
     const decipher = crypto.createDecipheriv(
@@ -32,21 +46,35 @@ const decrypt = (hash) => {
     return decrypted.toString();
 };
 
-const hashString = (text) => {
+/**
+ * 
+ * @param {string} text 
+ * @param {string} salt 
+ * @returns 
+ */
+const hashString = (text, salt = "") => {
     const CRYPTO_SECRET = decryptSecret(process?.env?.ENC_CRYPTO_SECRET)
+    if (!CRYPTO_SECRET) {
+        throw new Error('ENC_CRYPTO_SECRET not configured')
+    }
 
     return crypto
         .createHmac('sha256', CRYPTO_SECRET || "")
-        .update(text)
+        .update(text + salt)
         .digest('hex')
 }
 
+/**
+ * 
+ * @param {string} secret 
+ * @returns 
+ */
 const decryptSecret = (secret) => {
 
-    if(!secret){
+    if (!secret) {
         return null
     }
-    
+
     if (!process.env.MASTER_KEY) {
         throw new Error("MASTER_KEY missing")
     }
