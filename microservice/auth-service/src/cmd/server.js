@@ -35,7 +35,7 @@ const { useRPCWebsocket } = require("common/hooks");
     server.on('error', logger.error);
     server.on('listening', () => console.log("server up", port));
 
-    seedUser().catch(console.error)
+    seedUser().catch(logger.error)
 
     // @ts-ignore
     const { server: rpc } = useRPCWebsocket({

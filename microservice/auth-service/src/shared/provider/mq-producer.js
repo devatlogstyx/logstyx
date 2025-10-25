@@ -10,9 +10,13 @@ const {
     CREATE_PROJECT_MQ_QUEUE,
 } = require("common/routes/mq-queue");
 const { useLogger } = require("common/hooks");
+const { createLog } = require('./core.service');
 
 const log = useLogger({
-    Sender: console.error
+    Context: {
+        service: "Auth Service"
+    },
+    Sender: createLog
 })
 const produce = useMQProducer({
     amqp,

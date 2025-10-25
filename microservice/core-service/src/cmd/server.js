@@ -2,13 +2,13 @@
 
 require("dotenv").config()
 const { connectToDB } = require("../shared/mongoose/index.js");
-const { logger } = require("../shared/logger/index.js");
 const { Server } = require("jsonrpc-ws");
 const { useRPCWebsocket } = require("common/hooks");
-
+const { logger } = require("../shared/logger/index.js");
 
 (async () => {
     await connectToDB();
+    
     const { num2Floor } = require("common/function")
     const app = require("../shared/express/app.js");
     const http = require('http');
