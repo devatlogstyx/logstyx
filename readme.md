@@ -1,6 +1,6 @@
 # README
 
-Welcome to the Loga Project! An open-source server implementation of the LOGSTYX logging platform that compatible with [logstyx SDK](https://github.com/devatlogstyx/logstyx-js-core). This project comprises several interdependent services, including authentication, caching, core processing, a frontend application, and utility functionalities, which communicate via HTTP and RPC protocols.
+Welcome to the Logstyx Project! An open-source server implementation of the LOGSTYX logging platform that compatible with [logstyx SDK](https://github.com/devatlogstyx/logstyx-js-core). This project comprises several interdependent services, including authentication, caching, core processing, a frontend application, and utility functionalities, which communicate via HTTP and RPC protocols.
 
 ## Table of Contents
 - [Overview](#overview)
