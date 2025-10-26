@@ -269,15 +269,7 @@ const ensureSelfProject = async (userId) => {
         slug: projectSlug,
         creator: userId.toString(),
         indexes: [
-             //backend
             "context.service",
-            //frontend
-            "context.event",
-            "context.url",
-            "context.referrer",
-            "context.title",
-
-            //backend
             "data.title",
         ],
         allowedOrigin: [] // internal backend only
