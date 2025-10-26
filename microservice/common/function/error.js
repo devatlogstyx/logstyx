@@ -43,18 +43,18 @@ const normalizeError = (e) => {
     if (e instanceof Error) {
         let m = parseError(e)
         return {
-            title: m?.error,
+            error: m?.error,
             message: m?.message,
             stack: e?.stack || null
         };
     } else if (typeof e === 'string') {
         return {
-            title: e,
+            error: e,
             message: ''
         };
     } else {
         return {
-            title: e?.title || 'Unknown Error',
+            error: e?.error || 'Unknown Error',
             message: e?.message || JSON.stringify(e)
         };
     }

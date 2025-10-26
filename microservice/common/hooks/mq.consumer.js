@@ -93,7 +93,7 @@ function useMQConsumer({ amqp, log, prefetch: defaultPrefetch = 5 }) {
         channel.sendToQueue(CREATE_AGENDA_JOB_MQ_QUEUE, buf, { persistent: true });
 
         log?.custom?.(DEAD_LETTER_QUEUE_LOG_LEVEL, {
-            title: `Retry ${options?.isFanout ? "Fanout" : "Queue"} - ${queue}`,
+            error: `Retry ${options?.isFanout ? "Fanout" : "Queue"} - ${queue}`,
             message: `Retrying message (attempt ${retryCount}/${maxRetry})`,
             context: {
                 payload: params,
@@ -153,7 +153,7 @@ function useMQConsumer({ amqp, log, prefetch: defaultPrefetch = 5 }) {
 
                             } else {
                                 log?.custom?.(DEAD_LETTER_QUEUE_LOG_LEVEL, {
-                                    title: `Discard ${options?.isFanout ? "Fanout" : "Queue"} - ${queue}`,
+                                    error: `Discard ${options?.isFanout ? "Fanout" : "Queue"} - ${queue}`,
                                     message: `Discarding message after ${maxRetry} attempts`,
                                     context: {
                                         payload: JSON.parse(msg.content.toString()),
