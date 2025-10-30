@@ -4,8 +4,8 @@
 
 var amqp = require('amqplib');
 const { useMQProducer } = require("common/hooks")
-
 const { useLogger } = require("common/hooks");
+const { createLog } = require('./core.service');
 
 const log = useLogger({
     Context: {
@@ -15,7 +15,6 @@ const log = useLogger({
 })
 
 const { CREATE_LOG_MQ_QUEUE } = require('common/routes/mq-queue');
-const { createLog } = require('./core.service');
 
 const produce = useMQProducer({
     amqp,
