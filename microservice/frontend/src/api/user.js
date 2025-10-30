@@ -7,8 +7,14 @@ const Axios = axios.create({
     withCredentials: true,
 });
 
-
-export const getCurrentUser = async () => {
-    let { data } = await Axios.get("/v1/user/me");
+/**
+ * 
+ * @param {*} signal 
+ * @returns 
+ */
+export const getCurrentUser = async (signal) => {
+    let { data } = await Axios.get("/v1/users/me", {
+        signal
+    });
     return data?.data;
 }

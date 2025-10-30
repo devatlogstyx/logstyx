@@ -3,7 +3,7 @@ import React from "react"
 import { useErrorMessage } from "../../hooks/useMessage"
 import { getCurrentUser } from "../../api/user"
 import { useNavigate } from "react-router-dom"
-const useLanding = () => {
+const useDashboard = () => {
     const ErrorMessage = useErrorMessage()
     const navigate = useNavigate()
 
@@ -14,7 +14,6 @@ const useLanding = () => {
             if (!user) {
                 throw new Error("Not login")
             }
-            navigate(`/dashboard`)
         } catch (e) {
             navigate(`/login`)
             ErrorMessage(e)
@@ -29,6 +28,7 @@ const useLanding = () => {
             controller.abort();
         };
 
+
     }, [fetchUser])
 
     return {
@@ -36,4 +36,4 @@ const useLanding = () => {
     }
 }
 
-export default useLanding
+export default useDashboard

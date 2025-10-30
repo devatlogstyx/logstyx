@@ -23,7 +23,7 @@ services:
     image: nginx:alpine
     container_name: gateway-service
     ports:
-      - "3000:80"
+      - "5000:80"
     volumes:
       - ./microservice/gateway-service/include.d:/etc/nginx/include.d:ro
       - ./microservice/gateway-service/proxy_settings.conf:/etc/nginx/proxy_settings.conf:ro

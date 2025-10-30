@@ -7,15 +7,18 @@ const useCors = ({ Detector, Cors }) => {
 
   return (req, res, next) => {
     // Allow preflight OPTIONS requests quickly
+    console.log("cors here")
     if (req.method === 'OPTIONS') {
       return Cors({
         origin: true,
-        credentials: true // <--- ADD THIS HERE TOO
+        credentials: true
       })(req, res, next);
     }
 
     const userAgent = req.headers['user-agent'] || '';
     const origin = req.headers.origin || "";
+
+    console.log("cors", userAgent, origin)
 
     const device = deviceDetector.parse(userAgent);
 

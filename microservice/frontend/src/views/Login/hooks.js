@@ -3,7 +3,7 @@ import React from "react"
 import { useErrorMessage } from "../../hooks/useMessage"
 import { getCurrentUser } from "../../api/user"
 import { useNavigate } from "react-router-dom"
-const useLanding = () => {
+const useLogin = () => {
     const ErrorMessage = useErrorMessage()
     const navigate = useNavigate()
 
@@ -11,12 +11,11 @@ const useLanding = () => {
     const fetchUser = React.useCallback(async (/** @type {any} */ signal) => {
         try {
             const user = await getCurrentUser(signal)
-            if (!user) {
-                throw new Error("Not login")
+            if (user) {
+                navigate(`/dashboard`)
             }
-            navigate(`/dashboard`)
         } catch (e) {
-            navigate(`/login`)
+
             ErrorMessage(e)
         }
     }, [ErrorMessage, navigate])
@@ -36,4 +35,4 @@ const useLanding = () => {
     }
 }
 
-export default useLanding
+export default useLogin
