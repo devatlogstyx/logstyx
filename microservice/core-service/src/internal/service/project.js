@@ -6,7 +6,7 @@ const { findUserById } = require("../../shared/provider/auth.service");
 const mongoose = require("mongoose");
 const projectModel = require("../model/project.model");
 const { ObjectId } = mongoose.Types
-const { default: striptags } = require("striptags")
+const { striptags } = require("striptags")
 const randomstring = require("randomstring");
 const projectUserModel = require("../model/project.user.model");
 const { updateProjectCache, getProjectFromCache } = require("../../shared/cache");
@@ -22,8 +22,10 @@ const { initLogger } = require("./../utils/helper");
  * @param {string} params.creator 
  * @param {string} params.title
  * @param {string} [params.slug]
- * @param {string[]} [params.indexes] 
- * @param {string[]} [params.allowedOrigin]
+ * @param {object} [params.settings]
+ * @param {string[]} [params.settings.indexes] 
+ * @param {string[]} [params.settings.allowedOrigin]
+ * @param {number | string} [params.settings.retentionDays]
  */
 const createProject = async (params) => {
 
@@ -31,8 +33,9 @@ const createProject = async (params) => {
         title: "required|string",
         slug: "string",
         creator: "required|string",
-        indexes: "arrayUnique",
-        allowedOrigin: "arrayUnique"
+        "settings.indexes": "arrayUnique",
+        "settings.allowedOrigin": "arrayUnique",
+        "settings.retentionDays": "numeric",
     });
 
     let match = await v.check();
@@ -56,8 +59,11 @@ const createProject = async (params) => {
                 title: striptags(params?.title),
                 slug: createSlug(params?.slug || params?.title),
                 secret,
-                indexes: params?.indexes?.filter((n) => validateCustomIndex(n)),
-                allowedOrigin: params?.allowedOrigin?.map((n) => striptags(n))
+                settings: {
+                    indexes: params?.settings?.indexes?.filter((n) => validateCustomIndex(n)),
+                    allowedOrigin: params?.settings?.allowedOrigin?.map((n) => striptags(n)),
+                    retentionDays: params?.settings?.retentionDays || 1
+                }
             })
         ], { session })
 

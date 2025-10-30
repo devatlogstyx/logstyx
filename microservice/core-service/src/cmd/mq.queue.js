@@ -18,6 +18,6 @@ const consumer = useMQConsumer({
 
 consumer.use(WRITE_LOG_MQ_QUEUE, processWriteLog);
 consumer.use(CREATE_LOG_MQ_QUEUE, processCreateLog);
-consumer.use(CREATE_PROJECT_MQ_QUEUE, createProject);
+consumer.use(CREATE_PROJECT_MQ_QUEUE, (params) => createProject(params)?.catch(console.error));
 
 consumer.start()

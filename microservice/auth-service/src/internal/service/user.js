@@ -268,11 +268,13 @@ const ensureSelfProject = async (userId) => {
         title: projectTitle,
         slug: projectSlug,
         creator: userId.toString(),
-        indexes: [
-            "context.service",
-            "data.title",
-        ],
-        allowedOrigin: [] // internal backend only
+        settings: {
+            indexes: [
+                "context.service",
+                "data.title",
+            ],
+            allowedOrigin: [] // internal backend only
+        }
     });
 };
 

@@ -16,4 +16,11 @@ ws.on("open", () => console.log("WebSocket to cache service connected"));
 ws.on("error", () => console.error("WebSocket to cache service error"));
 ws.on("close", () => console.error("WebSocket to cache service closed"));
 
-exports.readCache = ws.createCall(CACHE_READ_WSROUTE);
+/**
+ * 
+ * @param {object} param0 
+ * @param {string} param0.key
+ * @param {string} param0.id
+ * @returns 
+ */
+exports.readCache = ({ key, id }) => ws.createCall(CACHE_READ_WSROUTE, { key, id });

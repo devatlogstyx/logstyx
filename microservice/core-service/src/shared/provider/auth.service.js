@@ -16,4 +16,9 @@ ws.on("open", () => console.log("WebSocket to auth service connected"));
 ws.on("error", () => console.error("WebSocket to auth service error"));
 ws.on("close", () => console.error("WebSocket to auth service closed"));
 
-exports.findUserById = ws.createCall(FIND_USER_BY_ID_WSROUTE);
+/**
+ * 
+ * @param {string} id 
+ * @returns 
+ */
+exports.findUserById = (id) => ws.createCall(FIND_USER_BY_ID_WSROUTE, { id })

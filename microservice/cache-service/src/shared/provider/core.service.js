@@ -16,4 +16,9 @@ ws.on("open", () => console.log("WebSocket to core service connected"));
 ws.on("error", () => console.error("WebSocket to core service error"));
 ws.on("close", () => console.error("WebSocket to core service closed"));
 
-exports.createLog = ws.createCall(CREATE_LOG_WSROUTE);
+/**
+ * 
+ * @param {*} params 
+ * @returns 
+ */
+exports.createLog = (params) => ws.createCall(CREATE_LOG_WSROUTE, params);
