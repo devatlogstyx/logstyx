@@ -1,13 +1,18 @@
 //@ts-check
 
 const { ALLOWED_ORIGIN, BROWSER_CLIENT_TYPE } = require("./../constant/auth");
-
-const useCors = ({ Detector, Cors }) => {
+/**
+ * 
+ * @param {object} param0
+ * @param {*} param0.Detector
+ * @param {*} param0.Cors
+ * @param {string | string[]} [param0.allowedOrigins]
+ * @returns 
+ */
+const useCors = ({ Detector, Cors, allowedOrigins = ALLOWED_ORIGIN }) => {
   const deviceDetector = new Detector();
 
   return (req, res, next) => {
-    // Allow preflight OPTIONS requests quickly
-    console.log("cors here")
     if (req.method === 'OPTIONS') {
       return Cors({
         origin: true,
@@ -17,9 +22,6 @@ const useCors = ({ Detector, Cors }) => {
 
     const userAgent = req.headers['user-agent'] || '';
     const origin = req.headers.origin || "";
-
-    console.log("cors", userAgent, origin)
-
     const device = deviceDetector.parse(userAgent);
 
     const corsOptions = {
@@ -27,24 +29,21 @@ const useCors = ({ Detector, Cors }) => {
     };
 
     if (!origin) {
-      // No origin, likely non-browser client (Postman, curl)
       corsOptions.origin = true;
     } else if (device?.client?.type === BROWSER_CLIENT_TYPE) {
-      // Browser client
-      if (ALLOWED_ORIGIN.includes(origin)) {
+      // Browser client - use custom allowedOrigins
+      if (allowedOrigins === '*' || allowedOrigins.includes(origin)) {
         corsOptions.origin = origin;
       } else {
-        corsOptions.origin = false; // Block disallowed origin
+        corsOptions.origin = false;
       }
     } else {
-      // Non-browser client, allow all origins
       corsOptions.origin = true;
     }
 
     Cors(corsOptions)(req, res, next);
   };
 };
-
 
 
 module.exports = { useCors }

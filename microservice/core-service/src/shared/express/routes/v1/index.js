@@ -2,8 +2,25 @@
 
 const express = require("express");
 const router = express.Router();
+const { useCors } = require("common/hooks");
+const cors = require("cors");
+const DeviceDetector = require("device-detector-js")
 
-router.use("/projects", require("../../../../internal/express.routes/project"));
-router.use("/logs", require("../../../../internal/express.routes/log"));
+
+const privateMiddleware = useCors({
+    Detector: DeviceDetector,
+    Cors: cors,
+});
+
+// For PUBLIC routes (with CORS)
+const publicMiddleware = useCors({
+    Detector: DeviceDetector,
+    Cors: cors,
+    allowedOrigins: '*'
+});
+
+
+router.use("/projects", privateMiddleware, require("../../../../internal/express.routes/project"));
+router.use("/logs", publicMiddleware, require("../../../../internal/express.routes/log"));
 
 module.exports = router;

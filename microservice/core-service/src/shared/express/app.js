@@ -3,20 +3,12 @@
 const express = require('express');
 const cookieParser = require('cookie-parser');
 const bodyParser = require('body-parser');
-const cors = require("cors");
 const morgan = require("morgan")
-const DeviceDetector = require("device-detector-js")
 
 const { ExpressNotFoundHandler, ExpressSuccessHandler, ValidateSignature, ValidateBearer, ValidateDevice, ExpressErrorHandler, ValidateCookies } = require('./middleware');
-const { useCors } = require("common/hooks");
 
 const app = express();
 app.disable('x-powered-by');
-
-app.use(useCors({
-    Detector: DeviceDetector,
-    Cors: cors
-}));
 
 app.use(morgan("dev"))
 app.use(bodyParser.json({ limit: '200mb' }));
