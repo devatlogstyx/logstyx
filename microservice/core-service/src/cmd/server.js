@@ -41,5 +41,5 @@ const { logger } = require("../shared/logger/index.js");
     });
 
     require("./mq.queue.js")
-    require("./rpc-websockets.js").init(rpc({ port: process?.env?.PORT, path: "/rpc" }));
+    require("./rpc-websockets.js").init(rpc({ server, path: "/rpc" }));
 })();

@@ -104,7 +104,6 @@ const useLogger = ({
                 data: {
                     error,
                     message,
-                    stack,
                 }
             })
         },

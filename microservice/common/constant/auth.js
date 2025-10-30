@@ -22,6 +22,7 @@ module.exports = {
 
     ALLOWED_ORIGIN: [
         "http://localhost:3000",
+        "http://localhost:3001",
     ],
     BROWSER_CLIENT_TYPE: "browser",
 
