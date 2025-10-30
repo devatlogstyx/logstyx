@@ -1,7 +1,7 @@
 //@ts-check
 
 const { NO_ACCESS_ERR_CODE, NO_ACCESS_ERR_MESSAGE, NOT_FOUND_ERR_CODE, NOT_FOUND_ERR_MESSAGE } = require("common/constant");
-const { HttpError, num2Int, getNestedValue } = require("common/function");
+const { HttpError, num2Int, getNestedValue, hashString } = require("common/function");
 const { default: striptags } = require("striptags")
 const crypto = require("crypto");
 const logSchema = require("../model/log.model");
@@ -82,8 +82,22 @@ const Registry = {};
  * @param {number} project.settings.retentionDays 
  */
 const initLogger = (project) => {
+    const logModelName = `Log_${project.id}`;
+    const logStampModelName = `Logstamp_${project.id}`;
+
+    // Check if models already exist in Mongoose
+    if (mongoose.models[logModelName] && mongoose.models[logStampModelName]) {
+        // Models already exist, just cache them in Registry
+        Registry[project.id] = {
+            log: mongoose.models[logModelName],
+            logstamp: mongoose.models[logStampModelName]
+        };
+        return null;
+    }
+
+    // Models don't exist, create them with custom indexes
     const schema = logSchema.clone();
-    const stampSchema = logstampSchema.clone()
+    const stampSchema = logstampSchema.clone();
 
     for (const field of project.settings.indexes) {
         const hashField = `hash.${field.replace(/\./g, '_')}`;
@@ -97,25 +111,21 @@ const initLogger = (project) => {
         );
     }
 
-
     if (project.settings.retentionDays) {
         stampSchema.set('expireAfterSeconds',
             project.settings.retentionDays * 24 * 60 * 60
         );
     }
 
+    const logModel = mongoose.model(logModelName, schema, `logs_${project.id}`);
+    const logStampModel = mongoose.model(logStampModelName, stampSchema, `logstamps_${project.id}`);
 
-    const logModel = mongoose.model(`Log_${project?.id}`, schema, `logs_${project?.id}`);
-    const logStampModel = mongoose.model(`Logstamp_${project?.id}`, stampSchema, `logstamps_${project?.id}`);
-
-    // @ts-ignore
-    Registry[project?.id] = {
+    Registry[project.id] = {
         log: logModel,
         logstamp: logStampModel
     };
 
     return null;
-
 }
 
 /**
@@ -124,7 +134,7 @@ const initLogger = (project) => {
  * @returns 
  */
 const getLogModel = async (projectId) => {
-    // @ts-ignore
+    // Check in-memory registry first
     if (Registry[projectId]) return Registry[projectId];
 
     const project = await getProjectFromCache(projectId)
@@ -132,15 +142,22 @@ const getLogModel = async (projectId) => {
         throw HttpError(NOT_FOUND_ERR_CODE, NOT_FOUND_ERR_MESSAGE)
     }
 
-    const schema = logSchema.clone();
-    const logModel = mongoose.model(`Log_${project?.id}`, schema, `logs_${project?.id}`);
-    const logStampModel = mongoose.model(`Logstamp_${project?.id}`, logstampSchema.clone(), `logstamp_${project?.id}`);
+    const logModelName = `Log_${project.id}`;
+    const logStampModelName = `Logstamp_${project.id}`;
 
-    // @ts-ignore
-    Registry[project?.id] = {
+    // Check if models already exist in Mongoose, otherwise create them
+    const logModel = mongoose.models[logModelName] ||
+        mongoose.model(logModelName, logSchema.clone(), `logs_${project.id}`);
+
+    const logStampModel = mongoose.models[logStampModelName] ||
+        mongoose.model(logStampModelName, logstampSchema.clone(), `logstamp_${project.id}`);
+
+    // Cache in registry
+    Registry[project.id] = {
         log: logModel,
         logstamp: logStampModel
     };
+
     return {
         log: logModel,
         logstamp: logStampModel
@@ -168,6 +185,7 @@ const generateIndexedHashes = (log, project) => {
             const hashKey = fieldPath.replace(/\./g, '_');
 
             // Hash with salt (project + field for isolation)
+            // @ts-ignore
             hashes[hashKey] = hashString(
                 String(value),
                 fieldPath

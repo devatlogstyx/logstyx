@@ -19,6 +19,12 @@ export const getCurrentUser = async (signal) => {
     return data?.data;
 }
 
+/**
+ * 
+ * @param {object} payload 
+ * @param {*} signal 
+ * @returns 
+ */
 export const userLogin = async (payload, signal) => {
     let { data } = await Axios.post("/v1/users/login", payload, {
         signal

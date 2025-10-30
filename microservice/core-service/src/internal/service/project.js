@@ -48,10 +48,18 @@ const createProject = async (params) => {
         throw HttpError(NOT_FOUND_ERR_CODE, USER_NOT_FOUND_ERR_MESSAGE)
     }
 
+    const existingProject = await projectModel.findOne({
+        slug: createSlug(params?.slug || params?.title),
+    })
+    if (existingProject) {
+        return existingProject?.toJSON()
+    }
+
     const session = await mongoose.startSession();
     session.startTransaction();
 
     try {
+
 
         const secret = randomstring.generate(32)
         const projects = await projectModel.create([

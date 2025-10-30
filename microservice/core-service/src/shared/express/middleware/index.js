@@ -3,7 +3,7 @@ const { useMiddleware } = require("common/hooks")
 const jwt = require("jsonwebtoken");
 const DeviceDetector = require("device-detector-js");
 const { logger: Log } = require("../../logger");
-const striptags = require("striptags")
+const { striptags } = require("striptags")
 
 const {
     ValidateSignature,

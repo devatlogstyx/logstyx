@@ -3,6 +3,7 @@ import React from "react"
 import { useErrorMessage } from "../../hooks/useMessage"
 import { getCurrentUser, userLogin } from "../../api/user"
 import { useNavigate } from "react-router-dom"
+import { EMAIL_PASSWORD_LOGIN_TYPE } from "../../utils/constant"
 const useLogin = () => {
     const ErrorMessage = useErrorMessage()
     const navigate = useNavigate()
@@ -40,8 +41,9 @@ const useLogin = () => {
     const handleLogin = React.useCallback(async (payload) => {
         try {
             setIsSubmitting(true)
+            payload.type = EMAIL_PASSWORD_LOGIN_TYPE
             await userLogin(payload, controller.signal)
-            navigate(`/admin/dashboard`)
+            navigate(`/dashboard`)
         } catch (e) {
             ErrorMessage(e)
         } finally {

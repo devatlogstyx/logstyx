@@ -15,7 +15,7 @@ const {
     NOT_FOUND_ERR_MESSAGE,
 } = require("common/constant")
 
-const striptags = require("striptags")
+const { striptags } = require("striptags")
 const userLoginModel = require("../model/user.login.model")
 const { submitRemoveCache, submitCreateProject } = require("../../shared/provider/mq-producer")
 
@@ -34,7 +34,13 @@ const USER_EMAIL = decryptSecret(process.env.ENC_USER_EMAIL)
 const USER_PASSWORD = decryptSecret(process.env.ENC_USER_PASSWORD)
 
 
-const findUserById = async (id, expand = []) => {
+/**
+ * 
+ * @param {string} id 
+ * @returns 
+ */
+const findUserById = async (id,) => {
+
     if (!id) return null;
 
     const user = await getUserFromCache(id)
@@ -42,7 +48,7 @@ const findUserById = async (id, expand = []) => {
         return null
     }
 
-    return mapUser(user)
+    return user
 }
 
 const loginUserWithEmailPassword = async (params) => {
