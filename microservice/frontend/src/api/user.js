@@ -18,3 +18,10 @@ export const getCurrentUser = async (signal) => {
     });
     return data?.data;
 }
+
+export const userLogin = async (payload, signal) => {
+    let { data } = await Axios.post("/v1/users/login", payload, {
+        signal
+    });
+    return data?.data;
+}

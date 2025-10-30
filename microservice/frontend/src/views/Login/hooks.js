@@ -1,15 +1,20 @@
 //@ts-check
 import React from "react"
 import { useErrorMessage } from "../../hooks/useMessage"
-import { getCurrentUser } from "../../api/user"
+import { getCurrentUser, userLogin } from "../../api/user"
 import { useNavigate } from "react-router-dom"
 const useLogin = () => {
     const ErrorMessage = useErrorMessage()
     const navigate = useNavigate()
+    const controller = React.useMemo(() => new AbortController(), []);
 
+
+    const [isLoading, setIsLoading] = React.useState(true)
+    const [isSubmitting, setIsSubmitting] = React.useState(false)
 
     const fetchUser = React.useCallback(async (/** @type {any} */ signal) => {
         try {
+            setIsLoading(true)
             const user = await getCurrentUser(signal)
             if (user) {
                 navigate(`/dashboard`)
@@ -17,21 +22,37 @@ const useLogin = () => {
         } catch (e) {
 
             ErrorMessage(e)
+        } finally {
+            setIsLoading(false)
         }
     }, [ErrorMessage, navigate])
 
     React.useEffect(() => {
-        const controller = new AbortController();
+
 
         fetchUser(controller.signal)
         return () => {
             controller.abort();
         };
 
-    }, [fetchUser])
+    }, [fetchUser, controller])
+
+    const handleLogin = React.useCallback(async (payload) => {
+        try {
+            setIsSubmitting(true)
+            await userLogin(payload, controller.signal)
+            navigate(`/admin/dashboard`)
+        } catch (e) {
+            ErrorMessage(e)
+        } finally {
+            setIsSubmitting(false)
+        }
+    }, [ErrorMessage, navigate, controller])
 
     return {
-
+        isLoading,
+        handleLogin,
+        isSubmitting
     }
 }
 

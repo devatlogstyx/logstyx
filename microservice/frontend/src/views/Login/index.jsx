@@ -3,17 +3,27 @@
 
 import { Loader } from "@mantine/core"
 import useLogin from "./hooks";
+import LoginForm from "./LoginForm";
 
 const LoginPage = () => {
 
-    useLogin()
-    
+    const {
+        isLoading,
+        isSubmitting,
+        handleLogin
+    } = useLogin()
+
     return (
         <>
             <div className="flex justify-center items-center h-screen">
-                <div className="text-center">
-                    Login
-                </div>
+                {
+                    isLoading ?
+                        <Loader /> :
+                        <LoginForm
+                            isSubmitting={isSubmitting}
+                            onSubmit={handleLogin}
+                        />
+                }
             </div>
         </>
     );
