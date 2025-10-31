@@ -31,3 +31,15 @@ export const userLogin = async (payload, signal) => {
     });
     return data?.data;
 }
+
+/**
+ * 
+ * @param {*} signal 
+ * @returns 
+ */
+export const userLogout = async (signal) => {
+    let { data } = await Axios.post("/v1/users/logout", {}, {
+        signal
+    });
+    return data?.data;
+}

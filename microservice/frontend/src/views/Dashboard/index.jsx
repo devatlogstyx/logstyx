@@ -3,8 +3,9 @@
 
 import { Loader } from "@mantine/core";
 import { useUser } from "../../context/useUser";
-import DashboardHeader from "./Header";
+import DashboardHeader from "../../layouts/DashboardLayout/Header";
 import { Navigate } from "react-router-dom";
+import DashboardSidebar from "../../layouts/DashboardLayout/Sidebar";
 
 
 const DashboardPage = () => {
@@ -25,8 +26,9 @@ const DashboardPage = () => {
 
     return (
         <>
-            <div className="w-full h-screen flex flex-col">
-                <DashboardHeader />
+            <div>
+                <h1 className="text-2xl font-bold text-gray-800 mb-4">Dashboard Overview</h1>
+                <p className="text-gray-600">Welcome to your dashboard!</p>
             </div>
         </>
     );
