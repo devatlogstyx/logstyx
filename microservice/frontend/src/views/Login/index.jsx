@@ -4,29 +4,37 @@
 import { Loader } from "@mantine/core"
 import useLogin from "./hooks";
 import LoginForm from "./LoginForm";
+import { useUser } from "../../context/useUser";
+import { Navigate } from 'react-router-dom';
 
 const LoginPage = () => {
 
+    const { user, isLoading } = useUser();
+
     const {
-        isLoading,
         isSubmitting,
         handleLogin
     } = useLogin()
 
-    return (
-        <>
-            <div className="flex justify-center items-center h-screen">
-                {
-                    isLoading ?
-                        <Loader /> :
-                        <LoginForm
-                            isSubmitting={isSubmitting}
-                            onSubmit={handleLogin}
-                        />
-                }
-            </div>
-        </>
-    );
+    if (!user) {
+        return (
+            <>
+                <div className="flex justify-center items-center h-screen">
+                    {
+                        isLoading ?
+                            <Loader /> :
+                            <LoginForm
+                                isSubmitting={isSubmitting}
+                                onSubmit={handleLogin}
+                            />
+                    }
+                </div>
+            </>
+        );
+    }
+
+    return <Navigate to="/dashboard" replace />;
+
 };
 
 export default LoginPage;

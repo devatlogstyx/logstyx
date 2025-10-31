@@ -1,21 +1,28 @@
 //@ts-check
 
-import useLanding from "./hooks";
+
 import { Loader } from "@mantine/core"
+import { useUser } from "../../context/useUser";
+import { Navigate } from 'react-router-dom';
+
 
 const LandingPage = () => {
 
-    useLanding()
+    const { user, isLoading } = useUser();
 
-    return (
-        <>
-            <div className="flex justify-center items-center h-screen">
-                <div className="text-center">
-                    <Loader />
-                </div>
+    if (isLoading) {
+        return <div className="flex justify-center items-center h-screen">
+            <div className="text-center">
+                <Loader />
             </div>
-        </>
-    );
+        </div>
+    }
+
+    if (!user) {
+        return <Navigate to="/login" replace />;
+    }
+
+    return <Navigate to="/dashboard" replace />;
 };
 
 export default LandingPage;
