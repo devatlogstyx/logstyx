@@ -19,11 +19,6 @@ module.exports = {
         sameSite: 'lax',
         secure: false
     },
-
-    ALLOWED_ORIGIN: [
-        "http://localhost:3000",
-        "http://localhost:3001",
-    ],
     BROWSER_CLIENT_TYPE: "browser",
 
     EMAIL_PASSWORD_LOGIN_TYPE:"EMAIL_PASSWORD"

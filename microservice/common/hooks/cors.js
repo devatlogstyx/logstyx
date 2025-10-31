@@ -1,6 +1,8 @@
 //@ts-check
 
-const { ALLOWED_ORIGIN, BROWSER_CLIENT_TYPE } = require("./../constant/auth");
+const { decryptSecret } = require("../function/encryptor");
+const { BROWSER_CLIENT_TYPE } = require("./../constant/auth");
+const ALLOWED_ORIGIN = decryptSecret(process?.env?.ENC_ALLOWED_ORIGIN)?.split(",") ?? []
 /**
  * 
  * @param {object} param0
