@@ -43,3 +43,16 @@ export const userLogout = async (signal) => {
     });
     return data?.data;
 }
+
+
+/**
+ * 
+ * @param {*} signal 
+ * @returns 
+ */
+export const getUserDashboardProjectStats = async (signal) => {
+    let { data } = await Axios.get("/v1/users/me/dashboard-project-stats", {
+        signal
+    });
+    return data?.data;
+}

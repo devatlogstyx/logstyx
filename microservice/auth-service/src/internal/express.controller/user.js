@@ -20,6 +20,7 @@ const {
 } = require("common/constant");
 const { paginateUser, removeUser, handleUserLogin, createUserToken } = require("../service/user");
 const { createRefreshToken, expireRefreshToken } = require("../service/auth");
+const { getUserDashboardProjectStats } = require("../../shared/provider/core.service");
 
 module.exports = {
 
@@ -113,6 +114,24 @@ module.exports = {
         HttpResponse(res).json({
             error: SUCCESS_ERR_CODE,
             message: SUCCESS_ERR_MESSAGE,
+        });
+    },
+    /**
+     * 
+     * @param {*} req 
+     * @param {*} res 
+     */
+    async UserGetMyDashboardProjectStats(req, res) {
+        if (!req?.user) {
+            throw HttpError(NO_ACCESS_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
+        }
+
+        const data = await getUserDashboardProjectStats(req?.user?.id)
+
+        HttpResponse(res).json({
+            error: SUCCESS_ERR_CODE,
+            message: SUCCESS_ERR_MESSAGE,
+            data
         });
     },
 };

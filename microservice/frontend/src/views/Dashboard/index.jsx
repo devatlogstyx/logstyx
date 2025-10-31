@@ -1,23 +1,23 @@
 //@ts-check
 
-
 import { Loader } from "@mantine/core";
 import { useUser } from "../../context/useUser";
-import DashboardHeader from "../../layouts/DashboardLayout/Header";
 import { Navigate } from "react-router-dom";
-import DashboardSidebar from "../../layouts/DashboardLayout/Sidebar";
-
+import ProjectViews from "./ProjectViews";
 
 const DashboardPage = () => {
-
     const { user, isLoading } = useUser();
 
+   
+
     if (isLoading) {
-        return <div className="flex justify-center items-center h-screen">
-            <div className="text-center">
-                <Loader />
+        return (
+            <div className="flex justify-center items-center h-screen">
+                <div className="text-center">
+                    <Loader />
+                </div>
             </div>
-        </div>
+        );
     }
 
     if (!user) {
@@ -25,12 +25,15 @@ const DashboardPage = () => {
     }
 
     return (
-        <>
-            <div>
-                <h1 className="text-2xl font-bold text-gray-800 mb-4">Dashboard Overview</h1>
-                <p className="text-gray-600">Welcome to your dashboard!</p>
+        <div>
+            {/* Header Section */}
+            <div className="mb-6">
+                <h1 className="text-2xl font-bold text-gray-800 mb-2">Your Projects</h1>
+                <p className="text-gray-600">Monitor and manage your logging projects</p>
             </div>
-        </>
+
+            <ProjectViews />
+        </div>
     );
 };
 

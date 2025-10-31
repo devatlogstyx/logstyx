@@ -18,10 +18,12 @@ const useUserContext = () => {
         try {
             setIsLoading(true)
             const u = await getCurrentUser(controller.signal)
-            if (u) {
-                setUser(u)
+            if (!u) {
+                throw new Error(`Not login`)
             }
+            setUser(u)
         } catch (e) {
+            setUser(null)
             ErrorMessage(e)
         } finally {
             setIsLoading(false)

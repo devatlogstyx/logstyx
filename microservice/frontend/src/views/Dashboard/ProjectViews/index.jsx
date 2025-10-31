@@ -1,0 +1,178 @@
+//@ts-check
+import {
+    IoAlertCircle,
+    IoWarning,
+    IoTimeOutline,
+    IoEyeOutline,
+    IoSettingsOutline,
+    IoKeyOutline,
+    IoTrendingUpOutline
+} from "react-icons/io5";
+import useProjectViews from "./hooks";
+
+
+const ProjectViews = () => {
+
+    const { projects } = useProjectViews()
+
+    return (
+        <>
+
+            {/* Stats Overview */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                <div className="bg-white rounded-lg p-4 border border-gray-200">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <p className="text-sm text-gray-600">Total Projects</p>
+                            <p className="text-2xl font-bold text-gray-800">{projects.length}</p>
+                        </div>
+                        <div className="bg-blue-100 p-3 rounded-lg">
+                            <IoTrendingUpOutline size={24} className="text-blue-600" />
+                        </div>
+                    </div>
+                </div>
+
+                <div className="bg-white rounded-lg p-4 border border-gray-200">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <p className="text-sm text-gray-600">Logs Today</p>
+                            <p className="text-2xl font-bold text-gray-800">
+                                {projects.reduce((sum, p) => sum + p.logsToday, 0).toLocaleString()}
+                            </p>
+                        </div>
+                        <div className="bg-green-100 p-3 rounded-lg">
+                            <IoTimeOutline size={24} className="text-green-600" />
+                        </div>
+                    </div>
+                </div>
+
+                <div className="bg-white rounded-lg p-4 border border-gray-200">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <p className="text-sm text-gray-600">Total Errors</p>
+                            <p className="text-2xl font-bold text-orange-600">
+                                {projects.reduce((sum, p) => sum + p.errorCount, 0)}
+                            </p>
+                        </div>
+                        <div className="bg-orange-100 p-3 rounded-lg">
+                            <IoWarning size={24} className="text-orange-600" />
+                        </div>
+                    </div>
+                </div>
+
+                <div className="bg-white rounded-lg p-4 border border-gray-200">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <p className="text-sm text-gray-600">Critical Issues</p>
+                            <p className="text-2xl font-bold text-red-600">
+                                {projects.reduce((sum, p) => sum + p.criticalCount, 0)}
+                            </p>
+                        </div>
+                        <div className="bg-red-100 p-3 rounded-lg">
+                            <IoAlertCircle size={24} className="text-red-600" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Projects Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {projects.map((project) => (
+                    <div
+                        key={project.id}
+                        className="bg-white rounded-lg border border-gray-200 hover:shadow-lg transition-shadow cursor-pointer"
+                    >
+                        {/* Project Header */}
+                        <div className="p-4 border-b border-gray-200">
+                            <div className="flex items-start justify-between mb-2">
+                                <div className="flex items-center gap-3">
+                                    <div className={`w-10 h-10 ${project.color} rounded-lg flex items-center justify-center text-white font-bold`}>
+                                        {project.title.charAt(0)}
+                                    </div>
+                                    <div>
+                                        <h3 className="font-semibold text-gray-800">{project.title}</h3>
+                                        <div className="flex items-center gap-2 mt-1">
+                                            <span
+                                                className={`w-2 h-2 rounded-full ${project.status === "active" ? "bg-green-500" : "bg-gray-400"
+                                                    }`}
+                                            ></span>
+                                            <span className="text-xs text-gray-500 capitalize">{project.status}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Stats */}
+                        <div className="p-4">
+                            <div className="flex items-center gap-2 text-sm text-gray-600 mb-3">
+                                <IoTimeOutline size={16} />
+                                <span>Last log: {project.lastLog}</span>
+                            </div>
+
+                            <div className="grid grid-cols-3 gap-2 mb-4">
+                                <div className="text-center p-2 bg-gray-50 rounded">
+                                    <p className="text-xs text-gray-600">Logs</p>
+                                    <p className="text-sm font-semibold text-gray-800">{project.logsToday}</p>
+                                </div>
+                                <div className="text-center p-2 bg-orange-50 rounded">
+                                    <p className="text-xs text-orange-600">Errors</p>
+                                    <p className="text-sm font-semibold text-orange-600">{project.errorCount}</p>
+                                </div>
+                                <div className="text-center p-2 bg-red-50 rounded">
+                                    <p className="text-xs text-red-600">Critical</p>
+                                    <p className="text-sm font-semibold text-red-600">{project.criticalCount}</p>
+                                </div>
+                            </div>
+
+                            {/* Mini Activity Chart */}
+                            <div className="flex items-end gap-1 h-12 mb-4">
+                                {project.activity.map((value, index) => (
+                                    <div
+                                        key={index}
+                                        className={`flex-1 ${project.color} rounded-t opacity-70`}
+                                        style={{ height: `${(value / 60) * 100}%` }}
+                                    ></div>
+                                ))}
+                            </div>
+
+                            {/* Action Buttons */}
+                            <div className="flex gap-2">
+                                <button className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-gradient-to-r from-blue-500 via-cyan-500 to-teal-500 text-white rounded-lg hover:shadow-md transition-all text-sm font-medium">
+                                    <IoEyeOutline size={16} />
+                                    View Logs
+                                </button>
+                                <button className="px-3 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+                                    <IoKeyOutline size={16} />
+                                </button>
+                                <button className="px-3 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+                                    <IoSettingsOutline size={16} />
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Alert Banner for Critical Issues */}
+                        {project.criticalCount > 0 && (
+                            <div className="px-4 pb-4">
+                                <div className="bg-red-50 border border-red-200 rounded-lg p-2 flex items-center gap-2">
+                                    <IoAlertCircle size={16} className="text-red-600" />
+                                    <span className="text-xs text-red-600 font-medium">
+                                        {project.criticalCount} critical issue{project.criticalCount > 1 ? "s" : ""} detected
+                                    </span>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                ))}
+            </div>
+
+            {/* Create New Project Button */}
+            <button className="fixed bottom-8 right-8 bg-gradient-to-r from-blue-500 via-cyan-500 to-teal-500 text-white px-6 py-3 rounded-full shadow-lg hover:shadow-xl transition-all font-medium flex items-center gap-2">
+                <span className="text-xl">+</span>
+                New Project
+            </button>
+        </>
+    )
+}
+
+export default ProjectViews

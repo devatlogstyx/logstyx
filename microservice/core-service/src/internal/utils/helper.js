@@ -196,6 +196,17 @@ const generateIndexedHashes = (log, project) => {
     return hashes;
 }
 
+/**
+ * 
+ * @param {number} date 
+ * @param {number} thresholdHours 
+ * @returns 
+ */
+function isRecent(date, thresholdHours = 24) {
+    const hoursSince = (new Date() - date) / (1000 * 60 * 60);
+    return hoursSince < thresholdHours;
+}
+
 
 module.exports = {
     validateCustomIndex,
@@ -203,5 +214,6 @@ module.exports = {
     validateSignature,
     initLogger,
     getLogModel,
-    generateIndexedHashes
+    generateIndexedHashes,
+    isRecent
 }

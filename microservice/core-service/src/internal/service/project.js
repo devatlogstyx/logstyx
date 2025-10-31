@@ -13,8 +13,9 @@ const { updateProjectCache, getProjectFromCache } = require("../../shared/cache"
 const logModel = require("../model/log.model");
 const logstampModel = require("../model/logstamp.model");
 const { mapProjectUser } = require("../utils/mapper");
-const { validateCustomIndex } = require("../utils/helper");
+const { validateCustomIndex, getLogModel, isRecent } = require("../utils/helper");
 const { initLogger } = require("./../utils/helper");
+const moment = require("moment-timezone")
 
 /**
  * 
@@ -251,7 +252,9 @@ const paginateProject = async (query = {}, sortBy = "createdAt:desc", limit = 10
         results: res?.docs?.map((n) => {
             return {
                 id: n?._id?.toString(),
-                title: n?.title
+                title: n?.title,
+                slug: n?.slug,
+                settings: n?.settings
             }
         }),
         page,
@@ -347,6 +350,116 @@ const listUserFromProject = async (projectId) => {
     return list?.map(mapProjectUser);
 };
 
+const getUsersDashboardProjectsStats = async (userId) => {
+    // 1. Get all projects for the user
+    const projectUsers = await projectUserModel.find({ 'user.userId': ObjectId.createFromHexString(userId) })
+
+    const projectsWithStats = await Promise.all(
+        projectUsers.map(async (pu) => {
+            const project = await getProjectFromCache(pu.project?.toString());
+
+            const { log, logstamp } = await getLogModel(project?.id?.toString())
+
+            const todayStart = new Date();
+            todayStart.setHours(0, 0, 0, 0);
+
+            // ⭐ PUT THE ULTRA-OPTIMIZED QUERY HERE ⭐
+            const [result] = await logstamp.aggregate([
+                {
+                    $facet: {
+                        // Logs today
+                        logsToday: [
+                            { $match: { createdAt: { $gte: todayStart } } },
+                            { $count: "count" }
+                        ],
+
+                        // Last log
+                        lastLog: [
+                            { $sort: { createdAt: -1 } },
+                            { $limit: 1 },
+                            { $project: { createdAt: 1 } }
+                        ],
+
+                        // Activity per hour
+                        activity: [
+                            {
+                                $match: {
+                                    createdAt: { $gte: new Date(Date.now() - 7 * 60 * 60 * 1000) }
+                                }
+                            },
+                            {
+                                $group: {
+                                    _id: {
+                                        $dateToString: {
+                                            format: "%Y-%m-%d-%H",
+                                            date: "$createdAt"
+                                        }
+                                    },
+                                    count: { $sum: 1 }
+                                }
+                            },
+                            { $sort: { _id: 1 } }
+                        ],
+
+                        // Errors today
+                        errorsToday: [
+                            {
+                                $match: {
+                                    createdAt: { $gte: todayStart },
+                                    level: { $regex: /error/i }
+                                }
+                            },
+                            { $count: "count" }
+                        ],
+
+                        // Critical today
+                        criticalToday: [
+                            {
+                                $match: {
+                                    createdAt: { $gte: todayStart },
+                                    level: { $regex: /critical|fatal/i }
+                                }
+                            },
+                            { $count: "count" }
+                        ]
+                    }
+                }
+            ]);
+
+            // Extract data from aggregation result
+            const logsToday = result.logsToday[0]?.count || 0;
+            const lastLogData = result.lastLog[0];
+            const errorCount = result.errorsToday[0]?.count || 0;
+            const criticalCount = result.criticalToday[0]?.count || 0;
+
+            // Process activity data (fill gaps for missing hours)
+            const activityMap = new Map(
+                result.activity.map(item => [item._id, item.count])
+            );
+
+            const activity = Array.from({ length: 7 }, (_, i) => {
+                const date = new Date(Date.now() - (6 - i) * 60 * 60 * 1000);
+                const key = date.toISOString().slice(0, 13).replace('T', '-');
+                return activityMap.get(key) || 0;
+            });
+
+            // Return formatted project data
+            return {
+                id: project.id,
+                title: project.title,
+                slug: project.slug,
+                status: lastLogData && isRecent(lastLogData.createdAt) ? 'active' : 'inactive',
+                lastLog: lastLogData ? moment(lastLogData.createdAt).fromNow() : 'Never',
+                logsToday: logsToday,
+                errorCount: errorCount,
+                criticalCount: criticalCount,
+                activity: activity
+            };
+        })
+    );
+
+    return projectsWithStats;
+}
 module.exports = {
     createProject,
     updateProject,
@@ -355,5 +468,6 @@ module.exports = {
     paginateProject,
     addUserToProject,
     removeUserFromProject,
-    listUserFromProject
+    listUserFromProject,
+    getUsersDashboardProjectsStats
 }

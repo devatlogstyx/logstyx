@@ -8,11 +8,12 @@ export function UserProvider({ children }) {
 
     const {
         isLoading,
-        user
+        user,
+        refetchUser
     } = useUserContext()
 
     return (
-        <UserContext.Provider value={{ user, isLoading }}>
+        <UserContext.Provider value={{ user, isLoading, refetchUser }}>
             {children}
         </UserContext.Provider>
     );

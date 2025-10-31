@@ -1,6 +1,6 @@
 //@ts-check
 
-const { CREATE_LOG_WSROUTE } = require("common/routes/rpc-websockets")
+const { CREATE_LOG_WSROUTE, GET_USER_DASHBOARD_PROJECT_STATS_WSROUTE } = require("common/routes/rpc-websockets")
 
 const { useRPCWebsocket } = require("common/hooks");
 let WebSocket = require("jsonrpc-ws").Client;
@@ -22,3 +22,9 @@ ws.on("close", () => console.error("WebSocket to core service closed"));
  * @returns 
  */
 exports.createLog = (params) => ws.createCall(CREATE_LOG_WSROUTE, params);
+/**
+ * 
+ * @param {string} userId 
+ * @returns 
+ */
+exports.getUserDashboardProjectStats = (userId) => ws.createCall(GET_USER_DASHBOARD_PROJECT_STATS_WSROUTE, { userId });
