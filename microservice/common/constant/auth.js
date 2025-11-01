@@ -3,6 +3,23 @@ module.exports = {
     COOKIE_MIDDLEWARE_VALIDATION_SOURCE: "COOKIE",
     SIGNATURE_MIDDLEWARE_VALIDATION_SOURCE: "SIGNATURE",
 
+
+    // User Management
+    WRITE_USER_INVITATION_USER_ROLE: "WRITE_USER_INVITATION",
+    READ_USER_INVITATION_USER_ROLE: "READ_USER_INVITATION",
+
+    // User Management
+    WRITE_USER_USER_ROLE: "WRITE_USER",
+    READ_USER_USER_ROLE: "READ_USER",
+
+    // Project Management
+    WRITE_PROJECT_USER_ROLE: "WRITE_PROJECT",
+    READ_PROJECT_USER_ROLE: "READ_PROJECT",
+
+    // Alerts (if you plan to add this)
+    WRITE_ALERT_USER_ROLE: "CREATE_ALERT",
+    READ_ALERT_USER_ROLE: "READ_ALERT",
+
     REFRESH_TOKEN_COOKIE_NAME: "REFRESH_TOKEN",
     ADMIN_TOKEN_COOKIE_NAME: "ADMIN_COOKIE",
     USER_TOKEN_COOKIE_NAME: "USER_TOKEN",
@@ -11,7 +28,7 @@ module.exports = {
         maxAge: 1000 * 60 * 60, // 1 hour
         httpOnly: true,
         sameSite: 'lax',
-        secure: false 
+        secure: false
     },
 
     CLEAR_COOKIE_OPTION: {
@@ -21,5 +38,5 @@ module.exports = {
     },
     BROWSER_CLIENT_TYPE: "browser",
 
-    EMAIL_PASSWORD_LOGIN_TYPE:"EMAIL_PASSWORD"
+    EMAIL_PASSWORD_LOGIN_TYPE: "EMAIL_PASSWORD"
 }

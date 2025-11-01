@@ -13,6 +13,14 @@ const {
     USER_LOGIN_CACHE_KEY,
     NOT_FOUND_ERR_CODE,
     NOT_FOUND_ERR_MESSAGE,
+    WRITE_USER_USER_ROLE,
+    READ_USER_USER_ROLE,
+    WRITE_PROJECT_USER_ROLE,
+    READ_PROJECT_USER_ROLE,
+    WRITE_ALERT_USER_ROLE,
+    READ_ALERT_USER_ROLE,
+    WRITE_USER_INVITATION_USER_ROLE,
+    READ_USER_INVITATION_USER_ROLE
 } = require("common/constant")
 
 const { striptags } = require("striptags")
@@ -51,6 +59,13 @@ const findUserById = async (id,) => {
     return user
 }
 
+/**
+ * 
+ * @param {object} params
+ * @param {string} params.email 
+ * @param {string} params.password
+ * @returns 
+ */
 const loginUserWithEmailPassword = async (params) => {
 
     const v = new Validator(params, {
@@ -94,6 +109,14 @@ const loginUserWithEmailPassword = async (params) => {
 
 }
 
+/**
+ * 
+ * @param {object} params 
+ * @param {string} params.email 
+ * @param {string} params.password
+ * @param {string} params.type
+ * @returns 
+ */
 const handleUserLogin = async (params) => {
     if (params?.type === EMAIL_PASSWORD_LOGIN_TYPE) {
         return loginUserWithEmailPassword(params)
@@ -102,6 +125,13 @@ const handleUserLogin = async (params) => {
     throw HttpError(INVALID_INPUT_ERR_CODE, `Unknown command`)
 }
 
+/**
+ * 
+ * @param {object} [params]
+ * @param {string} [params.search]
+ * @param {string} [params.group]
+ * @returns 
+ */
 const buildUserSearchQuery = (params = {}) => {
 
     let query = {}
@@ -133,7 +163,7 @@ const paginateUser = async (query = {}, sortBy = "createdAt:desc", limit = 10, p
 
     let list = await userModel.pagimate(queryParams, { sortBy, limit, page });
 
-    list.results = list?.results?.map((doc) => {
+    list.results = list?.results?.map((/** @type {any} */ doc) => {
         let n = new userModel(doc);
         n.decryptFieldsSync();
         return mapUser(n?.toJSON())
@@ -142,6 +172,11 @@ const paginateUser = async (query = {}, sortBy = "createdAt:desc", limit = 10, p
     return list
 }
 
+/**
+ * 
+ * @param {string} id 
+ * @returns 
+ */
 const removeUser = async (id) => {
     id = id?.toString();
     if (!id) return;
@@ -175,13 +210,22 @@ const removeUser = async (id) => {
     });
 };
 
+/**
+ * 
+ * @param {object} user 
+ * @param {string} user.id
+ * @param {string} user.fullname
+ * @param {string} user.image
+ * 
+ * @param {string} refreshToken 
+ * @returns 
+ */
 const createUserToken = async (user, refreshToken) => {
     const token = jwt.sign(
         sanitizeObject({
             id: user?.id,
             fullname: user?.fullname,
             image: user?.image,
-            partner: user?.partner?.toString(),
             refreshToken
         }),
         USER_AUTHENTICATION_JWT_SECRET || "",
@@ -211,6 +255,16 @@ const seedUser = async () => {
             const [newUser] = await userModel.create([sanitizeObject({
                 fullname: USER_NAME,
                 email: USER_EMAIL,
+                permissions: [
+                    WRITE_USER_USER_ROLE,
+                    READ_USER_USER_ROLE,
+                    WRITE_PROJECT_USER_ROLE,
+                    READ_PROJECT_USER_ROLE,
+                    WRITE_ALERT_USER_ROLE,
+                    READ_ALERT_USER_ROLE,
+                    WRITE_USER_INVITATION_USER_ROLE,
+                    READ_USER_INVITATION_USER_ROLE
+                ],
                 hash: { email: hashedEmail }
             })], { session });
 
@@ -283,6 +337,8 @@ const ensureSelfProject = async (userId) => {
         }
     });
 };
+
+
 
 module.exports = {
     findUserById,

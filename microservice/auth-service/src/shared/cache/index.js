@@ -22,7 +22,30 @@ const userModel = require("./../../internal/model/user.model")
 const userLoginModel = require("../../internal/model/user.login.model")
 const { mapUser } = require("../../internal/utils/mapper")
 
+/**
+ * 
+ * @param {string} id 
+ * @returns 
+ */
 exports.updateUserCache = async (id) => updateCache(USER_CACHE_KEY, id, userModel).then(mapUser)
+
+/**
+ * 
+ * @param {string} id 
+ * @returns 
+ */
 exports.getUserFromCache = async (id) => getCache(USER_CACHE_KEY, id, userModel).then(mapUser)
+
+/**
+ * 
+ * @param {string} id 
+ * @returns 
+ */
 exports.updateUserLoginCache = async (id) => updateCache(USER_LOGIN_CACHE_KEY, id, userLoginModel)
+
+/**
+ * 
+ * @param {string} id 
+ * @returns 
+ */
 exports.getUserLoginFromCache = async (id) => getCache(USER_LOGIN_CACHE_KEY, id, userLoginModel)

@@ -7,6 +7,11 @@ const { decryptSecret } = require("common/function");
 
 const REFRESH_TOKEN_SECRET = decryptSecret(process?.env?.ENC_REFRESH_TOKEN_SECRET)
 
+/**
+ * 
+ * @param {string} id 
+ * @returns 
+ */
 const createRefreshToken = async (id) => {
 
     const salt = crypto.randomBytes(16).toString("hex");
@@ -26,6 +31,12 @@ const createRefreshToken = async (id) => {
     return token;
 };
 
+/**
+ * 
+ * @param {string} id 
+ * @param {string} token 
+ * @returns 
+ */
 const validateRefreshToken = async (id, token) => {
     if (!id || !token) {
         return null;
@@ -59,6 +70,11 @@ const validateRefreshToken = async (id, token) => {
     return token;
 };
 
+/**
+ * 
+ * @param {string} token 
+ * @returns 
+ */
 const expireRefreshToken = async (token) => {
     await refreshTokenModel.findOneAndDelete({ token });
 

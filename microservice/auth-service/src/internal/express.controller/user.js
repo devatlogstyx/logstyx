@@ -16,11 +16,14 @@ const {
     REFRESH_TOKEN_COOKIE_NAME,
     CREATE_COOKIE_OPTION,
     CLEAR_COOKIE_OPTION,
+    WRITE_USER_USER_ROLE,
+    READ_USER_USER_ROLE,
 
 } = require("common/constant");
 const { paginateUser, removeUser, handleUserLogin, createUserToken } = require("../service/user");
 const { createRefreshToken, expireRefreshToken } = require("../service/auth");
 const { getUserDashboardProjectStats } = require("../../shared/provider/core.service");
+const { CanUserDo } = require("../utils/helper");
 
 module.exports = {
 
@@ -37,6 +40,11 @@ module.exports = {
     },
     async UserPaginate(req, res) {
         if (!req?.user) {
+            throw HttpError(NO_ACCESS_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
+        }
+
+        const canManage = await CanUserDo(req?.user?.id, READ_USER_USER_ROLE)
+        if (!canManage) {
             throw HttpError(NO_ACCESS_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
         }
 
@@ -67,6 +75,12 @@ module.exports = {
         if (!req?.user) {
             throw HttpError(NO_ACCESS_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
         }
+
+        const canManage = await CanUserDo(req?.user?.id, WRITE_USER_USER_ROLE)
+        if (!canManage) {
+            throw HttpError(NO_ACCESS_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
+        }
+
 
         await removeUser(req?.params?.id)
 

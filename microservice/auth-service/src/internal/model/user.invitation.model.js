@@ -3,24 +3,26 @@ const { mongoose } = require("../../shared/mongoose");
 const { hashSchema } = require("../utils/subfield.model");
 const { fieldEncryption } = require("../../shared/mongoose/plugins");
 const { decryptSecret } = require("common/function");
-const { WRITE_USER_USER_ROLE, READ_USER_USER_ROLE, WRITE_PROJECT_USER_ROLE, READ_PROJECT_USER_ROLE, WRITE_ALERT_USER_ROLE, READ_ALERT_USER_ROLE, WRITE_USER_INVITATION_USER_ROLE,
-    READ_USER_INVITATION_USER_ROLE } = require("common/constant");
+const {
+    WRITE_USER_USER_ROLE,
+    READ_USER_USER_ROLE,
+    WRITE_PROJECT_USER_ROLE,
+    READ_PROJECT_USER_ROLE,
+    WRITE_ALERT_USER_ROLE,
+    READ_ALERT_USER_ROLE,
+    WRITE_USER_INVITATION_USER_ROLE,
+    READ_USER_INVITATION_USER_ROLE
 
-const userSchema = new mongoose.Schema(
+} = require("common/constant");
+
+const userInvitationSchema = new mongoose.Schema(
     {
-        fullname: {
-            type: String,
-            required: true,
-            trim: true,
-            index: true,
-            maxLength: 128,
-        },
+
         email: {
             type: String,
-        },
-        image: {
-            type: String,
-            maxLength: 2048,
+            required: true,
+            index: true,
+            lowercase: true
         },
         permissions: {
             type: [String],
@@ -47,11 +49,11 @@ const userSchema = new mongoose.Schema(
     }
 );
 
-userSchema.index({ createdAt: 1 });
-userSchema.index({ updatedAt: 1 });
-userSchema.plugin(fieldEncryption, {
+userInvitationSchema.index({ createdAt: 1 });
+userInvitationSchema.index({ updatedAt: 1 });
+userInvitationSchema.plugin(fieldEncryption, {
     fields: ["email"],
     secret: () => decryptSecret(process?.env?.ENC_CRYPTO_SECRET),
 });
 
-module.exports = mongoose.model("user", userSchema);
+module.exports = mongoose.model("userInvitation", userInvitationSchema);

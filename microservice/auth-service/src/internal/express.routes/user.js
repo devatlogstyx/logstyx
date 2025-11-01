@@ -14,7 +14,7 @@ router.post("/logout", asyncHandler(UserLogout));
 router.get("/me", asyncHandler(UserGetMe));
 router.get("/me/dashboard-project-stats", asyncHandler(UserGetMyDashboardProjectStats));
 
-router.delete("/:id", asyncHandler(UserRemove));
 
+router.delete("/:id", asyncHandler(UserRemove));
 
 module.exports = router;

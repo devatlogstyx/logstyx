@@ -1,6 +1,7 @@
 //@ts-check
 const { JSONParseX, decrypt } = require("common/function");
 const bcrypt = require("bcryptjs");
+const { getUserFromCache } = require("../../shared/cache");
 
 const verifyUserPassword = async (credentials, inputPassword) => {
     const { password } = await JSONParseX(decrypt(credentials));
@@ -8,8 +9,26 @@ const verifyUserPassword = async (credentials, inputPassword) => {
     return isPasswordMatch
 }
 
+/**
+ * 
+ * @param {string} userId 
+ * @param {string} access 
+ * @returns 
+ */
+const CanUserDo = async (userId, access) => {
+
+    const user = await getUserFromCache(userId);
+    if (!user) {
+        return false
+    }
+
+    return user?.permissions?.includes(access)
+
+}
+
 module.exports = {
 
     verifyUserPassword,
+    CanUserDo
 
 }
