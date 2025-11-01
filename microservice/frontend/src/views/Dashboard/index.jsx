@@ -26,12 +26,6 @@ const DashboardPage = () => {
 
     return (
         <div>
-            {/* Header Section */}
-            <div className="mb-6">
-                <h1 className="text-2xl font-bold text-gray-800 mb-2">Your Projects</h1>
-                <p className="text-gray-600">Monitor and manage your logging projects</p>
-            </div>
-
             <ProjectViews />
         </div>
     );

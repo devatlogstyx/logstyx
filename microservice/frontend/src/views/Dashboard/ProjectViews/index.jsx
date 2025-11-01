@@ -9,11 +9,26 @@ import {
     IoTrendingUpOutline
 } from "react-icons/io5";
 import useProjectViews from "./hooks";
-
+import { numify } from "numify";
+import { sumInt } from "../../../utils/function";
+import { Loader } from "@mantine/core";
+import EmptyProjectViews from "../EmptyProjectViews";
 
 const ProjectViews = () => {
 
-    const { projects } = useProjectViews()
+    const { projects, isLoading } = useProjectViews()
+
+    if (isLoading) {
+        return <div className="flex justify-center items-center h-screen">
+            <div className="text-center">
+                <Loader />
+            </div>
+        </div>
+    }
+
+    if(projects?.length <1){
+        return <EmptyProjectViews />
+    }
 
     return (
         <>
@@ -37,7 +52,7 @@ const ProjectViews = () => {
                         <div>
                             <p className="text-sm text-gray-600">Logs Today</p>
                             <p className="text-2xl font-bold text-gray-800">
-                                {projects.reduce((sum, p) => sum + p.logsToday, 0).toLocaleString()}
+                                {numify(sumInt(projects?.map((p) => p.logsToday)))}
                             </p>
                         </div>
                         <div className="bg-green-100 p-3 rounded-lg">
@@ -51,7 +66,7 @@ const ProjectViews = () => {
                         <div>
                             <p className="text-sm text-gray-600">Total Errors</p>
                             <p className="text-2xl font-bold text-orange-600">
-                                {projects.reduce((sum, p) => sum + p.errorCount, 0)}
+                                {numify(sumInt(projects?.map((p) => p.errorCount)))}
                             </p>
                         </div>
                         <div className="bg-orange-100 p-3 rounded-lg">
@@ -65,7 +80,7 @@ const ProjectViews = () => {
                         <div>
                             <p className="text-sm text-gray-600">Critical Issues</p>
                             <p className="text-2xl font-bold text-red-600">
-                                {projects.reduce((sum, p) => sum + p.criticalCount, 0)}
+                                {numify(sumInt(projects?.map((p) => p.criticalCount)))}
                             </p>
                         </div>
                         <div className="bg-red-100 p-3 rounded-lg">
@@ -113,15 +128,15 @@ const ProjectViews = () => {
                             <div className="grid grid-cols-3 gap-2 mb-4">
                                 <div className="text-center p-2 bg-gray-50 rounded">
                                     <p className="text-xs text-gray-600">Logs</p>
-                                    <p className="text-sm font-semibold text-gray-800">{project.logsToday}</p>
+                                    <p className="text-sm font-semibold text-gray-800">{numify(project.logsToday)}</p>
                                 </div>
                                 <div className="text-center p-2 bg-orange-50 rounded">
                                     <p className="text-xs text-orange-600">Errors</p>
-                                    <p className="text-sm font-semibold text-orange-600">{project.errorCount}</p>
+                                    <p className="text-sm font-semibold text-orange-600">{numify(project.errorCount)}</p>
                                 </div>
                                 <div className="text-center p-2 bg-red-50 rounded">
                                     <p className="text-xs text-red-600">Critical</p>
-                                    <p className="text-sm font-semibold text-red-600">{project.criticalCount}</p>
+                                    <p className="text-sm font-semibold text-red-600">{numify(project.criticalCount)}</p>
                                 </div>
                             </div>
 

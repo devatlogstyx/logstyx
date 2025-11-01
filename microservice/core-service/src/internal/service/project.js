@@ -1,5 +1,5 @@
 //@ts-check
-const { INVALID_INPUT_ERR_CODE, NOT_FOUND_ERR_CODE, USER_NOT_FOUND_ERR_MESSAGE, PROJECT_NOT_FOUND_ERR_MESSAGE, ALREADY_A_MEMBER_ERR_MESSAGE, NOT_A_MEMBER_ERR_MESSAGE, NOT_FOUND_ERR_MESSAGE } = require("common/constant");
+const { INVALID_INPUT_ERR_CODE, NOT_FOUND_ERR_CODE, USER_NOT_FOUND_ERR_MESSAGE, PROJECT_NOT_FOUND_ERR_MESSAGE, ALREADY_A_MEMBER_ERR_MESSAGE, NOT_A_MEMBER_ERR_MESSAGE, NOT_FOUND_ERR_MESSAGE, ERROR_LOG_LEVEL, CRITICAL_LOG_LEVEL } = require("common/constant");
 const { HttpError, num2Ceil, num2Floor, parseSortBy, sanitizeObject, createSlug } = require("common/function");
 const { Validator } = require("node-input-validator");
 const { findUserById } = require("../../shared/provider/auth.service");
@@ -406,7 +406,7 @@ const getUsersDashboardProjectsStats = async (userId) => {
                             {
                                 $match: {
                                     createdAt: { $gte: todayStart },
-                                    level: { $regex: /error/i }
+                                    level: ERROR_LOG_LEVEL
                                 }
                             },
                             { $count: "count" }
@@ -417,7 +417,7 @@ const getUsersDashboardProjectsStats = async (userId) => {
                             {
                                 $match: {
                                     createdAt: { $gte: todayStart },
-                                    level: { $regex: /critical|fatal/i }
+                                    level: CRITICAL_LOG_LEVEL
                                 }
                             },
                             { $count: "count" }

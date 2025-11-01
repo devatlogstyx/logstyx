@@ -9,16 +9,10 @@ const DashboardSidebar = () => {
 
     const menuItems = [
         { id: 'dashboard', label: 'Dashboard', icon: IoHomeOutline, path: '/dashboard' },
-        { id: 'analytics', label: 'Analytics', icon: IoStatsChartOutline, path: '/dashboard/analytics' },
         { id: 'users', label: 'Users', icon: IoPeopleOutline, path: '/dashboard/users' },
         { id: 'documents', label: 'Documents', icon: IoDocumentTextOutline, path: '/dashboard/documents' },
         { id: 'settings', label: 'Settings', icon: IoSettingsOutline, path: '/dashboard/settings' },
     ]
-
-    const handleLogout = () => {
-        // Add your logout logic here
-        navigate('/login')
-    }
 
     return (
         <aside className="w-64 bg-white border-r border-gray-200 flex flex-col">

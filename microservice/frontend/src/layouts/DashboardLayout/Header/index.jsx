@@ -18,25 +18,25 @@ const DashboardHeader = () => {
 
                 {/* Right: Actions */}
                 <div className="flex items-center gap-2">
-                    <ActionIcon 
-                        variant="subtle" 
-                        size="lg" 
+                    <ActionIcon
+                        variant="subtle"
+                        size="lg"
                         className="text-white hover:bg-white/20 transition-colors"
                         style={{ color: 'white' }}
                     >
                         <IoSearchOutline size={20} />
                     </ActionIcon>
-                    <ActionIcon 
-                        variant="subtle" 
-                        size="lg" 
+                    <ActionIcon
+                        variant="subtle"
+                        size="lg"
                         className="text-white hover:bg-white/20 transition-colors"
                         style={{ color: 'white' }}
                     >
                         <IoHelpCircleOutline size={20} />
                     </ActionIcon>
-                    <ActionIcon 
-                        variant="subtle" 
-                        size="lg" 
+                    <ActionIcon
+                        variant="subtle"
+                        size="lg"
                         className="text-white hover:bg-white/20 transition-colors"
                         style={{ color: 'white' }}
                     >
@@ -46,8 +46,8 @@ const DashboardHeader = () => {
                         <Menu.Target>
                             <button className="ml-2 flex items-center gap-2 hover:bg-white/20 rounded-lg px-2 py-1 transition-colors">
                                 <div className="bg-white/20 backdrop-blur-sm rounded-full p-0.5 cursor-pointer">
-                                    <Avatar 
-                                        name={user?.fullname} 
+                                    <Avatar
+                                        name={user?.fullname}
                                         size="sm"
                                         color="white"
                                     />
@@ -59,7 +59,9 @@ const DashboardHeader = () => {
                             <Menu.Item>Profile</Menu.Item>
                             <Menu.Item>Settings</Menu.Item>
                             <Menu.Divider />
-                            <Menu.Item color="red">Logout</Menu.Item>
+                            <a href={`/logout`}>
+                                <Menu.Item color="red">Logout</Menu.Item>
+                            </a>
                         </Menu.Dropdown>
                     </Menu>
                 </div>

@@ -22,3 +22,17 @@ export const generateColor = (text) => {
     const hash = text.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
     return colors[hash % colors.length];
 }
+
+export const num2Int = (number) => {
+    if (isNaN(number)) {
+        return 0;
+    }
+
+    return parseInt(number);
+};
+export const sumInt = (arr) => {
+    let sum = arr.reduce((total, count) => {
+        return num2Int(total) + num2Int(count);
+    }, 0);
+    return sum;
+};

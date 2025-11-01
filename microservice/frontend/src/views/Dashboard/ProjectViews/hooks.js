@@ -8,12 +8,15 @@ import { generateColor } from "../../../utils/function";
 const useProjectViews = () => {
 
     const [projects, setProjects] = React.useState([])
+    const [isLoading, setIsLoading] = React.useState(true)
+
     const ErrorMessage = useErrorMessage()
 
     const controller = React.useMemo(() => new AbortController(), []);
 
     const fetchData = React.useCallback(async () => {
         try {
+            setIsLoading(true)
             const r = await getUserDashboardProjectStats(controller.signal)
             console.log(r)
             setProjects(r?.map((n) => {
@@ -25,6 +28,8 @@ const useProjectViews = () => {
 
         } catch (e) {
             ErrorMessage(e)
+        } finally {
+            setIsLoading(false)
         }
     }, [ErrorMessage, controller])
 
@@ -34,6 +39,7 @@ const useProjectViews = () => {
     }, [fetchData])
 
     return {
+        isLoading,
         projects
     }
 
