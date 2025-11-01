@@ -18,7 +18,6 @@ const useProjectViews = () => {
         try {
             setIsLoading(true)
             const r = await getUserDashboardProjectStats(controller.signal)
-            console.log(r)
             setProjects(r?.map((n) => {
                 return {
                     ...n,

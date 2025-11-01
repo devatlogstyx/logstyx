@@ -10,6 +10,7 @@ import LoginPage from "../views/Login";
 import DashboardPage from "../views/Dashboard";
 import DashboardLayout from "../layouts/DashboardLayout";
 import Logout from "../views/Logout";
+import DashboardUser from "../views/DashboardUser";
 
 export default function Router() {
     return (
@@ -21,6 +22,7 @@ export default function Router() {
 
                     <Route path="/dashboard" element={<DashboardLayout />} >
                         <Route index element={<DashboardPage />} />
+                        <Route path="/dashboard/users" element={<DashboardUser />} />
                     </Route>
                     <Route path="/logout" element={<Logout />} />
 

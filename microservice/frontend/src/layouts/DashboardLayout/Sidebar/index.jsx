@@ -1,14 +1,14 @@
 //@ts-check
 
 import { useNavigate, useLocation } from "react-router-dom"
-import { IoHomeOutline, IoStatsChartOutline, IoPeopleOutline, IoSettingsOutline, IoDocumentTextOutline, IoLogOutOutline } from "react-icons/io5"
+import { IoHomeOutline, IoStatsChartOutline, IoPeopleOutline, IoSettingsOutline, IoDocumentTextOutline, IoLogOutOutline, IoBriefcase, IoBriefcaseOutline } from "react-icons/io5"
 
 const DashboardSidebar = () => {
     const navigate = useNavigate()
     const location = useLocation()
 
     const menuItems = [
-        { id: 'dashboard', label: 'Dashboard', icon: IoHomeOutline, path: '/dashboard' },
+        { id: 'projects', label: 'Projects', icon: IoBriefcaseOutline, path: '/dashboard' },
         { id: 'users', label: 'Users', icon: IoPeopleOutline, path: '/dashboard/users' },
         { id: 'documents', label: 'Documents', icon: IoDocumentTextOutline, path: '/dashboard/documents' },
         { id: 'settings', label: 'Settings', icon: IoSettingsOutline, path: '/dashboard/settings' },
@@ -33,7 +33,7 @@ const DashboardSidebar = () => {
                         <button
                             key={item.id}
                             onClick={() => navigate(item.path)}
-                            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${isActive
+                            className={`cursor-pointer w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${isActive
                                     ? 'bg-gradient-to-r from-blue-500 via-cyan-500 to-teal-500 text-white shadow-md'
                                     : 'text-gray-700 hover:bg-gray-100'
                                 }`}

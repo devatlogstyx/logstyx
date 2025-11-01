@@ -236,6 +236,9 @@ const createUserToken = async (user, refreshToken) => {
 
 
 const seedUser = async () => {
+    
+    await new Promise(resolve => setTimeout(resolve, 5000));
+
     if (!USER_NAME || !USER_EMAIL || !USER_PASSWORD) {
         console.warn("Skipping user seed: USER_NAME, USER_EMAIL, or USER_PASSWORD not set");
         return null;
@@ -285,7 +288,9 @@ const seedUser = async () => {
             user = newUser;
 
         } catch (e) {
-            await session.abortTransaction();
+            if (session.inTransaction()) {
+                await session.abortTransaction();
+            }
             console.error("Failed to create user:", e);
             throw e;
         } finally {
@@ -296,7 +301,7 @@ const seedUser = async () => {
     }
 
     // Always try to create self-project (whether user was just created or already existed)
-    await ensureSelfProject(user._id);
+    await ensureSelfProject(user?._id?.toString());
 
     return user;
 };
@@ -310,10 +315,16 @@ const seedUser = async () => {
  * @returns 
  */
 const ensureSelfProject = async (userId) => {
+
+    if (!userId) {
+        console.error("  No userId set, skipping self-project");
+        return null;
+    }
+
     const projectTitle = decryptSecret(process.env.ENC_SELF_PROJECT_TITLE);
 
     if (!projectTitle) {
-        console.log("  No ENC_SELF_PROJECT_TITLE set, skipping self-project");
+        console.error("  No ENC_SELF_PROJECT_TITLE set, skipping self-project");
         return null;
     }
 
@@ -327,7 +338,7 @@ const ensureSelfProject = async (userId) => {
     submitCreateProject({
         title: projectTitle,
         slug: projectSlug,
-        creator: userId.toString(),
+        creator: userId,
         settings: {
             indexes: [
                 "context.service",
