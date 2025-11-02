@@ -3,8 +3,16 @@ const { mongoose } = require("../../shared/mongoose");
 const { hashSchema } = require("../utils/subfield.model");
 const { fieldEncryption } = require("../../shared/mongoose/plugins");
 const { decryptSecret } = require("common/function");
-const { WRITE_USER_USER_ROLE, READ_USER_USER_ROLE, WRITE_PROJECT_USER_ROLE, READ_PROJECT_USER_ROLE, WRITE_ALERT_USER_ROLE, READ_ALERT_USER_ROLE, WRITE_USER_INVITATION_USER_ROLE,
-    READ_USER_INVITATION_USER_ROLE } = require("common/constant");
+const {
+    WRITE_USER_USER_ROLE,
+    READ_USER_USER_ROLE,
+    WRITE_PROJECT_USER_ROLE,
+    READ_PROJECT_USER_ROLE,
+    WRITE_SETTINGS_USER_ROLE,
+    READ_SETTINGS_USER_ROLE,
+    WRITE_USER_INVITATION_USER_ROLE,
+    READ_USER_INVITATION_USER_ROLE
+} = require("common/constant");
 
 const userSchema = new mongoose.Schema(
     {
@@ -30,8 +38,8 @@ const userSchema = new mongoose.Schema(
                     READ_USER_USER_ROLE,
                     WRITE_PROJECT_USER_ROLE,
                     READ_PROJECT_USER_ROLE,
-                    WRITE_ALERT_USER_ROLE,
-                    READ_ALERT_USER_ROLE,
+                    WRITE_SETTINGS_USER_ROLE,
+                    READ_SETTINGS_USER_ROLE,
                     WRITE_USER_INVITATION_USER_ROLE,
                     READ_USER_INVITATION_USER_ROLE
                 ],

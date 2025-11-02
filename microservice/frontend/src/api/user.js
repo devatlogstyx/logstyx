@@ -56,3 +56,48 @@ export const getUserDashboardProjectStats = async (signal) => {
     });
     return data?.data;
 }
+
+/**
+ * 
+ * @param {*} signal 
+ * @param {object} params 
+ * @returns 
+ */
+export const paginateUser = async (signal, params) => {
+    let { data } = await Axios.get("/v1/users", {
+        params,
+        signal
+    });
+    return data?.data;
+}
+
+/**
+ * 
+ * @param {*} signal 
+ * @returns 
+ */
+export const listAllUser = async (signal) => {
+    let page = 1
+    /**
+     * @type {any[]}
+     */
+    let res = [];
+
+    while (true) {
+        let list = await paginateUser(signal, {
+            page,
+            limit: 50
+        });
+
+
+        res = [...res, ...(list?.results || [])];  // Append new results
+        if (!list?.totalPages || page >= list?.totalPages) {
+            break;
+        }
+
+        page += 1;
+
+    }
+
+    return res;
+}

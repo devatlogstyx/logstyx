@@ -26,7 +26,11 @@ const { getUserDashboardProjectStats } = require("../../shared/provider/core.ser
 const { CanUserDo } = require("../utils/helper");
 
 module.exports = {
-
+    /**
+     * 
+     * @param {*} req 
+     * @param {*} res 
+     */
     async UserGetMe(req, res) {
         if (!req?.user) {
             throw HttpError(NO_ACCESS_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
@@ -38,6 +42,11 @@ module.exports = {
             data: req?.user,
         });
     },
+    /**
+     * 
+     * @param {*} req 
+     * @param {*} res 
+     */
     async UserPaginate(req, res) {
         if (!req?.user) {
             throw HttpError(NO_ACCESS_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
@@ -53,7 +62,6 @@ module.exports = {
             sortBy,
             limit,
             page,
-            expand
         } = req?.query ?? {}
 
         const data = await paginateUser(
@@ -71,6 +79,11 @@ module.exports = {
             data,
         });
     },
+    /**
+     * 
+     * @param {*} req 
+     * @param {*} res 
+     */
     async UserRemove(req, res) {
         if (!req?.user) {
             throw HttpError(NO_ACCESS_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
@@ -89,7 +102,11 @@ module.exports = {
             message: SUCCESS_ERR_MESSAGE,
         });
     },
-
+    /**
+     * 
+     * @param {*} req 
+     * @param {*} res 
+     */
     async UserLogin(req, res) {
 
         const user = await handleUserLogin(req?.body)
@@ -117,6 +134,11 @@ module.exports = {
 
         HttpResponse(res).json(response);
     },
+    /**
+     * 
+     * @param {*} req 
+     * @param {*} res 
+     */
     async UserLogout(req, res) {
         if (req?.user?.refreshToken) {
             await expireRefreshToken(req?.user?.refreshToken)

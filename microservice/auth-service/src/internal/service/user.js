@@ -17,8 +17,8 @@ const {
     READ_USER_USER_ROLE,
     WRITE_PROJECT_USER_ROLE,
     READ_PROJECT_USER_ROLE,
-    WRITE_ALERT_USER_ROLE,
-    READ_ALERT_USER_ROLE,
+    WRITE_SETTINGS_USER_ROLE,
+    READ_SETTINGS_USER_ROLE,
     WRITE_USER_INVITATION_USER_ROLE,
     READ_USER_INVITATION_USER_ROLE
 } = require("common/constant")
@@ -161,7 +161,7 @@ const paginateUser = async (query = {}, sortBy = "createdAt:desc", limit = 10, p
     page = num2Floor(page, 1)
 
 
-    let list = await userModel.pagimate(queryParams, { sortBy, limit, page });
+    let list = await userModel.paginate(queryParams, { sortBy, limit, page });
 
     list.results = list?.results?.map((/** @type {any} */ doc) => {
         let n = new userModel(doc);
@@ -236,7 +236,7 @@ const createUserToken = async (user, refreshToken) => {
 
 
 const seedUser = async () => {
-    
+
     await new Promise(resolve => setTimeout(resolve, 5000));
 
     if (!USER_NAME || !USER_EMAIL || !USER_PASSWORD) {
@@ -263,8 +263,8 @@ const seedUser = async () => {
                     READ_USER_USER_ROLE,
                     WRITE_PROJECT_USER_ROLE,
                     READ_PROJECT_USER_ROLE,
-                    WRITE_ALERT_USER_ROLE,
-                    READ_ALERT_USER_ROLE,
+                    WRITE_SETTINGS_USER_ROLE,
+                    READ_SETTINGS_USER_ROLE,
                     WRITE_USER_INVITATION_USER_ROLE,
                     READ_USER_INVITATION_USER_ROLE
                 ],

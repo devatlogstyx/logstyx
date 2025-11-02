@@ -1,6 +1,7 @@
 //@ts-check
 
 import { IoRocketOutline, IoCodeSlashOutline, IoShieldCheckmarkOutline, IoTrendingUpOutline } from "react-icons/io5";
+import PrimaryButton from "../../../component/button/PrimaryButton";
 
 const EmptyProjectViews = () => {
     return (
@@ -51,10 +52,10 @@ const EmptyProjectViews = () => {
                 </div>
 
                 {/* CTA Button */}
-                <button className="bg-gradient-to-r from-blue-500 via-cyan-500 to-teal-500 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:shadow-xl transition-all inline-flex items-center gap-3">
+                <PrimaryButton className="px-8 py-4 rounded-lg text-lg font-semibold inline-flex items-center gap-3">
                     <span className="text-2xl">+</span>
                     Create Your First Project
-                </button>
+                </PrimaryButton>
 
                 {/* Optional: Documentation Link */}
                 <p className="text-sm text-gray-500 mt-6">

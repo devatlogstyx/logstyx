@@ -6,13 +6,16 @@ import {
     IoEyeOutline,
     IoSettingsOutline,
     IoKeyOutline,
-    IoTrendingUpOutline
+    IoTrendingUpOutline,
+    IoAdd
 } from "react-icons/io5";
 import useProjectViews from "./hooks";
 import { numify } from "numify";
 import { sumInt } from "../../../utils/function";
 import { Loader } from "@mantine/core";
 import EmptyProjectViews from "../EmptyProjectViews";
+import PrimaryButton from "../../../component/button/PrimaryButton";
+import SecondaryButton from "../../../component/button/SecondaryButton";
 
 const ProjectViews = () => {
 
@@ -26,7 +29,7 @@ const ProjectViews = () => {
         </div>
     }
 
-    if(projects?.length <1){
+    if (projects?.length < 1) {
         return <EmptyProjectViews />
     }
 
@@ -153,16 +156,15 @@ const ProjectViews = () => {
 
                             {/* Action Buttons */}
                             <div className="flex gap-2">
-                                <button className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-gradient-to-r from-blue-500 via-cyan-500 to-teal-500 text-white rounded-lg hover:shadow-md transition-all text-sm font-medium">
-                                    <IoEyeOutline size={16} />
+                                <PrimaryButton leftSection={<IoEyeOutline size={16} />} className="flex-1">
                                     View Logs
-                                </button>
-                                <button className="px-3 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+                                </PrimaryButton>
+                                <SecondaryButton onClick={() => { }}>
                                     <IoKeyOutline size={16} />
-                                </button>
-                                <button className="px-3 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+                                </SecondaryButton>
+                                <SecondaryButton onClick={() => { }}>
                                     <IoSettingsOutline size={16} />
-                                </button>
+                                </SecondaryButton>
                             </div>
                         </div>
 
@@ -182,10 +184,12 @@ const ProjectViews = () => {
             </div>
 
             {/* Create New Project Button */}
-            <button className="fixed bottom-8 right-8 bg-gradient-to-r from-blue-500 via-cyan-500 to-teal-500 text-white px-6 py-3 rounded-full shadow-lg hover:shadow-xl transition-all font-medium flex items-center gap-2">
-                <span className="text-xl">+</span>
+            <PrimaryButton
+                leftSection={<IoAdd size={16}/>}
+                className="fixed bottom-8 right-8 px-6 py-3 rounded-full shadow-lg hover:shadow-xl transition-all font-medium flex items-center gap-2"
+            >
                 New Project
-            </button>
+            </PrimaryButton>
         </>
     )
 }

@@ -158,7 +158,7 @@ const paginateUserInvitation = async (query = {}, sortBy = "createdAt:desc", lim
     page = num2Floor(page, 1)
 
 
-    let list = await userInvitationModel.pagimate(queryParams, { sortBy, limit, page });
+    let list = await userInvitationModel.paginate(queryParams, { sortBy, limit, page });
 
     list.results = list?.results?.map((/** @type {any} */ doc) => {
         let n = new userInvitationModel(doc);
