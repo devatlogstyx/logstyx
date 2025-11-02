@@ -33,13 +33,14 @@ const useCreateUserInvitation = ({
             setIsSubmitting(true)
             await createUserInvitation(controller.signal, payload)
             onCreate()
+            form.reset()
         } catch (e) {
             ErrorMessage(e)
         } finally {
             setIsInviteModalVisible(false)
             setIsSubmitting(false)
         }
-    }, [ErrorMessage, controller, onCreate])
+    }, [ErrorMessage, controller, onCreate, form])
 
     return {
         form,

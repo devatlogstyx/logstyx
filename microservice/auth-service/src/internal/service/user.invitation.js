@@ -29,7 +29,9 @@ const createUserInvitation = async (params) => {
     }
 
     let email = striptags(params.email.toString()).trim().toLowerCase();
+
     const hashedEmail = hashString(email)
+
     const [invitation, user, login] = await Promise.all([
         userInvitationModel.findOne({
             "hash.email": hashedEmail
@@ -50,6 +52,9 @@ const createUserInvitation = async (params) => {
     const raw = await userInvitationModel.create({
         email,
         permissions: params?.permissions,
+        hash: {
+            email: hashedEmail
+        }
     })
 
     return mapUserInvitation(raw?.toJSON())
