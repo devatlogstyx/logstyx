@@ -24,6 +24,21 @@ export const createUserInvitation = async (signal, payload) => {
 /**
  * 
  * @param {*} signal 
+ * @param {string} id 
+ * @param {object} payload 
+ * @returns 
+ */
+export const updateUserInvitation = async (signal, id, payload) => {
+    let { data } = await Axios.put(`/v1/user-invitations/${id}`, payload, {
+        signal
+    });
+    return data?.data;
+}
+
+
+/**
+ * 
+ * @param {*} signal 
  * @param {object} params 
  * @returns 
  */

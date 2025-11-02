@@ -65,6 +65,7 @@ const DashboardUser = () => {
                         <TabUser
                             users={users}
                             onDelete={refetchData}
+                            onUpdate={refetchData}
                         />
                     </Tabs.Panel>
 
@@ -73,6 +74,7 @@ const DashboardUser = () => {
                         <TabUserInvitation
                             invitations={invitations}
                             onDelete={refetchData}
+                            onUpdate={refetchData}
                         />
                     </Tabs.Panel>
                 </Tabs>

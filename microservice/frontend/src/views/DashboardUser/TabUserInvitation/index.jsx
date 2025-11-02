@@ -4,10 +4,12 @@ import { ActionIcon, Avatar, Badge, Paper, Text } from "@mantine/core"
 import { IoMail, IoShield, IoTrash } from "react-icons/io5"
 import { MdContentCopy } from 'react-icons/md'
 import useTabUserInvitation from "./hooks"
+import UpdateUserInvitation from "../UpdateUserInvitation"
 
 const TabUserInvitation = ({
     invitations,
-    onDelete
+    onDelete,
+    onUpdate
 }) => {
 
     const {
@@ -47,6 +49,10 @@ const TabUserInvitation = ({
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-4">
+                                    <UpdateUserInvitation 
+                                        invitation={invitation}
+                                        onUpdate={onUpdate}
+                                    />
                                     <ActionIcon
                                         variant="light"
                                         onClick={() => {

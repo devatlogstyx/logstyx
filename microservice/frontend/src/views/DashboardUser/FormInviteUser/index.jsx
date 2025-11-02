@@ -10,7 +10,8 @@ const FormInviteUser = ({
     form,
     onSubmit,
     onClose,
-    isSubmitting
+    isSubmitting,
+    isEditing = false
 }) => {
 
     return (
@@ -22,6 +23,7 @@ const FormInviteUser = ({
                 <TextInput
                     placeholder="user@example.com"
                     key={form.key('email')}
+                    disabled={isEditing}
                     required
                     classNames={{
                         input: 'border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200'
