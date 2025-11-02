@@ -11,6 +11,7 @@ import DashboardPage from "../views/Dashboard";
 import DashboardLayout from "../layouts/DashboardLayout";
 import Logout from "../views/Logout";
 import DashboardUser from "../views/DashboardUser";
+import InvitationPage from "../views/Invitation";
 
 export default function Router() {
     return (
@@ -24,6 +25,7 @@ export default function Router() {
                         <Route index element={<DashboardPage />} />
                         <Route path="/dashboard/users" element={<DashboardUser />} />
                     </Route>
+                    <Route path="/invitations/:id" element={<InvitationPage />} />
                     <Route path="/logout" element={<Logout />} />
 
                     <Route path="*" element={<NotFound />} />

@@ -2,11 +2,15 @@
 
 import { ActionIcon, Avatar, Badge, Paper, Text } from "@mantine/core"
 import { FiEdit, FiShield, FiTrash, FiUser } from "react-icons/fi"
+import { useUser } from "../../../context/useUser"
 
 const TabUser = ({
     users,
     onDelete
 }) => {
+
+    const { user: currentUser } = useUser()
+
     return (
         <div className="space-y-4">
             {users.length > 0 ? (
@@ -21,7 +25,7 @@ const TabUser = ({
                                     className="w-12 h-12 rounded-full"
                                 />
                                 <div>
-                                    <Text className="font-semibold text-gray-900">{user.fullname}</Text>
+                                    <Text className="font-semibold text-gray-900">{user.fullname} {currentUser?.id === user?.id ? "(You)" : ""}</Text>
                                     <div className="flex flex-wrap gap-2 mt-2">
                                         {user.permissions.map(perm => (
                                             <Badge
@@ -37,19 +41,24 @@ const TabUser = ({
                                 </div>
                             </div>
                             <div className="flex gap-2">
-                                <ActionIcon
-                                    variant="light"
-                                    className="text-blue-600 hover:bg-blue-50 border border-gray-200 rounded-lg"
-                                >
-                                    <FiEdit size={18} />
-                                </ActionIcon>
-                                <ActionIcon
-                                    variant="light"
-                                    onClick={onDelete}
-                                    className="text-red-600 hover:bg-red-50 border border-gray-200 rounded-lg"
-                                >
-                                    <FiTrash size={18} />
-                                </ActionIcon>
+                                {
+                                    currentUser?.id !== user?.id &&
+                                    <>
+                                        <ActionIcon
+                                            variant="light"
+                                            
+                                        >
+                                            <FiEdit size={18} />
+                                        </ActionIcon>
+                                        <ActionIcon
+                                            variant="light"
+                                            onClick={onDelete}
+                                            
+                                        >
+                                            <FiTrash size={18} />
+                                        </ActionIcon>
+                                    </>
+                                }
                             </div>
                         </div>
                     </Paper>

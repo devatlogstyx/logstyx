@@ -93,3 +93,17 @@ export const removeUserInvitation = async (signal, id) => {
     });
     return data?.data;
 }
+
+/**
+ * 
+ * @param {*} signal 
+ * @param {string | undefined} id 
+ * @param {object} payload 
+ * @returns 
+ */
+export const validateUserInvitation = async (signal, id, payload) => {
+    let { data } = await Axios.post(`/v1/user-invitations/${id}/validate`, payload, {
+        signal
+    });
+    return data?.data;
+}

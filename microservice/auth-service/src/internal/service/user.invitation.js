@@ -217,7 +217,7 @@ const validateUserInvitation = async (id, params) => {
     }
 
     // Create user if doesn't exist
-    const session = await mongoose.connection.startSession();
+    const session = await mongoose.startSession();
     session.startTransaction();
 
     try {
@@ -239,7 +239,7 @@ const validateUserInvitation = async (id, params) => {
             hash: { key: hashedEmail }
         }], { session });
 
-        await userInvitationModel.findByIdAndDelete(id).session({ session })
+        await userInvitationModel.findByIdAndDelete(id).session(session)
 
         await session.commitTransaction();
         return mapUser(newUser?.toJSON())

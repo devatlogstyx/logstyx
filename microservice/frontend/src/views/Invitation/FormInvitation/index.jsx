@@ -1,23 +1,30 @@
 //@ts-check
 
 import { Button, TextInput } from "@mantine/core"
-import useLoginForm from "./hooks"
+import useFormInvitation from "./hooks"
 import PrimaryButton from "../../../component/button/PrimaryButton"
 
-const LoginForm = ({
+const FormInvitation = ({
     onSubmit,
     isSubmitting
 }) => {
 
     const {
         form
-    } = useLoginForm()
+    } = useFormInvitation()
 
     return (
         <>
             <div className="w-screen flex justify-center">
                 <div className="w-full max-w-[480px] min-h-[200px] border border-black rounded-xl p-6">
                     <form onSubmit={form.onSubmit(onSubmit)} className="flex flex-col gap-4">
+                        <TextInput
+                            withAsterisk
+                            label="Fullname"
+                            placeholder="Your Name"
+                            key={form.key('fullname')}
+                            {...form.getInputProps('fullname')}
+                        />
                         <TextInput
                             withAsterisk
                             label="Email"
@@ -49,4 +56,4 @@ const LoginForm = ({
     )
 }
 
-export default LoginForm
+export default FormInvitation

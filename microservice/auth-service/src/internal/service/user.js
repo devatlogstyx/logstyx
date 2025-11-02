@@ -251,7 +251,7 @@ const seedUser = async () => {
 
     if (!user) {
         // Create user if doesn't exist
-        const session = await mongoose.connection.startSession();
+        const session = await mongoose.startSession();
         session.startTransaction();
 
         try {
