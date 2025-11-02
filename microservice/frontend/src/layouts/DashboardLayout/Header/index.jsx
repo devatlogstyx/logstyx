@@ -18,30 +18,6 @@ const DashboardHeader = () => {
 
                 {/* Right: Actions */}
                 <div className="flex items-center gap-2">
-                    <ActionIcon
-                        variant="subtle"
-                        size="lg"
-                        className="text-white hover:bg-white/20 transition-colors"
-                        style={{ color: 'white' }}
-                    >
-                        <IoSearchOutline size={20} />
-                    </ActionIcon>
-                    <ActionIcon
-                        variant="subtle"
-                        size="lg"
-                        className="text-white hover:bg-white/20 transition-colors"
-                        style={{ color: 'white' }}
-                    >
-                        <IoHelpCircleOutline size={20} />
-                    </ActionIcon>
-                    <ActionIcon
-                        variant="subtle"
-                        size="lg"
-                        className="text-white hover:bg-white/20 transition-colors"
-                        style={{ color: 'white' }}
-                    >
-                        <IoNotificationsOutline size={20} />
-                    </ActionIcon>
                     <Menu>
                         <Menu.Target>
                             <button className="ml-2 flex items-center gap-2 hover:bg-white/20 rounded-lg px-2 py-1 transition-colors">
@@ -56,8 +32,6 @@ const DashboardHeader = () => {
                             </button>
                         </Menu.Target>
                         <Menu.Dropdown>
-                            <Menu.Item>Profile</Menu.Item>
-                            <Menu.Divider />
                             <a href={`/logout`}>
                                 <Menu.Item color="red">Logout</Menu.Item>
                             </a>

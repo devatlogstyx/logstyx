@@ -126,7 +126,6 @@ const createLog = async (project, params) => {
  * @returns 
  */
 const processCreateLog = async (params) => {
-    console.error(params)
 
     // @ts-ignore
     const projectTitle = decryptSecret(process?.env?.ENC_SELF_PROJECT_TITLE)

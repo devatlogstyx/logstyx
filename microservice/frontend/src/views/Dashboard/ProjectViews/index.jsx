@@ -98,7 +98,7 @@ const ProjectViews = () => {
                 {projects.map((project) => (
                     <div
                         key={project.id}
-                        className="bg-white rounded-lg border border-gray-200 hover:shadow-lg transition-shadow cursor-pointer"
+                        className="bg-white rounded-lg border border-gray-200 hover:shadow-lg transition-shadow"
                     >
                         {/* Project Header */}
                         <div className="p-4 border-b border-gray-200">
@@ -159,10 +159,7 @@ const ProjectViews = () => {
                                 <PrimaryButton leftSection={<IoEyeOutline size={16} />} className="flex-1">
                                     View Logs
                                 </PrimaryButton>
-                                <SecondaryButton onClick={() => { }}>
-                                    <IoKeyOutline size={16} />
-                                </SecondaryButton>
-                                <SecondaryButton onClick={() => { }}>
+                                <SecondaryButton >
                                     <IoSettingsOutline size={16} />
                                 </SecondaryButton>
                             </div>

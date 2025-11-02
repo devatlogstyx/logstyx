@@ -28,9 +28,9 @@ const DashboardSidebar = () => {
         menuItems.push({ id: 'users', label: 'Users', icon: IoPeopleOutline, path: '/dashboard/users' })
     }
 
-    if (user?.permissions?.includes(READ_SETTINGS_USER_ROLE)) {
-        menuItems.push({ id: 'settings', label: 'Settings', icon: IoSettingsOutline, path: '/dashboard/settings' })
-    }
+    // if (user?.permissions?.includes(READ_SETTINGS_USER_ROLE)) {
+    //     menuItems.push({ id: 'settings', label: 'Settings', icon: IoSettingsOutline, path: '/dashboard/settings' })
+    // }
 
     return (
         <aside className="w-64 bg-white border-r border-gray-200 flex flex-col">
