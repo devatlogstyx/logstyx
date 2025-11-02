@@ -1,19 +1,10 @@
 
 //@ts-check
 
-import { Button, MultiSelect, TextInput } from "@mantine/core"
-import {
-    WRITE_USER_USER_ROLE,
-    READ_USER_USER_ROLE,
-    WRITE_PROJECT_USER_ROLE,
-    READ_PROJECT_USER_ROLE,
-    WRITE_SETTINGS_USER_ROLE,
-    READ_SETTINGS_USER_ROLE,
-    WRITE_USER_INVITATION_USER_ROLE,
-    READ_USER_INVITATION_USER_ROLE
-} from "./../../../utils/constant"
+import { TextInput } from "@mantine/core"
 import PrimaryButton from "../../../component/button/PrimaryButton"
 import SecondaryButton from "../../../component/button/SecondaryButton"
+import SelectUserPermissions from "../../../component/select/SelectUserPermissions"
 
 const FormInviteUser = ({
     form,
@@ -21,17 +12,6 @@ const FormInviteUser = ({
     onClose,
     isSubmitting
 }) => {
-
-    const available_permission = [
-        WRITE_USER_USER_ROLE,
-        READ_USER_USER_ROLE,
-        WRITE_PROJECT_USER_ROLE,
-        READ_PROJECT_USER_ROLE,
-        WRITE_SETTINGS_USER_ROLE,
-        READ_SETTINGS_USER_ROLE,
-        WRITE_USER_INVITATION_USER_ROLE,
-        READ_USER_INVITATION_USER_ROLE,
-    ]
 
     return (
         <form className="space-y-4" onSubmit={form.onSubmit(onSubmit)}>
@@ -55,12 +35,8 @@ const FormInviteUser = ({
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                     Permission
                 </label>
-                <MultiSelect
-                    placeholder="Select Permission"
-                    data={available_permission}
-                    clearable
-                    searchable
-                    {...form.getInputProps('permissions')}
+                <SelectUserPermissions
+                    form={form}
                 />
             </div>
 

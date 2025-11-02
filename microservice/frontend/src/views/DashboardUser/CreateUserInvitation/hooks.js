@@ -4,6 +4,7 @@ import { useForm } from "@mantine/form";
 import React from "react";
 import { createUserInvitation } from "../../../api/user.invitation";
 import { useErrorMessage } from "../../../hooks/useMessage";
+import { READ_PROJECT_USER_ROLE } from "../../../utils/constant";
 
 const useCreateUserInvitation = ({
     onCreate
@@ -19,7 +20,7 @@ const useCreateUserInvitation = ({
         mode: 'uncontrolled',
         initialValues: {
             email: '',
-            permissions: [],
+            permissions: [READ_PROJECT_USER_ROLE],
         },
 
         validate: {
