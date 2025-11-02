@@ -1,10 +1,12 @@
 //@ts-check
 import React from "react"
-import { useErrorMessage } from "../../hooks/useMessage"
+import { useErrorMessage, useSuccessMessage } from "../../hooks/useMessage"
 import { useNavigate, useParams } from "react-router-dom"
 import { validateUserInvitation } from "../../api/user.invitation"
 const useInvitation = () => {
     const ErrorMessage = useErrorMessage()
+    const SuccessMessage = useSuccessMessage()
+
     const navigate = useNavigate()
     const { id } = useParams()
 
@@ -16,7 +18,8 @@ const useInvitation = () => {
         try {
 
             await validateUserInvitation(controller.signal, id, payload)
-            navigate(`/dashboard`)
+            SuccessMessage(`Account successfully created, you now can login`)
+            navigate("/login")
         } catch (e) {
             ErrorMessage(e)
         } finally {

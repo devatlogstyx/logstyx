@@ -20,7 +20,7 @@ const {
     READ_USER_USER_ROLE,
 
 } = require("common/constant");
-const { paginateUser, removeUser, handleUserLogin, createUserToken } = require("../service/user");
+const { paginateUser, removeUser, handleUserLogin, createUserToken, updateUser } = require("../service/user");
 const { createRefreshToken, expireRefreshToken } = require("../service/auth");
 const { getUserDashboardProjectStats } = require("../../shared/provider/core.service");
 const { CanUserDo } = require("../utils/helper");
@@ -97,8 +97,37 @@ module.exports = {
             throw HttpError(NO_ACCESS_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
         }
 
+        if (req?.params?.id === req?.user?.id) {
+            throw HttpError(INVALID_INPUT_ERR_CODE, `You cant remove yourself`)
+        }
 
         await removeUser(req?.params?.id)
+
+        HttpResponse(res).json({
+            error: SUCCESS_ERR_CODE,
+            message: SUCCESS_ERR_MESSAGE,
+        });
+    },
+    /**
+     * 
+     * @param {*} req 
+     * @param {*} res 
+     */
+    async UserUpdate(req, res) {
+        if (!req?.user) {
+            throw HttpError(NO_ACCESS_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
+        }
+
+        const canManage = await CanUserDo(req?.user?.id, WRITE_USER_USER_ROLE)
+        if (!canManage) {
+            throw HttpError(NO_ACCESS_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
+        }
+
+        if (req?.params?.id === req?.user?.id) {
+            throw HttpError(INVALID_INPUT_ERR_CODE, `You cant remove yourself`)
+        }
+
+        await updateUser(req?.params?.id, req?.body)
 
         HttpResponse(res).json({
             error: SUCCESS_ERR_CODE,

@@ -57,7 +57,6 @@ const DashboardHeader = () => {
                         </Menu.Target>
                         <Menu.Dropdown>
                             <Menu.Item>Profile</Menu.Item>
-                            <Menu.Item>Settings</Menu.Item>
                             <Menu.Divider />
                             <a href={`/logout`}>
                                 <Menu.Item color="red">Logout</Menu.Item>

@@ -3,7 +3,7 @@
 import { useNavigate, useLocation } from "react-router-dom"
 import { IoPeopleOutline, IoSettingsOutline, IoDocumentTextOutline, IoLogOutOutline, IoBriefcase, IoBriefcaseOutline } from "react-icons/io5"
 import { useUser } from "../../../context/useUser"
-import { READ_PROJECT_USER_ROLE, READ_SETTINGS_USER_ROLE, READ_USER_USER_ROLE } from "../../../utils/constant"
+import { PROJECT_TITLE, READ_PROJECT_USER_ROLE, READ_SETTINGS_USER_ROLE, READ_USER_USER_ROLE } from "../../../utils/constant"
 
 const DashboardSidebar = () => {
     const navigate = useNavigate()
@@ -37,7 +37,7 @@ const DashboardSidebar = () => {
             {/* Logo/Brand */}
             <div className="px-6 py-5 border-b border-gray-200">
                 <h2 className="text-xl font-bold bg-gradient-to-r from-blue-500 via-cyan-500 to-teal-500 bg-clip-text text-transparent">
-                    Your Brand
+                    {PROJECT_TITLE}
                 </h2>
             </div>
 

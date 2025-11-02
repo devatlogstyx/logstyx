@@ -101,3 +101,30 @@ export const listAllUser = async (signal) => {
 
     return res;
 }
+
+/**
+ * 
+ * @param {*} signal 
+ * @param {string} id 
+ * @returns 
+ */
+export const removeUser = async (signal, id) => {
+    let { data } = await Axios.delete(`/v1/users/${id}`, {
+        signal
+    });
+    return data?.data;
+}
+
+/**
+ * 
+ * @param {*} signal 
+ * @param {string} id 
+ * @param {object} payload 
+ * @returns 
+ */
+export const updateUser = async (signal, id, payload) => {
+    let { data } = await Axios.put(`/v1/users/${id}`, payload, {
+        signal
+    });
+    return data?.data;
+}

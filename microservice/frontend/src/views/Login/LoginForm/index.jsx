@@ -1,8 +1,9 @@
 //@ts-check
 
-import { Button, TextInput } from "@mantine/core"
+import { Button, TextInput, Title } from "@mantine/core"
 import useLoginForm from "./hooks"
 import PrimaryButton from "../../../component/button/PrimaryButton"
+import { PROJECT_TITLE } from "../../../utils/constant"
 
 const LoginForm = ({
     onSubmit,
@@ -15,7 +16,8 @@ const LoginForm = ({
 
     return (
         <>
-            <div className="w-screen flex justify-center">
+            <div className="w-screen flex flex-col items-center gap-4">
+                <Title>{PROJECT_TITLE} Dashboard</Title>
                 <div className="w-full max-w-[480px] min-h-[200px] border border-black rounded-xl p-6">
                     <form onSubmit={form.onSubmit(onSubmit)} className="flex flex-col gap-4">
                         <TextInput

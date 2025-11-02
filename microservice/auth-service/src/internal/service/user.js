@@ -1,7 +1,7 @@
 //@ts-check
 
 const { HttpError, hashString, num2Ceil, num2Floor, sanitizeObject, encrypt, decryptSecret, createSlug } = require("common/function")
-const { getUserFromCache } = require("../../shared/cache")
+const { getUserFromCache, updateUserCache } = require("../../shared/cache")
 const { mapUser, } = require("../utils/mapper")
 const { Validator } = require("node-input-validator")
 const {
@@ -212,6 +212,42 @@ const removeUser = async (id) => {
 
 /**
  * 
+ * @param {string} id 
+ * @param {object} params 
+ * @param {string[]} params.permissions
+ * @returns 
+ */
+const updateUser = async (id, params) => {
+
+    const user = await getUserFromCache(id)
+    if (!user) {
+        throw HttpError(NOT_FOUND_ERR_CODE, NOT_FOUND_ERR_MESSAGE)
+    }
+
+    const v = new Validator(params, {
+        permissions: "required|arrayUnique"
+    });
+
+    let match = await v.check();
+    if (!match) {
+        throw HttpError(INVALID_INPUT_ERR_CODE, v.errors);
+    }
+
+    const raw = await userModel.findByIdAndUpdate(id, {
+        $set: {
+            permissions: params?.permissions
+        }
+    }, {
+        new: true,
+        runValidators: true
+    })
+
+    return updateUserCache(id)
+
+};
+
+/**
+ * 
  * @param {object} user 
  * @param {string} user.id
  * @param {string} user.fullname
@@ -357,5 +393,6 @@ module.exports = {
     paginateUser,
     removeUser,
     createUserToken,
-    seedUser
+    seedUser,
+    updateUser
 }
