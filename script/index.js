@@ -33,7 +33,7 @@ const buildFrontend = () => {
 
 const setupFrontend = async () => {
     try {
-        const sourceFile = './../microservice/frontend/.env.sample';
+        const sourceFile = './.env.vite';
         const destFile = './../microservice/frontend/.env.local';
 
         fs.copyFileSync(sourceFile, destFile);

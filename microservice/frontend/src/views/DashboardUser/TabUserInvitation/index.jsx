@@ -2,6 +2,7 @@
 
 import { ActionIcon, Avatar, Badge, Paper, Text } from "@mantine/core"
 import { IoMail, IoShield, IoTrash } from "react-icons/io5"
+import { MdContentCopy } from 'react-icons/md'
 import useTabUserInvitation from "./hooks"
 
 const TabUserInvitation = ({
@@ -12,9 +13,11 @@ const TabUserInvitation = ({
     const {
         ConfirmDialogComponent,
         handleRemove,
+        copyInvitationMessage
     } = useTabUserInvitation({
         onDelete
     })
+
     return (
         <>
 
@@ -43,15 +46,25 @@ const TabUserInvitation = ({
                                         </div>
                                     </div>
                                 </div>
-                                <ActionIcon
-                                    variant="light"
-                                    onClick={() => {
-                                        handleRemove(invitation.id)
-                                    }}
-                                    className="text-red-600 hover:bg-red-50 border border-gray-200 rounded-lg"
-                                >
-                                    <IoTrash size={18} />
-                                </ActionIcon>
+                                <div className="flex items-center gap-4">
+                                    <ActionIcon
+                                        variant="light"
+                                        onClick={() => {
+                                            copyInvitationMessage(invitation.id)
+                                        }}
+                                    >
+                                        <MdContentCopy  size={18} />
+                                    </ActionIcon>
+                                    <ActionIcon
+                                        variant="light"
+                                        onClick={() => {
+                                            handleRemove(invitation.id)
+                                        }}
+                                        className="!text-red-600 hover:bg-red-50 border border-gray-200 rounded-lg"
+                                    >
+                                        <IoTrash size={18} />
+                                    </ActionIcon>
+                                </div>
                             </div>
                         </Paper>
                     ))
