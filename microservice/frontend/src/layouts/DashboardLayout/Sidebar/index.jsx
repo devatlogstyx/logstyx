@@ -1,18 +1,36 @@
 //@ts-check
 
 import { useNavigate, useLocation } from "react-router-dom"
-import { IoHomeOutline, IoStatsChartOutline, IoPeopleOutline, IoSettingsOutline, IoDocumentTextOutline, IoLogOutOutline, IoBriefcase, IoBriefcaseOutline } from "react-icons/io5"
+import { IoPeopleOutline, IoSettingsOutline, IoDocumentTextOutline, IoLogOutOutline, IoBriefcase, IoBriefcaseOutline } from "react-icons/io5"
+import { useUser } from "../../../context/useUser"
+import { READ_PROJECT_USER_ROLE, READ_SETTINGS_USER_ROLE, READ_USER_USER_ROLE } from "../../../utils/constant"
 
 const DashboardSidebar = () => {
     const navigate = useNavigate()
     const location = useLocation()
+    const {
+        user,
+        isLoading
+    } = useUser()
 
-    const menuItems = [
-        { id: 'projects', label: 'Projects', icon: IoBriefcaseOutline, path: '/dashboard' },
-        { id: 'users', label: 'Users', icon: IoPeopleOutline, path: '/dashboard/users' },
-        { id: 'documents', label: 'Documents', icon: IoDocumentTextOutline, path: '/dashboard/documents' },
-        { id: 'settings', label: 'Settings', icon: IoSettingsOutline, path: '/dashboard/settings' },
-    ]
+    if (isLoading) {
+        return <></>
+    }
+
+
+    const menuItems = []
+
+    if (user?.permissions?.includes(READ_PROJECT_USER_ROLE)) {
+        menuItems.push({ id: 'projects', label: 'Projects', icon: IoBriefcaseOutline, path: '/dashboard' })
+    }
+
+    if (user?.permissions?.includes(READ_USER_USER_ROLE)) {
+        menuItems.push({ id: 'users', label: 'Users', icon: IoPeopleOutline, path: '/dashboard/users' })
+    }
+
+    if (user?.permissions?.includes(READ_SETTINGS_USER_ROLE)) {
+        menuItems.push({ id: 'settings', label: 'Settings', icon: IoSettingsOutline, path: '/dashboard/settings' })
+    }
 
     return (
         <aside className="w-64 bg-white border-r border-gray-200 flex flex-col">
@@ -34,8 +52,8 @@ const DashboardSidebar = () => {
                             key={item.id}
                             onClick={() => navigate(item.path)}
                             className={`cursor-pointer w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${isActive
-                                    ? 'bg-gradient-to-r from-blue-500 via-cyan-500 to-teal-500 text-white shadow-md'
-                                    : 'text-gray-700 hover:bg-gray-100'
+                                ? 'bg-gradient-to-r from-blue-500 via-cyan-500 to-teal-500 text-white shadow-md'
+                                : 'text-gray-700 hover:bg-gray-100'
                                 }`}
                         >
                             <Icon size={20} />
