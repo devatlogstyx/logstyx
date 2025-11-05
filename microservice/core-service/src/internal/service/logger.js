@@ -156,6 +156,8 @@ const processCreateLog = async (params) => {
 
 }
 
+
+
 module.exports = {
     processWriteLog,
     processCreateLog

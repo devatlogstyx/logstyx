@@ -1,4 +1,4 @@
-import { CRITICAL_LOG_LEVEL, ERROR_LOG_LEVEL, INFO_LOG_LEVEL, UNKNOWN_ERR_CODE, UNKNOWN_ERR_MESSAGE, WARNING_LOG_LEVEL } from "./constant";
+import { CRITICAL_LOG_LEVEL, ERROR_LOG_LEVEL, INFO_LOG_LEVEL, SUCCESS_LOG_LEVEL, UNKNOWN_ERR_CODE, UNKNOWN_ERR_MESSAGE, WARNING_LOG_LEVEL } from "./constant";
 
 export const parseError = (e) => {
     return {
@@ -47,6 +47,8 @@ export const getLevelColor = (level) => {
             return 'yellow';
         case INFO_LOG_LEVEL:
             return 'blue';
+        case SUCCESS_LOG_LEVEL:
+            return 'green';
         default:
             return 'gray';
     }

@@ -18,6 +18,13 @@ const useAddUser = ({
     const [isSubmitting, setIsSubmitting] = React.useState(false)
     const [users, setUsers] = React.useState([]);
 
+    const form = useForm({
+        mode: 'uncontrolled',
+        initialValues: {
+            userId: ""
+        },
+    });
+    
     const fetchData = React.useCallback(async () => {
         try {
             const u = await listAllUser(controller.signal)
@@ -46,15 +53,6 @@ const useAddUser = ({
     React.useEffect(() => {
         fetchData()
     }, [fetchData])
-
-    const form = useForm({
-        mode: 'uncontrolled',
-        initialValues: {
-            userId: ""
-        },
-    });
-
-
 
     return {
         isModalVisible,

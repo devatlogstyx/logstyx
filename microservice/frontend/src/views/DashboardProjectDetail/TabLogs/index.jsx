@@ -14,6 +14,7 @@ const {
 const TabLogs = ({
     logs
 }) => {
+    
     return (
         <>
             <div className="p-6 rounded-md border shadow-sm bg-white">
@@ -34,10 +35,8 @@ const TabLogs = ({
                 <Table highlightOnHover>
                     <Thead>
                         <Tr>
-                            <Th>Log Key</Th>
                             <Th>Level</Th>
                             <Th>Count</Th>
-                            <Th>Device</Th>
                             <Th>Last Seen</Th>
                             <Th></Th>
                         </Tr>
@@ -45,9 +44,6 @@ const TabLogs = ({
                     <Tbody>
                         {logs.map((log) => (
                             <Tr key={log.id}>
-                                <Td>
-                                    <Code>{log.key}</Code>
-                                </Td>
                                 <Td>
                                     <Badge
                                         color={getLevelColor(log.level)}
@@ -59,11 +55,7 @@ const TabLogs = ({
                                 <Td>
                                     <span className="font-medium">{log.count}</span>
                                 </Td>
-                                <Td>
-                                    <span className="text-sm">
-                                        {log.device.browser} · {log.device.os}
-                                    </span>
-                                </Td>
+                               
                                 <Td>
                                     <span className="text-sm text-gray-500">
                                         {log.lastSeen}

@@ -6,6 +6,8 @@ import AddUser from "../AddUser"
 import useTabUser from "./hook"
 import { useUser } from "../../../context/useUser"
 import { WRITE_PROJECT_USER_ROLE } from "../../../utils/constant"
+import moment from "moment-timezone"
+
 const {
     Thead,
     Tbody,
@@ -46,7 +48,7 @@ const TabUser = ({
                     <Thead>
                         <Tr>
                             <Th>User</Th>
-                            <Th>Created At</Th>
+                            <Th>Joined At</Th>
                             <Th></Th>
                         </Tr>
                     </Thead>
@@ -62,9 +64,9 @@ const TabUser = ({
                                         <span className="font-medium">{user.fullname} {currentUser?.id === user?.id ? "(You)" : ""}</span>
                                     </div>
                                 </Td>
-                                <Td>
+                                <Td >
                                     <span className="text-sm text-gray-500">
-                                        {user.createdAt}
+                                        {moment(user.createdAt).format("MMM Do YYYY, HH:mm")}
                                     </span>
                                 </Td>
                                 <Td className="flex justify-end ">

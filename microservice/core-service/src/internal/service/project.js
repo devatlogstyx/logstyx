@@ -558,6 +558,49 @@ const processRemoveUserFromAllProject = async (userId) => {
     return null
 }
 
+/**
+ * 
+ * @param {string} projectId 
+ */
+const getProjectLogStats = async (projectId) => {
+    const { log: logModel } = await getLogModel(projectId)
+
+    const logsStats = await logModel.aggregate([
+        {
+            $group: {
+                _id: {
+                    key: '$key',
+                    level: '$level',
+                },
+                count: { $sum: '$count' },  // Sum all counts for this log type
+                lastSeen: { $max: '$updatedAt' },
+                device: { $first: "$device" },
+                context: { $first: "$context" },
+                data: { $first: "$data" },
+                firstDoc: { $first: '$$ROOT' }
+            }
+        },
+        {
+            $project: {
+                _id: 0,
+                key: '$_id.key',
+                level: '$_id.level',
+                count: 1,
+                device: 1,
+                context: 1,
+                data: 1,
+                lastSeen: 1,
+            }
+        },
+        {
+            $sort: { lastSeen: -1 }  // Most recent first
+        }
+    ]);
+
+
+    return logsStats
+}
+
 module.exports = {
     createProject,
     updateProject,
@@ -572,5 +615,6 @@ module.exports = {
     findProjectBySlug,
     canUserReadProject,
     listUserProject,
-    processRemoveUserFromAllProject
+    processRemoveUserFromAllProject,
+    getProjectLogStats
 }

@@ -1,34 +1,16 @@
 import {
   Container,
   Title,
-  Grid,
   Badge,
   Tabs,
-  Table,
-  Button,
-  TextInput,
-  Select,
-  ActionIcon,
   Code,
-  CopyButton,
-  Tooltip,
-  Avatar,
-  Menu,
-  Modal,
-  NumberInput,
-  MultiSelect,
   Loader,
+  ScrollArea,
 } from '@mantine/core';
 
 import {
-  FiSettings,
   FiUsers,
   FiActivity,
-  FiCopy,
-  FiEdit,
-  FiTrash2,
-  FiMoreVertical,
-  FiPlus,
   FiInfo,
 } from 'react-icons/fi';
 import { numify } from "numify";
@@ -38,6 +20,8 @@ import useDashboardProjectDetail from './hooks';
 import TabOverview from './TabOverview';
 import TabLogs from './TabLogs';
 import TabUser from './TabUser';
+import UpdateSettings from './UpdateSettings';
+import { CRITICAL_LOG_LEVEL, ERROR_LOG_LEVEL, WARNING_LOG_LEVEL } from '../../utils/constant';
 
 const DashboardProjectDetail = () => {
 
@@ -45,7 +29,7 @@ const DashboardProjectDetail = () => {
     project,
     isLoading,
     activeTab,
-    logs,
+    logStatistic,
     users,
     refetchData,
     changeActiveTab
@@ -71,9 +55,9 @@ const DashboardProjectDetail = () => {
               <Badge variant="light">Active</Badge>
             </div>
           </div>
-          <Button leftSection={<FiSettings />} >
-            Settings
-          </Button>
+          <UpdateSettings
+            project={project}
+          />
         </div>
 
         {/* Stats Cards */}
@@ -82,11 +66,9 @@ const DashboardProjectDetail = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600">Total Logs</p>
-                <p className="text-2xl font-bold text-gray-800">{logs.length}</p>
+                <p className="text-2xl font-bold text-gray-800">{numify(sumInt(logStatistic?.map((p) => p.count)))}</p>
               </div>
-              <div className="bg-blue-100 p-3 rounded-lg">
-                <IoTrendingDownOutline size={24} className="text-blue-600" />
-              </div>
+
             </div>
           </div>
 
@@ -95,7 +77,7 @@ const DashboardProjectDetail = () => {
               <div>
                 <p className="text-sm text-gray-600">Warnings</p>
                 <p className="text-2xl font-bold text-yellow-600">
-                  {numify(sumInt(logs?.filter((n) => n?.level === "warning")?.map((p) => p.count)))}
+                  {numify(sumInt(logStatistic?.filter((n) => n?.level === WARNING_LOG_LEVEL)?.map((p) => p.count)))}
                 </p>
               </div>
               <div className="bg-yellow-100 p-3 rounded-lg">
@@ -109,7 +91,7 @@ const DashboardProjectDetail = () => {
               <div>
                 <p className="text-sm text-gray-600">Errors</p>
                 <p className="text-2xl font-bold text-orange-600">
-                  {numify(sumInt(logs?.filter((n) => n?.level === "error")?.map((p) => p.count)))}
+                  {numify(sumInt(logStatistic?.filter((n) => n?.level === ERROR_LOG_LEVEL)?.map((p) => p.count)))}
                 </p>
               </div>
               <div className="bg-orange-100 p-3 rounded-lg">
@@ -123,7 +105,7 @@ const DashboardProjectDetail = () => {
               <div>
                 <p className="text-sm text-gray-600">Critical</p>
                 <p className="text-2xl font-bold text-red-600">
-                  {numify(sumInt(logs?.filter((n) => n?.level === "critical")?.map((p) => p.count)))}
+                  {numify(sumInt(logStatistic?.filter((n) => n?.level === CRITICAL_LOG_LEVEL)?.map((p) => p.count)))}
                 </p>
               </div>
               <div className="bg-red-100 p-3 rounded-lg">
@@ -157,9 +139,11 @@ const DashboardProjectDetail = () => {
 
         {/* Logs Tab */}
         <Tabs.Panel value="logs" className="pt-8">
-          <TabLogs
-            logs={logs}
-          />
+          <ScrollArea h={400}>
+            <TabLogs
+              logs={logStatistic}
+            />
+          </ScrollArea>
         </Tabs.Panel>
 
         {/* Users Tab */}
@@ -171,46 +155,6 @@ const DashboardProjectDetail = () => {
           />
         </Tabs.Panel>
       </Tabs>
-
-      {/* Settings Modal */}
-      <Modal
-        opened={false}
-
-        title="Project Settings"
-        className="min-w-xl"
-      >
-        <div className="space-y-4">
-          <TextInput label="Project Title" defaultValue={project.title} />
-          <TextInput label="Slug" defaultValue={project.slug} disabled />
-          <MultiSelect
-            label="Indexed Fields"
-            data={['userId', 'sessionId', 'errorCode', 'timestamp', 'endpoint']}
-            defaultValue={project.settings.indexes}
-            placeholder="Select fields to index"
-          />
-          <MultiSelect
-            label="Allowed Origins"
-            data={project.settings.allowedOrigin}
-            defaultValue={project.settings.allowedOrigin}
-            placeholder="Add allowed origins"
-            searchable
-            creatable
-            getCreateLabel={(query) => `+ Add ${query}`}
-          />
-          <NumberInput
-            label="Retention Days"
-            defaultValue={project.settings.retentionDays}
-            min={1}
-            max={365}
-          />
-          <div className="flex justify-end gap-2 mt-4">
-            <Button variant="subtle" >
-              Cancel
-            </Button>
-            <Button>Save Changes</Button>
-          </div>
-        </div>
-      </Modal>
     </Container>
   );
 };

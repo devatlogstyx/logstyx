@@ -14,7 +14,7 @@ const {
     NOT_FOUND_ERR_MESSAGE,
 
 } = require("common/constant");
-const { createProject, canUserModifyProject, removeProject, paginateProject, addUserToProject, removeUserFromProject, listUserFromProject, updateProject, findProjectBySlug, findProjectById, canUserReadProject } = require("../service/project");
+const { createProject, canUserModifyProject, removeProject, paginateProject, addUserToProject, removeUserFromProject, listUserFromProject, updateProject, findProjectBySlug, findProjectById, canUserReadProject, getProjectLogStats } = require("../service/project");
 
 module.exports = {
 
@@ -210,4 +210,33 @@ module.exports = {
             data: project
         });
     },
+    async ProjectGetLogStatus(req, res) {
+        if (!req?.user) {
+            throw HttpError(NO_ACCESS_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
+        }
+
+
+        let project = await findProjectBySlug(req?.params?.id)
+        if (!project) {
+            project = await findProjectById(req?.params?.id)
+        }
+
+        if (!project) {
+            throw HttpError(NOT_FOUND_ERR_CODE, NOT_FOUND_ERR_MESSAGE)
+        }
+
+        const canAccess = await canUserReadProject(req?.user?.id, project?.id)
+        if (!canAccess) {
+            throw HttpError(NO_ACCESS_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
+        }
+
+        const data = await getProjectLogStats(project?.id)
+
+        HttpResponse(res).json({
+            error: SUCCESS_ERR_CODE,
+            message: SUCCESS_ERR_MESSAGE,
+            data
+        });
+    },
 };
+

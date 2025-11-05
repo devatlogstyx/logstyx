@@ -61,3 +61,16 @@ export const addUserToProject = async (signal, projectId, userId) => {
     });
     return data?.data;
 }
+
+/**
+ * 
+ * @param {*} signal 
+ * @param {string} projectId 
+ * @returns 
+ */
+export const getProjectLogStats = async (signal, projectId) => {
+    let { data } = await Axios.get(`/v1/projects/${projectId}/logs-statistic`, {
+        signal
+    });
+    return data?.data;
+}

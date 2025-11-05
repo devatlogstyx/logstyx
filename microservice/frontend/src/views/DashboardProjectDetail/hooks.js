@@ -1,7 +1,7 @@
 import React from "react"
 import { useParams, useSearchParams } from "react-router-dom"
 import { useErrorMessage } from "../../hooks/useMessage"
-import { findProjectBySlug, listProjectUser } from "../../api/project"
+import { findProjectBySlug, getProjectLogStats, listProjectUser } from "../../api/project"
 
 //@ts-check
 const useDashboardProjectDetail = () => {
@@ -17,6 +17,7 @@ const useDashboardProjectDetail = () => {
     const [isLoading, setIsLoading] = React.useState(true)
     const [activeTab, setActiveTab] = React.useState('overview');
     const [users, setUsers] = React.useState([]);
+    const [logStatistic, setLogStatistic] = React.useState([]);
 
     const fetchData = React.useCallback(async () => {
         try {
@@ -24,7 +25,11 @@ const useDashboardProjectDetail = () => {
             const p = await findProjectBySlug(controller.signal, slug)
             setProject(p)
 
-            const u = await listProjectUser(controller.signal, p?.id)
+            const [u, l] = await Promise.all([
+                listProjectUser(controller.signal, p?.id),
+                getProjectLogStats(controller.signal, p?.id)
+            ])
+            setLogStatistic(l)
             setUsers(u)
 
         } catch (e) {
@@ -33,34 +38,6 @@ const useDashboardProjectDetail = () => {
             setIsLoading(false)
         }
     }, [ErrorMessage, controller, slug])
-
-
-    const logs = [
-        {
-            id: 1,
-            key: 'auth.login.failed',
-            level: 'error',
-            count: 45,
-            lastSeen: '2024-11-02T08:15:00Z',
-            device: { browser: 'Chrome', os: 'Windows' },
-        },
-        {
-            id: 2,
-            key: 'api.response.slow',
-            level: 'warning',
-            count: 128,
-            lastSeen: '2024-11-02T07:30:00Z',
-            device: { browser: 'Safari', os: 'macOS' },
-        },
-        {
-            id: 3,
-            key: 'user.signup.success',
-            level: 'info',
-            count: 234,
-            lastSeen: '2024-11-02T06:45:00Z',
-            device: { browser: 'Firefox', os: 'Linux' },
-        },
-    ];
 
     React.useEffect(() => {
         fetchData()
@@ -74,7 +51,7 @@ const useDashboardProjectDetail = () => {
         project,
         isLoading,
         activeTab,
-        logs,
+        logStatistic,
         users,
         refetchData: fetchData,
         changeActiveTab: (tab) => setSearchParams({ tab })

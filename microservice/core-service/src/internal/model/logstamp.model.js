@@ -26,7 +26,6 @@ const logstampSchema = new mongoose.Schema({
     },
     timestamps: false,  // Don't use Mongoose timestamps
     versionKey: false,
-    expireAfterSeconds: 15 * 24 * 60 * 60  // Auto-delete after 30 days
 });
 
 // Indexes for common queries
