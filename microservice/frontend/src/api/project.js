@@ -47,3 +47,17 @@ export const removeUserFromProject = async (signal, projectId, userId) => {
     });
     return data?.data;
 }
+
+/**
+ * 
+ * @param {*} signal 
+ * @param {string} projectId 
+ * @param {string} userId 
+ * @returns 
+ */
+export const addUserToProject = async (signal, projectId, userId) => {
+    let { data } = await Axios.patch(`/v1/projects/${projectId}/users/${userId}`, {}, {
+        signal
+    });
+    return data?.data;
+}

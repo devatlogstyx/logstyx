@@ -37,6 +37,8 @@ const TabUser = ({
                 <div className="flex justify-between items-center mb-4">
                     <h3 className="text-xl font-semibold">Team Members</h3>
                     <AddUser
+                        projectId={projectId}
+                        projectUsers={users}
                         onUpdate={onUpdate}
                     />
                 </div>
