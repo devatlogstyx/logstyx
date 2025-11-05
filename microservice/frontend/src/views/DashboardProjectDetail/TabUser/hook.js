@@ -1,40 +1,43 @@
 //@ts-check
 
-import React from "react";
+import React from "react"
+import { useErrorMessage } from "../../../hooks/useMessage"
+import { removeUserFromProject } from "../../../api/project"
 import { useConfirmDialog } from "../../../hooks/useConfirmDialog";
-import { useErrorMessage } from "../../../hooks/useMessage";
-import { removeUser } from "../../../api/user";
 
 const useTabUser = ({
-    onDelete
+    projectId,
+    onUpdate
 }) => {
+
     const controller = React.useMemo(() => new AbortController(), []);
 
-    const { openConfirmDialog, ConfirmDialogComponent } = useConfirmDialog();
     const ErrorMessage = useErrorMessage()
+    const { openConfirmDialog, ConfirmDialogComponent } = useConfirmDialog();
 
-    const handleRemove = React.useCallback(async (id) => {
+    const handleRemoveUser = React.useCallback(async (userId) => {
         openConfirmDialog({
             title: 'Remove User',
-            
+
             message: 'Are you sure you want to remove this User? This action cannot be undone.',
             confirmLabel: 'Delete',
             cancelLabel: 'Cancel',
             onConfirm: async () => {
                 try {
-                    await removeUser(controller.signal, id)
-                    onDelete()
+                    await removeUserFromProject(controller.signal, projectId, userId)
+                    onUpdate()
                 } catch (e) {
                     ErrorMessage(e)
                 }
             },
             onCancel: () => console.log('Delete cancelled'),
         })
-    }, [ErrorMessage, controller, openConfirmDialog, onDelete])
+
+    }, [ErrorMessage, controller.signal, onUpdate, openConfirmDialog, projectId])
 
     return {
-        handleRemove,
-        ConfirmDialogComponent,
+        handleRemoveUser,
+        ConfirmDialogComponent
     }
 }
 

@@ -10,9 +10,11 @@ const {
     NO_ACCESS_ERR_MESSAGE,
     SUCCESS_ERR_CODE,
     SUCCESS_ERR_MESSAGE,
+    NOT_FOUND_ERR_CODE,
+    NOT_FOUND_ERR_MESSAGE,
 
 } = require("common/constant");
-const { createProject, canUserModifyProject, removeProject, paginateProject, addUserToProject, removeUserFromProject, listUserFromProject, updateProject } = require("../service/project");
+const { createProject, canUserModifyProject, removeProject, paginateProject, addUserToProject, removeUserFromProject, listUserFromProject, updateProject, findProjectBySlug, findProjectById, canUserReadProject } = require("../service/project");
 
 module.exports = {
 
@@ -102,7 +104,10 @@ module.exports = {
         } = req?.query ?? {}
 
         const data = await paginateProject({ search, user: req?.user?.id }, sortBy, limit, page)
-
+        data.results = data?.results?.map((/** @type {{ secret: any; }} */ n) => {
+            delete n.secret
+            return n
+        })
         HttpResponse(res).json({
             error: SUCCESS_ERR_CODE,
             message: SUCCESS_ERR_MESSAGE,
@@ -164,7 +169,7 @@ module.exports = {
             throw HttpError(NO_ACCESS_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
         }
 
-        const canAccess = await canUserModifyProject(req?.user?.id, req?.params?.id)
+        const canAccess = await canUserReadProject(req?.user?.id, req?.params?.id)
         if (!canAccess) {
             throw HttpError(NO_ACCESS_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
         }
@@ -175,6 +180,34 @@ module.exports = {
             error: SUCCESS_ERR_CODE,
             message: SUCCESS_ERR_MESSAGE,
             data
+        });
+    },
+    async ProjectGet(req, res) {
+        if (!req?.user) {
+            throw HttpError(NO_ACCESS_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
+        }
+
+
+        let project = await findProjectBySlug(req?.params?.id)
+        if (!project) {
+            project = await findProjectById(req?.params?.id)
+        }
+
+        if (!project) {
+            throw HttpError(NOT_FOUND_ERR_CODE, NOT_FOUND_ERR_MESSAGE)
+        }
+
+        const canAccess = await canUserReadProject(req?.user?.id, project?.id)
+        if (!canAccess) {
+            throw HttpError(NO_ACCESS_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
+        }
+
+        delete project.secret
+
+        HttpResponse(res).json({
+            error: SUCCESS_ERR_CODE,
+            message: SUCCESS_ERR_MESSAGE,
+            data: project
         });
     },
 };

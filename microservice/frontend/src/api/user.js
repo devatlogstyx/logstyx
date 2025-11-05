@@ -128,3 +128,15 @@ export const updateUser = async (signal, id, payload) => {
     });
     return data?.data;
 }
+
+/**
+ * 
+ * @param {*} signal 
+ * @returns 
+ */
+export const listMyProject = async (signal) => {
+    let { data } = await Axios.get("/v1/users/me/projects",{
+        signal
+    });
+    return data?.data;
+}

@@ -20,7 +20,8 @@ const UpdateUserInvitation = ({
     } = useUpdateUserInvitation({
         initialValues: {
             email: invitation?.email,
-            permissions: invitation?.permissions
+            permissions: invitation?.permissions,
+            projects: invitation?.projects,
         },
         invitationId: invitation?.id,
         onUpdate

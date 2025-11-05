@@ -25,7 +25,7 @@ const {
 
 const { striptags } = require("striptags")
 const userLoginModel = require("../model/user.login.model")
-const { submitRemoveCache, submitCreateProject } = require("../../shared/provider/mq-producer")
+const { submitRemoveCache, submitCreateProject, fanoutOnUserRemoved } = require("../../shared/provider/mq-producer")
 
 const { mongoose } = require("../../shared/mongoose")
 const userModel = require("../model/user.model")
@@ -208,6 +208,11 @@ const removeUser = async (id) => {
         key: USER_CACHE_KEY,
         id,
     });
+
+    fanoutOnUserRemoved({
+        userId: id
+    })
+
 };
 
 /**

@@ -1,6 +1,10 @@
 // @ts-check
 
-const { CREATE_LOG_WSROUTE, GET_USER_DASHBOARD_PROJECT_STATS_WSROUTE } = require("common/routes/rpc-websockets");
+const {
+    CREATE_LOG_WSROUTE,
+    GET_USER_DASHBOARD_PROJECT_STATS_WSROUTE,
+    LIST_USER_PROJECT_WSROUTE
+} = require("common/routes/rpc-websockets");
 const { processCreateLog } = require("../internal/service/logger");
 const { getUsersDashboardProjectsStats } = require("../internal/service/project");
 
@@ -17,4 +21,10 @@ exports.init = (rpc) => {
     rpc.use(GET_USER_DASHBOARD_PROJECT_STATS_WSROUTE, async ({ userId }) => {
         return getUsersDashboardProjectsStats(userId)
     });
+
+    rpc.use(LIST_USER_PROJECT_WSROUTE, async ({ userId }) => {
+        return getUsersDashboardProjectsStats(userId)
+    });
+
+    
 };

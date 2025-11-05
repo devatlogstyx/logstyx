@@ -21,7 +21,10 @@ module.exports = {
             throw HttpError(NO_ACCESS_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
         }
 
-        const data = await createUserInvitation(req?.body)
+        const data = await createUserInvitation({
+            ...req?.body,
+            creator: req?.user?.id
+        })
         HttpResponse(res).json({
             error: SUCCESS_ERR_CODE,
             message: SUCCESS_ERR_MESSAGE,
@@ -78,7 +81,10 @@ module.exports = {
             throw HttpError(NO_ACCESS_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
         }
 
-        const data = await updateUserInvitation(req?.params?.id, req?.body)
+        const data = await updateUserInvitation(req?.params?.id, {
+            ...req?.body,
+            creator: req?.user?.id
+        })
         HttpResponse(res).json({
             error: SUCCESS_ERR_CODE,
             message: SUCCESS_ERR_MESSAGE,

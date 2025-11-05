@@ -5,6 +5,7 @@ import { TextInput } from "@mantine/core"
 import PrimaryButton from "../../../component/button/PrimaryButton"
 import SecondaryButton from "../../../component/button/SecondaryButton"
 import SelectUserPermissions from "../../../component/select/SelectUserPermissions"
+import SelectUserProject from "../../../component/select/SelectUserProject"
 
 const FormInviteUser = ({
     form,
@@ -38,6 +39,15 @@ const FormInviteUser = ({
                     Permission
                 </label>
                 <SelectUserPermissions
+                    form={form}
+                />
+            </div>
+
+            <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Projects
+                </label>
+                <SelectUserProject
                     form={form}
                 />
             </div>

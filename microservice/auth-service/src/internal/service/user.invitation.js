@@ -1,6 +1,6 @@
 //@ts-check
 
-const { INVALID_INPUT_ERR_CODE, EMAIL_PASSWORD_LOGIN_TYPE, NOT_FOUND_ERR_CODE, NOT_FOUND_ERR_MESSAGE } = require("common/constant");
+const { INVALID_INPUT_ERR_CODE, EMAIL_PASSWORD_LOGIN_TYPE, NOT_FOUND_ERR_CODE, NOT_FOUND_ERR_MESSAGE, WRITE_USER_INVITATION_USER_ROLE, NO_ACCESS_ERR_CODE } = require("common/constant");
 const { HttpError, hashString, num2Ceil, num2Floor, sanitizeObject, encrypt } = require("common/function");
 const { Validator } = require("node-input-validator");
 const { default: striptags } = require("striptags");
@@ -9,18 +9,25 @@ const userModel = require("../model/user.model");
 const userLoginModel = require("../model/user.login.model");
 const { mapUserInvitation, mapUser } = require("../utils/mapper");
 const { mongoose } = require("../../shared/mongoose");
-const bcrypt = require("bcryptjs")
-
+const bcrypt = require("bcryptjs");
+const { listUsersProject } = require("../../shared/provider/core.service");
+const { getUserFromCache } = require("../../shared/cache");
+const { submitAddUserToProject } = require("../../shared/provider/mq-producer");
+const { ObjectId } = mongoose.Types
 /**
  * 
  * @param {object} params 
  * @param {string} params.email
  * @param {string[]} params.permissions
+ * @param {string} [params.creator]
+ * @param {string[]} [params.projects]
  */
 const createUserInvitation = async (params) => {
     const v = new Validator(params, {
         email: "required|email",
-        permissions: "required|arrayUnique"
+        permissions: "required|arrayUnique",
+        projects: "arrayUnique",
+        creator: params.projects && params.projects.length > 0 ? "required|string" : "string"
     });
 
     let match = await v.check();
@@ -49,13 +56,29 @@ const createUserInvitation = async (params) => {
         throw HttpError(INVALID_INPUT_ERR_CODE, `Unable to create invitation`)
     }
 
-    const raw = await userInvitationModel.create({
+    let payload = {
         email,
         permissions: params?.permissions,
         hash: {
             email: hashedEmail
         }
-    })
+    }
+
+    if (params?.projects && params.projects.length > 0 && params?.creator) {
+        const creator = await getUserFromCache(params?.creator)
+        if (!creator || !creator?.permissions?.includes(WRITE_USER_INVITATION_USER_ROLE)) {
+            throw HttpError(INVALID_INPUT_ERR_CODE, `Unable to create invitation`)
+        }
+
+        const creatorsProjects = await listUsersProject(params?.creator)
+        const creatorsProjectIds = new Set(creatorsProjects?.map(p => p.id) || []);
+
+        const validProjects = params.projects.filter(id => creatorsProjectIds.has(id));
+        payload.projects = validProjects.map(id => ObjectId.createFromHexString(id));
+
+    }
+
+    const raw = await userInvitationModel.create(payload)
 
     return mapUserInvitation(raw?.toJSON())
 
@@ -81,6 +104,8 @@ const findInvitationById = async (id) => {
  * @param {string} id
  * @param {object} params 
  * @param {string[]} params.permissions
+ * @param {string} [params.creator]
+ * @param {string[]} [params.projects]
  */
 const updateUserInvitation = async (id, params) => {
 
@@ -90,7 +115,9 @@ const updateUserInvitation = async (id, params) => {
     }
 
     const v = new Validator(params, {
-        permissions: "required|arrayUnique"
+        permissions: "required|arrayUnique",
+        projects: "arrayUnique",
+        creator: params.projects && params.projects.length > 0 ? "required|string" : "string"
     });
 
     let match = await v.check();
@@ -98,11 +125,40 @@ const updateUserInvitation = async (id, params) => {
         throw HttpError(INVALID_INPUT_ERR_CODE, v.errors);
     }
 
+    const updatePayload = {
+        permissions: params.permissions
+    };
+
+    if (params?.projects && params?.projects?.length > 0) {
+        if (!params.creator) {
+            throw HttpError(INVALID_INPUT_ERR_CODE, "Creator required for project assignment");
+        }
+
+        const creator = await getUserFromCache(params.creator);
+        if (!creator) {
+            throw HttpError(INVALID_INPUT_ERR_CODE, "Creator not found");
+        }
+
+        if (!creator.permissions?.includes(WRITE_USER_INVITATION_USER_ROLE)) {
+            throw HttpError(NO_ACCESS_ERR_CODE, "Insufficient permissions");
+        }
+
+        const creatorsProjects = await listUsersProject(params.creator);
+        const creatorsProjectIds = new Set(creatorsProjects?.map(p => p.id) || []);
+
+        const validProjects = params.projects.filter(id => creatorsProjectIds.has(id));
+
+        if (validProjects.length === 0) {
+            throw HttpError(INVALID_INPUT_ERR_CODE, "No valid projects provided");
+        }
+
+        updatePayload.projects = validProjects.map(id => ObjectId.createFromHexString(id));
+    } else {
+        updatePayload.projects = []
+    }
 
     const raw = await userInvitationModel.findByIdAndUpdate(id, {
-        $set: {
-            permissions: params?.permissions
-        }
+        $set: updatePayload
     }, {
         new: true,
         runValidators: true
@@ -242,6 +298,14 @@ const validateUserInvitation = async (id, params) => {
         await userInvitationModel.findByIdAndDelete(id).session(session)
 
         await session.commitTransaction();
+
+        await Promise.all(invitation?.projects?.map((n) => {
+            submitAddUserToProject({
+                userId: newUser._id?.toString(),
+                projectId: n?.toString()
+            })
+        }))
+
         return mapUser(newUser?.toJSON())
 
     } catch (e) {

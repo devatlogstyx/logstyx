@@ -1,5 +1,5 @@
 //@ts-check
-const { INVALID_INPUT_ERR_CODE, NOT_FOUND_ERR_CODE, USER_NOT_FOUND_ERR_MESSAGE, PROJECT_NOT_FOUND_ERR_MESSAGE, ALREADY_A_MEMBER_ERR_MESSAGE, NOT_A_MEMBER_ERR_MESSAGE, NOT_FOUND_ERR_MESSAGE, ERROR_LOG_LEVEL, CRITICAL_LOG_LEVEL } = require("common/constant");
+const { INVALID_INPUT_ERR_CODE, NOT_FOUND_ERR_CODE, USER_NOT_FOUND_ERR_MESSAGE, PROJECT_NOT_FOUND_ERR_MESSAGE, ALREADY_A_MEMBER_ERR_MESSAGE, NOT_A_MEMBER_ERR_MESSAGE, NOT_FOUND_ERR_MESSAGE, ERROR_LOG_LEVEL, CRITICAL_LOG_LEVEL, WRITE_PROJECT_USER_ROLE } = require("common/constant");
 const { HttpError, num2Ceil, num2Floor, parseSortBy, sanitizeObject, createSlug } = require("common/function");
 const { Validator } = require("node-input-validator");
 const { findUserById } = require("../../shared/provider/auth.service");
@@ -12,7 +12,7 @@ const projectUserModel = require("../model/project.user.model");
 const { updateProjectCache, getProjectFromCache } = require("../../shared/cache");
 const logModel = require("../model/log.model");
 const logstampModel = require("../model/logstamp.model");
-const { mapProjectUser } = require("../utils/mapper");
+const { mapProjectUser, mapProject } = require("../utils/mapper");
 const { validateCustomIndex, getLogModel, isRecent } = require("../utils/helper");
 const { initLogger } = require("./../utils/helper");
 const moment = require("moment-timezone")
@@ -155,6 +155,30 @@ const updateProject = async (id, params) => {
  * @param {string} projectId 
  */
 const canUserModifyProject = async (userId, projectId) => {
+
+    const user = await findUserById(userId)
+    if (!user) {
+        return false
+    }
+
+    if (!user?.permissions?.includes(WRITE_PROJECT_USER_ROLE)) {
+        return false
+    }
+
+    return projectUserModel.exists({
+        project: ObjectId.createFromHexString(projectId?.toString()),
+        "user.userId": ObjectId.createFromHexString(userId?.toString())
+    });
+
+}
+
+/**
+ * 
+ * @param {string} userId 
+ * @param {string} projectId 
+ * @returns 
+ */
+const canUserReadProject = async (userId, projectId) => {
 
     return projectUserModel.exists({
         project: ObjectId.createFromHexString(projectId?.toString()),
@@ -350,6 +374,11 @@ const listUserFromProject = async (projectId) => {
     return list?.map(mapProjectUser);
 };
 
+/**
+ * 
+ * @param {string} userId 
+ * @returns 
+ */
 const getUsersDashboardProjectsStats = async (userId) => {
     // 1. Get all projects for the user
     const projectUsers = await projectUserModel.find({ 'user.userId': ObjectId.createFromHexString(userId) })
@@ -460,6 +489,75 @@ const getUsersDashboardProjectsStats = async (userId) => {
 
     return projectsWithStats;
 }
+
+/**
+ * 
+ * @param {string} userId 
+ * @returns 
+ */
+const listUserProject = async (userId) => {
+    const projects = await projectUserModel.aggregate([
+        {
+            $match: { 'user.userId': ObjectId.createFromHexString(userId) }
+        },
+        {
+            $lookup: {
+                from: 'projects', // your projects collection name
+                localField: 'project',
+                foreignField: '_id',
+                as: 'projectDetails'
+            }
+        },
+        {
+            $unwind: '$projectDetails'
+        },
+        {
+            $replaceRoot: { newRoot: '$projectDetails' }
+        }
+    ]);
+
+    return projects?.map(mapProject)
+}
+/**
+ * 
+ * @param {string} id 
+ * @returns 
+ */
+const findProjectById = async (id) => {
+    const raw = await getProjectFromCache(id)
+    if (!raw) {
+        return null
+    }
+
+    return raw
+}
+
+/**
+ * 
+ * @param {string} slug 
+ * @returns 
+ */
+const findProjectBySlug = async (slug) => {
+    const raw = await projectModel.findOne({ slug })
+    if (!raw) {
+        return null
+    }
+
+    return updateProjectCache(raw?._id?.toString())
+}
+
+/**
+ * 
+ * @param {string} userId 
+ */
+const processRemoveUserFromAllProject = async (userId) => {
+    await projectUserModel.deleteMany({
+        "user.userId": ObjectId.createFromHexString(userId)
+    });
+
+    return null
+}
+
 module.exports = {
     createProject,
     updateProject,
@@ -469,5 +567,10 @@ module.exports = {
     addUserToProject,
     removeUserFromProject,
     listUserFromProject,
-    getUsersDashboardProjectsStats
+    getUsersDashboardProjectsStats,
+    findProjectById,
+    findProjectBySlug,
+    canUserReadProject,
+    listUserProject,
+    processRemoveUserFromAllProject
 }

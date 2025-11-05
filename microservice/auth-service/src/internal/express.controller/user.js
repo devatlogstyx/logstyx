@@ -22,7 +22,7 @@ const {
 } = require("common/constant");
 const { paginateUser, removeUser, handleUserLogin, createUserToken, updateUser } = require("../service/user");
 const { createRefreshToken, expireRefreshToken } = require("../service/auth");
-const { getUserDashboardProjectStats } = require("../../shared/provider/core.service");
+const { getUserDashboardProjectStats, listUsersProject } = require("../../shared/provider/core.service");
 const { CanUserDo } = require("../utils/helper");
 const { getUserFromCache } = require("../../shared/cache");
 
@@ -202,4 +202,25 @@ module.exports = {
             data
         });
     },
+
+    /**
+     * 
+     * @param {*} req 
+     * @param {*} res 
+     */
+    async UserListProject(req, res) {
+        if (!req?.user) {
+            throw HttpError(NO_ACCESS_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
+        }
+
+        const data = await listUsersProject(req?.user?.id)
+
+        HttpResponse(res).json({
+            error: SUCCESS_ERR_CODE,
+            message: SUCCESS_ERR_MESSAGE,
+            data
+        });
+    },
+
+    
 };

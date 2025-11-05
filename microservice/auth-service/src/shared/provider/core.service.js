@@ -1,6 +1,10 @@
 //@ts-check
 
-const { CREATE_LOG_WSROUTE, GET_USER_DASHBOARD_PROJECT_STATS_WSROUTE } = require("common/routes/rpc-websockets")
+const {
+    CREATE_LOG_WSROUTE,
+    GET_USER_DASHBOARD_PROJECT_STATS_WSROUTE,
+    LIST_USER_PROJECT_WSROUTE
+} = require("common/routes/rpc-websockets")
 
 const { useRPCWebsocket } = require("common/hooks");
 let WebSocket = require("jsonrpc-ws").Client;
@@ -28,3 +32,10 @@ exports.createLog = (params) => ws.createCall(CREATE_LOG_WSROUTE, params);
  * @returns 
  */
 exports.getUserDashboardProjectStats = (userId) => ws.createCall(GET_USER_DASHBOARD_PROJECT_STATS_WSROUTE, { userId });
+
+/**
+ * 
+ * @param {string} userId 
+ * @returns 
+ */
+exports.listUsersProject = (userId) => ws.createCall(LIST_USER_PROJECT_WSROUTE, { userId })

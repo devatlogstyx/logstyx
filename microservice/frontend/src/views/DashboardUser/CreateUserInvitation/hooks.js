@@ -21,6 +21,7 @@ const useCreateUserInvitation = ({
         initialValues: {
             email: '',
             permissions: [READ_PROJECT_USER_ROLE],
+            projects: []
         },
 
         validate: {

@@ -155,13 +155,15 @@ const ProjectViews = () => {
                             </div>
 
                             {/* Action Buttons */}
-                            <div className="flex gap-2">
-                                <PrimaryButton leftSection={<IoEyeOutline size={16} />} className="flex-1">
-                                    View Logs
-                                </PrimaryButton>
-                                <SecondaryButton >
-                                    <IoSettingsOutline size={16} />
-                                </SecondaryButton>
+                            <div className="flex gap-2 justify-end">
+                                <a
+                                    href={`/dashboard/projects/${project.slug}?tab=logs`}
+                                    className="flex w-full"
+                                >
+                                    <PrimaryButton leftSection={<IoEyeOutline size={16} />} className="w-full px-3 py-2 text-sm">
+                                        View Logs
+                                    </PrimaryButton>
+                                </a>
                             </div>
                         </div>
 
@@ -182,7 +184,7 @@ const ProjectViews = () => {
 
             {/* Create New Project Button */}
             <PrimaryButton
-                leftSection={<IoAdd size={16}/>}
+                leftSection={<IoAdd size={16} />}
                 className="fixed bottom-8 right-8 px-6 py-3 rounded-full shadow-lg hover:shadow-xl transition-all font-medium flex items-center gap-2"
             >
                 New Project

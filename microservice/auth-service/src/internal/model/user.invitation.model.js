@@ -3,6 +3,7 @@ const { mongoose } = require("../../shared/mongoose");
 const { hashSchema } = require("../utils/subfield.model");
 const { fieldEncryption } = require("../../shared/mongoose/plugins");
 const { decryptSecret } = require("common/function");
+const { ObjectId } = mongoose.Schema.Types;
 const {
     WRITE_USER_USER_ROLE,
     READ_USER_USER_ROLE,
@@ -39,6 +40,9 @@ const userInvitationSchema = new mongoose.Schema(
                 ],
                 message: '{VALUE} is not supported'
             }
+        },
+        projects: {
+            type: [ObjectId]
         },
         hash: {
             type: hashSchema,

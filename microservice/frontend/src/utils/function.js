@@ -1,4 +1,4 @@
-import { UNKNOWN_ERR_CODE, UNKNOWN_ERR_MESSAGE } from "./constant";
+import { CRITICAL_LOG_LEVEL, ERROR_LOG_LEVEL, INFO_LOG_LEVEL, UNKNOWN_ERR_CODE, UNKNOWN_ERR_MESSAGE, WARNING_LOG_LEVEL } from "./constant";
 
 export const parseError = (e) => {
     return {
@@ -35,4 +35,19 @@ export const sumInt = (arr) => {
         return num2Int(total) + num2Int(count);
     }, 0);
     return sum;
+};
+
+export const getLevelColor = (level) => {
+    switch (level) {
+        case CRITICAL_LOG_LEVEL:
+            return 'red';
+        case ERROR_LOG_LEVEL:
+            return 'orange';
+        case WARNING_LOG_LEVEL:
+            return 'yellow';
+        case INFO_LOG_LEVEL:
+            return 'blue';
+        default:
+            return 'gray';
+    }
 };

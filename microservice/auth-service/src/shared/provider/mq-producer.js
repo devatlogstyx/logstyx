@@ -9,6 +9,8 @@ const {
     CACHE_REMOVE_MQ_QUEUE,
     CREATE_PROJECT_MQ_QUEUE,
     CREATE_LOG_MQ_QUEUE,
+    ADD_USER_TO_PROJECT_MQ_QUEUE,
+    ON_USER_REMOVE_MQ_EXCHANGE,
 } = require("common/routes/mq-queue");
 const { useLogger } = require("common/hooks");
 const { createLog } = require('./core.service');
@@ -29,4 +31,6 @@ module.exports = {
     submitCreateCache: produce(CACHE_CREATE_MQ_QUEUE),
     submitCreateProject: produce(CREATE_PROJECT_MQ_QUEUE),
     submitCreateLog: produce(CREATE_LOG_MQ_QUEUE),
+    submitAddUserToProject: produce(ADD_USER_TO_PROJECT_MQ_QUEUE),
+    fanoutOnUserRemoved: produce(ON_USER_REMOVE_MQ_EXCHANGE, true)
 }

@@ -34,6 +34,13 @@ const TabUserInvitation = ({
                                     </Avatar>
                                     <div>
                                         <Text className="font-semibold text-gray-900">{invitation.email}</Text>
+                                        {
+                                            invitation.projects?.length > 0 &&
+                                            <div className="flex gap-2 flex-wrap mt-2">
+                                                {invitation.projects?.length} Project(s)
+                                            </div>
+                                        }
+
                                         <div className="flex gap-2 flex-wrap mt-2">
                                             {invitation.permissions.map(perm => (
                                                 <Badge
@@ -49,7 +56,7 @@ const TabUserInvitation = ({
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-4">
-                                    <UpdateUserInvitation 
+                                    <UpdateUserInvitation
                                         invitation={invitation}
                                         onUpdate={onUpdate}
                                     />
@@ -59,7 +66,7 @@ const TabUserInvitation = ({
                                             copyInvitationMessage(invitation.id)
                                         }}
                                     >
-                                        <MdContentCopy  size={18} />
+                                        <MdContentCopy size={18} />
                                     </ActionIcon>
                                     <ActionIcon
                                         variant="light"
