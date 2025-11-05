@@ -22,6 +22,7 @@ import TabLogs from './TabLogs';
 import TabUser from './TabUser';
 import UpdateSettings from './UpdateSettings';
 import { CRITICAL_LOG_LEVEL, ERROR_LOG_LEVEL, WARNING_LOG_LEVEL } from '../../utils/constant';
+import { Navigate } from 'react-router-dom';
 
 const DashboardProjectDetail = () => {
 
@@ -41,6 +42,10 @@ const DashboardProjectDetail = () => {
         <Loader />
       </div>
     </div>
+  }
+
+  if (!project) {
+    return <Navigate to="/login" replace />
   }
 
   return (
@@ -139,11 +144,10 @@ const DashboardProjectDetail = () => {
 
         {/* Logs Tab */}
         <Tabs.Panel value="logs" className="pt-8">
-          <ScrollArea h={400}>
-            <TabLogs
-              logs={logStatistic}
-            />
-          </ScrollArea>
+          <TabLogs
+            project={project}
+            logStatistic={logStatistic}
+          />
         </Tabs.Panel>
 
         {/* Users Tab */}

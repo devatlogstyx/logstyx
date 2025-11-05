@@ -74,3 +74,18 @@ export const getProjectLogStats = async (signal, projectId) => {
     });
     return data?.data;
 }
+
+/**
+ * 
+ * @param {*} signal 
+ * @param {string} projectId 
+ * @param {object} params 
+ * @returns 
+ */
+export const paginateProjectLogs = async (signal, projectId, params) => {
+    let { data } = await Axios.get(`/v1/projects/${projectId}/logs`, {
+        signal,
+        params
+    });
+    return data?.data;
+}

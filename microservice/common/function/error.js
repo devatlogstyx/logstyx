@@ -29,7 +29,6 @@ const HttpError = (error, message) => {
 }
 
 const parseError = (e) => {
-
     const message = e?.showError ? (e?.response?.data?.message || e?.response?.data || e?.data || e?.message || e?.stack || e || UNKNOWN_ERR_MESSAGE) : UNKNOWN_ERR_MESSAGE
     const error = e?.error || e?.name || e?.constructor?.name || UNKNOWN_ERR_CODE
     return {
@@ -41,20 +40,19 @@ const parseError = (e) => {
 
 const normalizeError = (e) => {
     if (e instanceof Error) {
-        let m = parseError(e)
         return {
-            error: m?.error,
-            message: m?.message,
+            title: e?.name,
+            message: e?.message,
             stack: e?.stack || null
         };
     } else if (typeof e === 'string') {
         return {
-            error: e,
+            title: e,
             message: ''
         };
     } else {
         return {
-            error: e?.error || 'Unknown Error',
+            title: e?.title || "",
             message: e?.message || JSON.stringify(e)
         };
     }

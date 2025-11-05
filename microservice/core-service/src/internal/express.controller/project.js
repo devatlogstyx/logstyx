@@ -15,6 +15,7 @@ const {
 
 } = require("common/constant");
 const { createProject, canUserModifyProject, removeProject, paginateProject, addUserToProject, removeUserFromProject, listUserFromProject, updateProject, findProjectBySlug, findProjectById, canUserReadProject, getProjectLogStats } = require("../service/project");
+const { paginateLogs } = require("../service/logger");
 
 module.exports = {
 
@@ -182,6 +183,11 @@ module.exports = {
             data
         });
     },
+    /**
+     * 
+     * @param {*} req 
+     * @param {*} res 
+     */
     async ProjectGet(req, res) {
         if (!req?.user) {
             throw HttpError(NO_ACCESS_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
@@ -210,7 +216,12 @@ module.exports = {
             data: project
         });
     },
-    async ProjectGetLogStatus(req, res) {
+    /**
+     * 
+     * @param {*} req 
+     * @param {*} res 
+     */
+    async ProjectGetLogStatistic(req, res) {
         if (!req?.user) {
             throw HttpError(NO_ACCESS_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
         }
@@ -231,6 +242,51 @@ module.exports = {
         }
 
         const data = await getProjectLogStats(project?.id)
+
+        HttpResponse(res).json({
+            error: SUCCESS_ERR_CODE,
+            message: SUCCESS_ERR_MESSAGE,
+            data
+        });
+    },
+    /**
+     * 
+     * @param {*} req 
+     * @param {*} res 
+     */
+    async ProjectPaginateLogs(req, res) {
+        if (!req?.user) {
+            throw HttpError(NO_ACCESS_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
+        }
+
+
+        let project = await findProjectBySlug(req?.params?.id)
+        if (!project) {
+            project = await findProjectById(req?.params?.id)
+        }
+
+        if (!project) {
+            throw HttpError(NOT_FOUND_ERR_CODE, NOT_FOUND_ERR_MESSAGE)
+        }
+
+        const canAccess = await canUserReadProject(req?.user?.id, project?.id)
+        if (!canAccess) {
+            throw HttpError(NO_ACCESS_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
+        }
+
+        const {
+            search,
+            level,
+            sortBy,
+            limit,
+            page
+        } = req?.query ?? {}
+
+        const data = await paginateLogs({
+            project: project?.id,
+            search,
+            level
+        }, sortBy, limit, page)
 
         HttpResponse(res).json({
             error: SUCCESS_ERR_CODE,

@@ -91,7 +91,7 @@ const createLog = async (project, params) => {
         { key },
         {
             $set: { updatedAt: new Date(params?.timestamp) },
-            $inc: { occurrenceCount: 1 },
+            $inc: { count: 1 },
             $setOnInsert: {
                 project: ObjectId.createFromHexString(project?.id),
                 level: params?.level,
@@ -156,9 +156,68 @@ const processCreateLog = async (params) => {
 
 }
 
+/**
+ * 
+ * @param {object} [params] 
+ * @param {string} [params.search]
+ * @param {*} project 
+ * @returns 
+ */
+const buildLogsSearchQuery = (project, params = {}) => {
+    let query = {
 
+    }
+
+    if (params.search) {
+        // @ts-ignore
+        query.$or = project?.settings?.indexes?.map((/** @type {string} */ fieldName) => {
+            return {
+                // @ts-ignore
+                [fieldName]: hashString(params.search)
+            }
+        })
+    }
+
+    if (params?.level) {
+        query.level = params?.level
+    }
+
+    return query
+}
+
+/**
+ * 
+ * @param {object} [query] 
+ * @param {string} [query.project]
+ * @param {string} [query.search]
+ * @param {string} sortBy 
+ * @param {number} limit 
+ * @param {number} page 
+ * @returns 
+ */
+const paginateLogs = async (query, sortBy = "createdAt:desc", limit = 10, page = 1) => {
+
+    if (!query?.project) {
+        throw HttpError(INVALID_INPUT_ERR_CODE, `Unknown Project`)
+    }
+
+    const project = await getProjectFromCache(query?.project)
+    if (!project) {
+        throw HttpError(NOT_FOUND_ERR_CODE, `Project Not Found`)
+    }
+
+    let queryParams = buildLogsSearchQuery(project, query)
+
+    const { log: logModel } = await getLogModel(project?.id)
+
+    const list = await logModel.paginate(queryParams, { sortBy, limit, page })
+    list.results = list?.results?.map((n) => n?.toJSON())
+
+    return list
+}
 
 module.exports = {
     processWriteLog,
-    processCreateLog
+    processCreateLog,
+    paginateLogs
 }

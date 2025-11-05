@@ -568,38 +568,26 @@ const getProjectLogStats = async (projectId) => {
     const logsStats = await logModel.aggregate([
         {
             $group: {
-                _id: {
-                    key: '$key',
-                    level: '$level',
-                },
-                count: { $sum: '$count' },  // Sum all counts for this log type
-                lastSeen: { $max: '$updatedAt' },
-                device: { $first: "$device" },
-                context: { $first: "$context" },
-                data: { $first: "$data" },
-                firstDoc: { $first: '$$ROOT' }
+                _id: "$level",
+                count: { $sum: "$count" }
             }
         },
         {
             $project: {
-                _id: 0,
-                key: '$_id.key',
-                level: '$_id.level',
+                level: "$_id",
                 count: 1,
-                device: 1,
-                context: 1,
-                data: 1,
-                lastSeen: 1,
+                _id: 0
             }
         },
         {
-            $sort: { lastSeen: -1 }  // Most recent first
+            $sort: { count: -1 } // Optional: sort by count descending
         }
     ]);
 
 
     return logsStats
 }
+
 
 module.exports = {
     createProject,

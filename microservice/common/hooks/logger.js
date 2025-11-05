@@ -29,7 +29,7 @@ const useLogger = ({
 
     return {
         error: (e) => {
-            const { error, message, stack } = normalizeError(e)
+            const { title, message, stack } = normalizeError(e)
             return Sender({
                 timestamp: new Date().toISOString(),
                 level: ERROR_LOG_LEVEL,
@@ -37,14 +37,14 @@ const useLogger = ({
                 device,
                 context: Context,
                 data: {
-                    error,
+                    title,
                     message,
                     stack,
                 }
             })
         },
         info: (e) => {
-            const { error, message } = normalizeError(e)
+            const { title, message } = normalizeError(e)
             return Sender({
                 timestamp: new Date().toISOString(),
                 level: INFO_LOG_LEVEL,
@@ -52,13 +52,13 @@ const useLogger = ({
                 device,
                 context: Context,
                 data: {
-                    error,
+                    title,
                     message,
                 }
             })
         },
         critical: (e) => {
-            const { error, message, stack } = normalizeError(e)
+            const { title, message, stack } = normalizeError(e)
             return Sender({
                 timestamp: new Date().toISOString(),
                 level: CRITICAL_LOG_LEVEL,
@@ -66,14 +66,14 @@ const useLogger = ({
                 device,
                 context: Context,
                 data: {
-                    error,
+                    title,
                     message,
                     stack,
                 }
             })
         },
         warn: (e) => {
-            const { error, message, stack } = normalizeError(e)
+            const { title, message, stack } = normalizeError(e)
             return Sender({
                 timestamp: new Date().toISOString(),
                 level: WARNING_LOG_LEVEL,
@@ -81,14 +81,14 @@ const useLogger = ({
                 device,
                 context: Context,
                 data: {
-                    error,
+                    title,
                     message,
                     stack,
                 }
             })
         },
         custom: (level, {
-            error,
+            title,
             message,
             context
         }) => {
@@ -102,7 +102,7 @@ const useLogger = ({
                     context
                 },
                 data: {
-                    error,
+                    title,
                     message,
                 }
             })

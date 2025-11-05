@@ -1,7 +1,7 @@
 //@ts-check
 
-import { ActionIcon, Badge, Code, Menu, Select, Table } from "@mantine/core"
-import { getLevelColor } from "../../../utils/function"
+import { ActionIcon, Badge, Code, Menu, Pagination, Select, Table } from "@mantine/core"
+import { getLevelColor, getNestedValue } from "../../../utils/function"
 import { FiActivity, FiInfo, FiMoreVertical } from "react-icons/fi"
 const {
     Thead,
@@ -10,25 +10,33 @@ const {
     Tr,
     Th
 } = Table
+import moment from "moment-timezone"
+import useTabLogs from "./hooks"
 
 const TabLogs = ({
-    logs
+    project,
+    logStatistic = []
 }) => {
-    
+    const {
+        list,
+        page,
+        setPage,
+        level,
+        setLevel
+    } = useTabLogs({
+        projectId: project?.id
+    })
     return (
         <>
-            <div className="p-6 rounded-md border shadow-sm bg-white">
+            <div className="p-6 rounded-md border shadow-sm bg-white flex flex-col gap-4">
                 <div className="flex justify-between items-center mb-4">
                     <h3 className="text-xl font-semibold">Recent Logs</h3>
                     <Select
                         placeholder="Filter by level"
-                        data={[
-                            { value: 'all', label: 'All Levels' },
-                            { value: 'error', label: 'Error' },
-                            { value: 'warning', label: 'Warning' },
-                            { value: 'info', label: 'Info' },
-                        ]}
-                        defaultValue="all"
+                        data={["All Levels", ...logStatistic.map((n) => n?.level)]}
+                        defaultValue="All Levels"
+                        value={level}
+                        onChange={setLevel}
                         className="w-52"
                     />
                 </div>
@@ -37,13 +45,18 @@ const TabLogs = ({
                         <Tr>
                             <Th>Level</Th>
                             <Th>Count</Th>
+                            {project?.settings?.indexes?.map((n) => {
+                                return (
+                                    <Th>{n}</Th>
+                                )
+                            })}
                             <Th>Last Seen</Th>
                             <Th></Th>
                         </Tr>
                     </Thead>
                     <Tbody>
-                        {logs.map((log) => (
-                            <Tr key={log.id}>
+                        {list?.results?.map((log) => (
+                            <Tr key={log.key}>
                                 <Td>
                                     <Badge
                                         color={getLevelColor(log.level)}
@@ -55,10 +68,14 @@ const TabLogs = ({
                                 <Td>
                                     <span className="font-medium">{log.count}</span>
                                 </Td>
-                               
+                                {project?.settings?.indexes?.map((n) => {
+                                    return (
+                                        <Th>{getNestedValue(log, n)}</Th>
+                                    )
+                                })}
                                 <Td>
                                     <span className="text-sm text-gray-500">
-                                        {log.lastSeen}
+                                        {moment(log.lastSeen)?.fromNow()}
                                     </span>
                                 </Td>
                                 <Td>
@@ -78,6 +95,13 @@ const TabLogs = ({
                         ))}
                     </Tbody>
                 </Table>
+                <div className="flex justify-end">
+                    <Pagination
+                        total={list?.totalPages}
+                        value={page}
+                        onChange={setPage}
+                    />
+                </div>
             </div>
         </>
     )

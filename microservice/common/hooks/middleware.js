@@ -290,7 +290,7 @@ const useMiddleware = ({
                             logged = true;
                             if (typeof Log.custom === "function") {
                                 Log?.custom?.(SUCCESS_LOG_LEVEL, {
-                                    error: `${req.method} ${req.path}`,
+                                    title: `${req.method} ${req.path}`,
                                     message: "Request completed successfully",
                                     context: {
                                         query: redactObject(req.query),
@@ -316,7 +316,7 @@ const useMiddleware = ({
         ExpressErrorHandler: (err, req, res, next) => {
             HttpResponse(res).error(err);
             Log?.custom?.(ERROR_LOG_LEVEL, {
-                error: `${req.method} ${req.path}`,
+                title: `${req.method} ${req.path}`,
                 message: err?.message,
                 context: {
                     stack: err?.stack,
