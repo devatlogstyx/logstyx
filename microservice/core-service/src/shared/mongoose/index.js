@@ -9,7 +9,7 @@ const {
     mongoose
 } = useMongoose({
     Mongoose: mongoosePackage,
-    DbName: "AuthService",
+    DbName: "CoreService",
     Log
 })
 
