@@ -1,5 +1,4 @@
 export const API_HOST = import.meta.env.VITE_API_HOST;
-export const THIS_HOST = import.meta.env.VITE_THIS_HOST;
 export const PROJECT_TITLE = import.meta.env.VITE_PROJECT_TITLE
 
 export const SUCCESS_ERR_CODE = 200;

@@ -5,8 +5,13 @@ WORKDIR /app
 COPY microservice/frontend/package*.json ./
 RUN npm ci --no-audit --no-fund
 
-# Copy the rest of the frontend source and build
+# Copy the rest of the frontend source including .env.sample
 COPY microservice/frontend/. ./
+
+# Copy .env.sample to .env.local before building
+RUN cp .env.sample .env.local
+
+# Build the frontend
 RUN npm run build
 
 # ---- Runtime image ----
