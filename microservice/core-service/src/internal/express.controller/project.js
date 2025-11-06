@@ -75,12 +75,21 @@ module.exports = {
             throw HttpError(NO_ACCESS_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
         }
 
-        const canAccess = await canUserModifyProject(req?.user?.id, req?.params?.id)
+        let project = await findProjectBySlug(req?.params?.id)
+        if (!project) {
+            project = await findProjectById(req?.params?.id)
+        }
+
+        if (!project) {
+            throw HttpError(NOT_FOUND_ERR_CODE, NOT_FOUND_ERR_MESSAGE)
+        }
+
+        const canAccess = await canUserModifyProject(req?.user?.id, project?.id)
         if (!canAccess) {
             throw HttpError(NO_ACCESS_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
         }
 
-        await removeProject(req?.params?.id)
+        await removeProject(project?.id)
 
         HttpResponse(res).json({
             error: SUCCESS_ERR_CODE,

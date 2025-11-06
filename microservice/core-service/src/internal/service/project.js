@@ -209,13 +209,17 @@ const removeProject = async (id) => {
     }
 
     const projectObjId = ObjectId.createFromHexString(id.toString());
+    const { log, logstamp } = await getLogModel(id)
 
     await Promise.all([
         projectModel.findByIdAndDelete(id),
         projectUserModel.deleteMany({ project: projectObjId, }),
-        logModel.deleteMany({ project: projectObjId, }),
-        logstampModel.deleteMany({ project: projectObjId, })
+        log.collection.drop(),
+        logstamp.collection.drop()
     ])
+
+    return null
+
 }
 
 /**

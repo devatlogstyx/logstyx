@@ -104,6 +104,13 @@ export const getLogTimeline = async (signal, projectId, logKey) => {
     return data?.data;
 }
 
+/**
+ * 
+ * @param {*} signal 
+ * @param {string} projectId 
+ * @param {object} payload 
+ * @returns 
+ */
 export const updateProject = async (signal, projectId, payload) => {
     let { data } = await Axios.put(`/v1/projects/${projectId}`, payload, {
         signal
@@ -111,8 +118,27 @@ export const updateProject = async (signal, projectId, payload) => {
     return data?.data;
 }
 
+/**
+ * 
+ * @param {*} signal 
+ * @param {object} payload 
+ * @returns 
+ */
 export const createProject = async (signal, payload) => {
     let { data } = await Axios.post(`/v1/projects`, payload, {
+        signal
+    });
+    return data?.data;
+}
+
+/**
+ * 
+ * @param {*} signal 
+ * @param {string} projectId 
+ * @returns 
+ */
+export const removeProject = async (signal, projectId="") => {
+    let { data } = await Axios.delete(`/v1/projects/${projectId}`, {
         signal
     });
     return data?.data;
