@@ -6,6 +6,7 @@ Welcome to the Logstyx Project! An open-source server implementation of the LOGS
 - [Overview](#overview)
 - [Features](#features)
 - [Why Logstyx?](#why-logstyx)
+- [Roadmap](#roadmap)
 - [Services Structure](#services-structure)
 - [Technologies Used](#technologies-used)
 - [Setup Instructions](#setup-instructions)
@@ -64,6 +65,26 @@ This project implements a microservices architecture, with each service tailored
 - ❌ Partial/fuzzy text search across logs
 - ❌ Managed service with zero maintenance
 - ❌ Advanced APM features out of the box
+
+## Roadmap
+
+We're actively working on these features:
+
+### 🔔 Alerting & Notifications
+- **Alert Setup**: Configure custom alerts based on log patterns, error rates, or specific conditions
+- **Webhooks Integration**: Send notifications to external services (Slack, Discord, PagerDuty, etc.)
+- **Multi-channel Notifications**: Support for email, SMS, and other notification channels
+
+### 📊 Custom Dashboards
+- **Dashboard Builder**: Create custom dashboards tailored to your monitoring needs
+- **Widget System**: Flexible widgets for charts, graphs, and log visualizations
+- **Dashboard Sharing**: Share dashboards across teams
+
+### 🔗 Integrations
+- **Third-party Service Connectors**: Connect to incident management and collaboration tools
+- **API Webhooks**: Trigger external workflows based on log events
+
+Want to contribute or have feature suggestions? Open an issue on our repository!
 
 ## Services Structure
 The project uses a monorepo structure managed with `pnpm`. Below is an overview of the main directories:
