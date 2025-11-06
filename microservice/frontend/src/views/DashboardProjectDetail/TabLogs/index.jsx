@@ -1,6 +1,6 @@
 //@ts-check
 
-import { ActionIcon, Badge, Code, Menu, Pagination, Select, Table } from "@mantine/core"
+import { ActionIcon, Badge, Code, Loader, Menu, Pagination, Select, Table } from "@mantine/core"
 import { getLevelColor, getNestedValue } from "../../../utils/function"
 import { FiActivity, FiInfo, FiMoreVertical } from "react-icons/fi"
 const {
@@ -18,6 +18,7 @@ const TabLogs = ({
     logStatistic = []
 }) => {
     const {
+        isLoading,
         list,
         page,
         setPage,
@@ -26,6 +27,14 @@ const TabLogs = ({
     } = useTabLogs({
         projectId: project?.id
     })
+
+    if (isLoading) {
+        return <div className="flex justify-center items-center h-screen">
+            <div className="text-center">
+                <Loader />
+            </div>
+        </div>
+    }
     return (
         <>
             <div className="p-6 rounded-md border shadow-sm bg-white flex flex-col gap-4">
