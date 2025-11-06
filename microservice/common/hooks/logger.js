@@ -35,8 +35,8 @@ const useLogger = ({
                 level: ERROR_LOG_LEVEL,
                 projectId,
                 device,
-                context: Context,
                 data: {
+                    ...Context,
                     title,
                     message,
                     stack,
@@ -50,8 +50,8 @@ const useLogger = ({
                 level: INFO_LOG_LEVEL,
                 projectId,
                 device,
-                context: Context,
                 data: {
+                    ...Context,
                     title,
                     message,
                 }
@@ -64,8 +64,8 @@ const useLogger = ({
                 level: CRITICAL_LOG_LEVEL,
                 projectId,
                 device,
-                context: Context,
                 data: {
+                    ...Context,
                     title,
                     message,
                     stack,
@@ -79,8 +79,8 @@ const useLogger = ({
                 level: WARNING_LOG_LEVEL,
                 projectId,
                 device,
-                context: Context,
                 data: {
+                    ...Context,
                     title,
                     message,
                     stack,
@@ -97,13 +97,11 @@ const useLogger = ({
                 level,
                 projectId,
                 device,
-                context: {
-                    ...Context,
-                    context
-                },
                 data: {
+                    ...Context,
                     title,
                     message,
+                    context
                 }
             })
         },

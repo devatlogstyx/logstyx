@@ -15,7 +15,7 @@ const { getProjectFromCache } = require("../../shared/cache");
  * @returns 
  */
 const validateCustomIndex = (field) => {
-    return /^(context|data)\.[a-zA-Z_$][\w$]*$/.test(striptags(field));
+    return /^(data)\.[a-zA-Z_$][\w$]*$/.test(striptags(field));
 }
 
 /**
@@ -41,7 +41,7 @@ const validateOrigin = (project, origin) => {
  * @param {*} body 
  */
 const validateSignature = (project, headers, body) => {
-    const { level, projectId, device, context, data } = body
+    const { level, projectId, device, data } = body
 
     const { timestamp, signature } = headers;
 
@@ -50,7 +50,6 @@ const validateSignature = (project, headers, body) => {
         level,
         projectId,
         device,
-        context,
         data
     };
 
@@ -176,12 +175,12 @@ const generateIndexedHashes = (log, project) => {
 
     // Loop through project's indexed fields
     for (const fieldPath of project.settings.indexes) {
-        // Extract value from log (context.userId, data.errorMessage, etc.)
+        // Extract value from log (userId, data.errorMessage, etc.)
         const value = getNestedValue(log, fieldPath);
 
         // Only hash if value exists
         if (value !== undefined && value !== null) {
-            // Convert field path to hash key: "context.userId" -> "context_userId"
+            // Convert field path to hash key: "data.userId" -> "data_userId"
             const hashKey = fieldPath.replace(/\./g, '_');
 
             // Hash with salt (project + field for isolation)

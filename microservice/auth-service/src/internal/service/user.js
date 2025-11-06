@@ -382,7 +382,7 @@ const ensureSelfProject = async (userId) => {
         creator: userId,
         settings: {
             indexes: [
-                "context.service",
+                "data.service",
                 "data.title",
             ],
             allowedOrigin: [] // internal backend only
