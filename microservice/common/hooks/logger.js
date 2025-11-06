@@ -97,13 +97,11 @@ const useLogger = ({
                 level,
                 projectId,
                 device,
-                context: {
-                    ...Context,
-                    context
-                },
+                context: Context,
                 data: {
                     title,
                     message,
+                    context
                 }
             })
         },
