@@ -26,7 +26,9 @@ function useMQProducer({ amqp, log, exchanges = [], queues = [] }) {
     const connect = async () => {
         if (isReconnecting) return;
         isReconnecting = true;
-        const AMQP_HOST = decryptSecret(process?.env?.ENC_AMQP_HOST)
+        const AMQP_HOST = process.env.AMQP_HOST
+            || (process.env.ENC_AMQP_HOST && decryptSecret(process.env.ENC_AMQP_HOST))
+            || 'amqp://rabbitmq:5672'
 
         try {
             connection = await amqp.connect(AMQP_HOST || "");

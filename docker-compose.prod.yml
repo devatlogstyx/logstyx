@@ -6,6 +6,9 @@ x-microservice-base: &microservice-base
     CACHE_WSHOST: ws://cache-service:5002/rpc
     UTILITY_WSHOST: ws://utility-service:5003/rpc
     CORE_WSHOST: ws://core-service:5004/rpc
+    REDIS_URL: redis://redis:6379
+    MONGODB_HOST: mongodb://mongodb:27017
+    AMQP_HOST: amqp://rabbitmq:5672
   logging:
     driver: "json-file"
     options:
@@ -19,32 +22,6 @@ x-microservice-base: &microservice-base
         memory: "512M"
 
 services:
-  rabbitmq:
-    image: rabbitmq:3-management
-    container_name: rabbitmq
-    volumes:
-      - rabbitmq-data:/var/lib/rabbitmq
-    healthcheck:
-      test: rabbitmq-diagnostics -q ping
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  redis:
-    image: redis:7
-    container_name: redis
-    volumes:
-      - redis-data:/data
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    deploy:
-      resources:
-        limits:
-          cpus: "0.5"
-          memory: "256M"
       
   gateway-service:
     image: devatlogstyx/logstyx-gateway-service
@@ -100,7 +77,3 @@ services:
     depends_on:
       rabbitmq:
         condition: service_healthy
-
-volumes:
-  rabbitmq-data:
-  redis-data:

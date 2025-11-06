@@ -9,7 +9,9 @@ const useMongoose = ({ Mongoose, DbName, Log }) => {
       return Mongoose.connection;
     }
 
-    const MONGO_DB_SERVER = decryptSecret(process?.env?.ENC_MONGODB_HOST);
+    const MONGO_DB_SERVER = process.env.MONGODB_HOST
+      || (process.env.ENC_MONGODB_HOST && decryptSecret(process.env.ENC_MONGODB_HOST))
+      || 'mongodb://mongodb:27017'
     const uri = `${MONGO_DB_SERVER}/${DbName}`;
 
     try {
@@ -18,7 +20,7 @@ const useMongoose = ({ Mongoose, DbName, Log }) => {
         minPoolSize: 10,
       });
 
-      
+
       Mongoose.connection.on("error", (e) => Log?.error?.(e));
       Mongoose.connection.once("connected", () => {
         Log?.info?.(`✅ Connected to MongoDB: ${DbName}`);

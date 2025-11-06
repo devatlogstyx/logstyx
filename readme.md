@@ -17,7 +17,7 @@ This project implements a microservices architecture, with each service tailored
 - **Core Service**: Handles essential application logic and data processing.
 - **Gateway Service**: Acts as a single entry point for client requests.
 - **Frontend Application**: An interactive user interface for interacting with the services.
-- **Utility Service**: Contains miscellaneous utility functions including logging.
+- **Utility Service**: Contains miscellaneous utility functions.
 
 ## Services Structure
 The project uses a monorepo structure managed with `pnpm`. Below is an overview of the main directories:
@@ -71,5 +71,30 @@ Each service has its own Docker configuration (`Dockerfile` and `docker-compose`
    ```bash
    docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
    ```
+
+5. Access the application
+   open http://localhost:5000 from your browser
+
+## Setup For Production
+
+### Option 1: Using Docker Compose with default services
+```bash
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+```
+This uses the bundled Redis, MongoDB, and RabbitMQ services.
+
+### Option 2: Using external/separate services
+1. Create a `.env` file with your service URLs
+2. Update these variables in your `.env`:
+```env
+AMQP_HOST=amqp://your-rabbitmq-host:5672
+REDIS_URL=redis://your-redis-host:6379
+MONGODB_HOST=mongodb://your-mongodb-host:27017
+```
+3. Run the encryption script
+4. Start with
+```bash
+docker compose -f docker-compose.prod.yml up -d
+```
 
 If you encounter issues or have questions, feel free to open an issue in the repository or contact the project maintainers. Happy coding!
