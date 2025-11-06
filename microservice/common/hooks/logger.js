@@ -87,22 +87,14 @@ const useLogger = ({
                 }
             })
         },
-        custom: (level, {
-            title,
-            message,
-            context
-        }) => {
+        custom: (level, data) => {
             return Sender({
                 timestamp: new Date().toISOString(),
                 level,
                 projectId,
                 device,
                 context: Context,
-                data: {
-                    title,
-                    message,
-                    context
-                }
+                data
             })
         },
     }

@@ -23,7 +23,11 @@ const TabLogs = ({
         page,
         setPage,
         level,
-        setLevel
+        setLevel,
+        DetailModalComponent,
+        openDetailModal,
+        TimelineModalComponent,
+        openTimelineModal
     } = useTabLogs({
         projectId: project?.id
     })
@@ -90,13 +94,13 @@ const TabLogs = ({
                                 <Td>
                                     <Menu position="bottom-end">
                                         <Menu.Target>
-                                            <ActionIcon>
+                                            <ActionIcon variant="transparent" >
                                                 <FiMoreVertical className="w-4 h-4" />
                                             </ActionIcon>
                                         </Menu.Target>
                                         <Menu.Dropdown>
-                                            <Menu.Item leftSection={<FiInfo className="w-3.5 h-3.5" />}>View Details</Menu.Item>
-                                            <Menu.Item leftSection={<FiActivity className="w-3.5 h-3.5" />}>View Timeline</Menu.Item>
+                                            <Menu.Item leftSection={<FiInfo className="w-3.5 h-3.5" />} onClick={() => openDetailModal(log)}>View Details</Menu.Item>
+                                            <Menu.Item leftSection={<FiActivity className="w-3.5 h-3.5" />} onClick={() => openTimelineModal(log?.key)}>View Timeline</Menu.Item>
                                         </Menu.Dropdown>
                                     </Menu>
                                 </Td>
@@ -112,6 +116,9 @@ const TabLogs = ({
                     />
                 </div>
             </div>
+
+            <DetailModalComponent />
+            <TimelineModalComponent />
         </>
     )
 }

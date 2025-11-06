@@ -393,23 +393,23 @@ const getUsersDashboardProjectsStats = async (userId) => {
             todayStart.setHours(0, 0, 0, 0);
 
             // ⭐ PUT THE ULTRA-OPTIMIZED QUERY HERE ⭐
-            const [result] = await logstamp.aggregate([
+            const [result] = await log.aggregate([
                 {
                     $facet: {
                         // Logs today
                         logsToday: [
                             { $match: { createdAt: { $gte: todayStart } } },
-                            { $count: "count" }
+                            { $group: { _id: null, total: { $sum: "$count" } } }
                         ],
 
                         // Last log
                         lastLog: [
                             { $sort: { createdAt: -1 } },
                             { $limit: 1 },
-                            { $project: { createdAt: 1 } }
+                            { $project: { createdAt: 1, key: 1, level: 1 } }
                         ],
 
-                        // Activity per hour
+                        // Activity per hour (last 7 hours)
                         activity: [
                             {
                                 $match: {
@@ -424,7 +424,7 @@ const getUsersDashboardProjectsStats = async (userId) => {
                                             date: "$createdAt"
                                         }
                                     },
-                                    count: { $sum: 1 }
+                                    count: { $sum: "$count" }
                                 }
                             },
                             { $sort: { _id: 1 } }
@@ -438,7 +438,7 @@ const getUsersDashboardProjectsStats = async (userId) => {
                                     level: ERROR_LOG_LEVEL
                                 }
                             },
-                            { $count: "count" }
+                            { $group: { _id: null, total: { $sum: "$count" } } }
                         ],
 
                         // Critical today
@@ -449,17 +449,17 @@ const getUsersDashboardProjectsStats = async (userId) => {
                                     level: CRITICAL_LOG_LEVEL
                                 }
                             },
-                            { $count: "count" }
+                            { $group: { _id: null, total: { $sum: "$count" } } }
                         ]
                     }
                 }
             ]);
 
             // Extract data from aggregation result
-            const logsToday = result.logsToday[0]?.count || 0;
+            const logsToday = result.logsToday[0]?.total || 0;
             const lastLogData = result.lastLog[0];
-            const errorCount = result.errorsToday[0]?.count || 0;
-            const criticalCount = result.criticalToday[0]?.count || 0;
+            const errorCount = result.errorsToday[0]?.total || 0;
+            const criticalCount = result.criticalToday[0]?.total || 0;
 
             // Process activity data (fill gaps for missing hours)
             const activityMap = new Map(

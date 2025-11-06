@@ -292,13 +292,11 @@ const useMiddleware = ({
                                 Log?.custom?.(SUCCESS_LOG_LEVEL, {
                                     title: `${req.method} ${req.path}`,
                                     message: "Request completed successfully",
-                                    context: {
-                                        query: redactObject(req.query),
-                                        body: redactObject(req.body),
-                                        admin: req.admin,
-                                        user: req.user,
-                                        response: method === "json" || method === "send" ? redactObject(args[0]) : null
-                                    },
+                                    query: redactObject(req.query),
+                                    body: redactObject(req.body),
+                                    admin: req.admin,
+                                    user: req.user,
+                                    response: method === "json" || method === "send" ? redactObject(args[0]) : null
                                 });
                             }
                         }
@@ -318,13 +316,11 @@ const useMiddleware = ({
             Log?.custom?.(ERROR_LOG_LEVEL, {
                 title: `${req.method} ${req.path}`,
                 message: err?.message,
-                context: {
-                    stack: err?.stack,
-                    query: redactObject(req.query),
-                    body: redactObject(req.body),
-                    admin: req.admin,
-                    user: req.user,
-                },
+                stack: err?.stack,
+                query: redactObject(req.query),
+                body: redactObject(req.body),
+                admin: req.admin,
+                user: req.user,
             });
         }
     }

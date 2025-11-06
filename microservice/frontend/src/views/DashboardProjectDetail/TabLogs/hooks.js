@@ -3,12 +3,55 @@
 import React from "react"
 import { useErrorMessage } from "../../../hooks/useMessage"
 import { paginateProjectLogs } from "../../../api/project"
+import ModalLogDetail from "../ModalLogDetail"
+import ModalTimeline from "../ModalTimeline"
 
 const useTabLogs = ({ projectId }) => {
     const [isLoading, setIsLoading] = React.useState(true)
     const [page, setPage] = React.useState(1)
     const [level, setLevel] = React.useState("")
     const [list, setList] = React.useState({})
+
+    const [detailModalProps, setDetailModalProps] = React.useState({
+        opened: false,
+        log: null,
+    });
+
+    const closeDetailModal = () => {
+        setDetailModalProps((prev) => ({ ...prev, opened: false }));
+    };
+
+    const DetailModalComponent = () =>
+        React.createElement(ModalLogDetail, { ...detailModalProps, onClose: closeDetailModal });
+
+    const openDetailModal = (/** @type {any} */ log) => {
+        setDetailModalProps({
+            opened: true,
+            log
+        });
+    };
+
+    const [timelineModalProps, setTimelineModalProps] = React.useState({
+        opened: false,
+        logKey: "",
+        projectId,
+    });
+
+    const closeTimelineModal = () => {
+        setTimelineModalProps((prev) => ({ ...prev, opened: false }));
+    };
+
+    const TimelineModalComponent = () =>
+        React.createElement(ModalTimeline, { ...timelineModalProps, onClose: closeTimelineModal });
+
+    const openTimelineModal = (/** @type {any} */ logKey) => {
+        setTimelineModalProps({
+            opened: true,
+            logKey,
+            projectId,
+        });
+    };
+
 
     const ErrorMessage = useErrorMessage()
 
@@ -67,6 +110,10 @@ const useTabLogs = ({ projectId }) => {
         setPage,
         level,
         setLevel: handleLevelChange,
+        DetailModalComponent,
+        openDetailModal,
+        TimelineModalComponent,
+        openTimelineModal
     }
 }
 

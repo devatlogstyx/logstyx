@@ -216,8 +216,48 @@ const paginateLogs = async (query, sortBy = "createdAt:desc", limit = 10, page =
     return list
 }
 
+/**
+ * 
+ * @param {string} projectId 
+ * @param {string} key 
+ */
+const logTimeline = async (projectId, key) => {
+
+    const { logstamp } = await getLogModel(projectId)
+
+    const hourlyStats = await logstamp.aggregate([
+        {
+            $match: {
+                key,
+                createdAt: {
+                    $gte: new Date(Date.now() - 24 * 60 * 60 * 1000) // Last 24 hours
+                }
+            }
+        },
+        {
+            $group: {
+                _id: { $dateTrunc: { date: "$createdAt", unit: "hour" } },
+                count: { $sum: 1 }
+            }
+        },
+        {
+            $sort: { "_id": -1 }
+        },
+        {
+            $project: {
+                _id: 0,
+                datetime: "$_id",
+                count: 1
+            }
+        }
+    ]);
+
+    return hourlyStats
+}
+
 module.exports = {
     processWriteLog,
     processCreateLog,
-    paginateLogs
+    paginateLogs,
+    logTimeline
 }

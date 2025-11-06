@@ -11,9 +11,13 @@ const {
     SUCCESS_ERR_CODE,
     SUCCESS_ERR_MESSAGE,
     BROWSER_CLIENT_TYPE,
+    NOT_FOUND_ERR_CODE,
+    NOT_FOUND_ERR_MESSAGE,
 
 } = require("common/constant");
 const { submitWriteLog } = require("../../shared/provider/mq-producer");
+const { logTimeline } = require("../service/logger");
+const { findProjectBySlug, findProjectById, canUserReadProject } = require("../service/project");
 
 module.exports = {
 
@@ -47,6 +51,40 @@ module.exports = {
         HttpResponse(res).json({
             error: SUCCESS_ERR_CODE,
             message: SUCCESS_ERR_MESSAGE,
+        });
+    },
+    /**
+     * 
+     * @param {*} req 
+     * @param {*} res 
+     */
+    async LogGetTimeline(req, res) {
+
+
+        if (!req?.user) {
+            throw HttpError(NO_ACCESS_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
+        }
+
+        let project = await findProjectBySlug(req?.params?.id)
+        if (!project) {
+            project = await findProjectById(req?.params?.id)
+        }
+
+        if (!project) {
+            throw HttpError(NOT_FOUND_ERR_CODE, NOT_FOUND_ERR_MESSAGE)
+        }
+
+        const canAccess = await canUserReadProject(req?.user?.id, project?.id)
+        if (!canAccess) {
+            throw HttpError(NO_ACCESS_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
+        }
+
+        const data = await logTimeline(req?.params?.id, req?.params?.key)
+
+        HttpResponse(res).json({
+            error: SUCCESS_ERR_CODE,
+            message: SUCCESS_ERR_MESSAGE,
+            data
         });
     },
 };
