@@ -9,7 +9,6 @@ Welcome to the Logstyx Project! An open-source server implementation of the LOGS
 - [Setup Instructions](#setup-instructions)
 - [Environment Variables](#environment-variables)
 - [Scripts](#scripts)
-- [Licenses](#licenses)
 
 ## Overview
 This project implements a microservices architecture, with each service tailored to specific functionalities. The services include:
@@ -72,10 +71,5 @@ Each service has its own Docker configuration (`Dockerfile` and `docker-compose`
    ```bash
    docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
    ```
-
-## Licenses
-This project is licensed under the UNLICENSED license. Please contact the author for more details if needed.
-
----
 
 If you encounter issues or have questions, feel free to open an issue in the repository or contact the project maintainers. Happy coding!
