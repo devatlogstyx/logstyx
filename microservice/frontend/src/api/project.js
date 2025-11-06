@@ -110,3 +110,10 @@ export const updateProject = async (signal, projectId, payload) => {
     });
     return data?.data;
 }
+
+export const createProject = async (signal, payload) => {
+    let { data } = await Axios.post(`/v1/projects`, payload, {
+        signal
+    });
+    return data?.data;
+}

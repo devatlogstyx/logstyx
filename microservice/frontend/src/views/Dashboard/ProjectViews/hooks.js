@@ -39,7 +39,8 @@ const useProjectViews = () => {
 
     return {
         isLoading,
-        projects
+        projects,
+        refetchData: fetchData
     }
 
 }

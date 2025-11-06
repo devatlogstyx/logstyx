@@ -15,11 +15,11 @@ import { sumInt } from "../../../utils/function";
 import { Loader } from "@mantine/core";
 import EmptyProjectViews from "../EmptyProjectViews";
 import PrimaryButton from "../../../component/button/PrimaryButton";
-import SecondaryButton from "../../../component/button/SecondaryButton";
+import CreateProject from "../CreateProject";
 
 const ProjectViews = () => {
 
-    const { projects, isLoading } = useProjectViews()
+    const { projects, isLoading, refetchData } = useProjectViews()
 
     if (isLoading) {
         return <div className="flex justify-center items-center h-screen">
@@ -183,12 +183,12 @@ const ProjectViews = () => {
             </div>
 
             {/* Create New Project Button */}
-            <PrimaryButton
-                leftSection={<IoAdd size={16} />}
-                className="fixed bottom-8 right-8 px-6 py-3 rounded-full shadow-lg hover:shadow-xl transition-all font-medium flex items-center gap-2"
-            >
-                New Project
-            </PrimaryButton>
+            <div className="fixed bottom-8 right-8">
+                <CreateProject
+                    onUpdate={refetchData}
+                />
+            </div>
+
         </>
     )
 }
