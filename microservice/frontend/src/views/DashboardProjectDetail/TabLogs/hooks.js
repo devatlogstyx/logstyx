@@ -5,13 +5,15 @@ import { useErrorMessage } from "../../../hooks/useMessage"
 import { paginateProjectLogs } from "../../../api/project"
 import ModalLogDetail from "../ModalLogDetail"
 import ModalTimeline from "../ModalTimeline"
+import { sanitizeObject } from "../../../utils/function"
 
 const useTabLogs = ({ projectId }) => {
     const [isLoading, setIsLoading] = React.useState(true)
     const [page, setPage] = React.useState(1)
     const [level, setLevel] = React.useState("")
     const [list, setList] = React.useState({})
-
+    const [sortConfig, setSortConfig] = React.useState({ key: null, direction: 'asc' });
+    
     const [detailModalProps, setDetailModalProps] = React.useState({
         opened: false,
         log: null,
@@ -71,7 +73,7 @@ const useTabLogs = ({ projectId }) => {
             const l = await paginateProjectLogs(
                 controllerRef.current.signal,
                 projectId,
-                { level, page }
+                sanitizeObject({ level, page, sortBy: sortConfig ? `${sortConfig.key}:${sortConfig.direction}` : undefined })
             )
             setList(l)
         } catch (e) {
@@ -82,7 +84,7 @@ const useTabLogs = ({ projectId }) => {
         } finally {
             setIsLoading(false)
         }
-    }, [ErrorMessage, page, projectId, level])
+    }, [ErrorMessage, page, projectId, level, sortConfig])
 
     React.useEffect(() => {
         fetchData()
@@ -103,6 +105,19 @@ const useTabLogs = ({ projectId }) => {
         setPage(1)
     }, [])
 
+    const SortIcon = ({ column }) => {
+        if (sortConfig.key !== column) return null;
+        return sortConfig.direction === 'asc' ? ' ↑' : ' ↓';
+    };
+
+    const handleSort = (key) => {
+        setSortConfig(prevConfig => ({
+            key,
+            direction: prevConfig.key === key && prevConfig.direction === 'asc' ? 'desc' : 'asc'
+        }));
+    };
+
+
     return {
         list,
         isLoading,
@@ -113,7 +128,9 @@ const useTabLogs = ({ projectId }) => {
         DetailModalComponent,
         openDetailModal,
         TimelineModalComponent,
-        openTimelineModal
+        openTimelineModal,
+        SortIcon,
+        handleSort
     }
 }
 

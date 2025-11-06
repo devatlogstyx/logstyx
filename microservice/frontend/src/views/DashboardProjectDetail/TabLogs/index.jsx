@@ -27,7 +27,9 @@ const TabLogs = ({
         DetailModalComponent,
         openDetailModal,
         TimelineModalComponent,
-        openTimelineModal
+        openTimelineModal,
+        handleSort,
+        SortIcon
     } = useTabLogs({
         projectId: project?.id
     })
@@ -56,14 +58,24 @@ const TabLogs = ({
                 <Table highlightOnHover>
                     <Thead>
                         <Tr>
-                            <Th>Level</Th>
-                            <Th>Count</Th>
-                            {project?.settings?.indexes?.map((n) => {
-                                return (
-                                    <Th>{n}</Th>
-                                )
-                            })}
-                            <Th>Last Seen</Th>
+                            <Th onClick={() => handleSort('level')} style={{ cursor: 'pointer' }}>
+                                Level<SortIcon column="level" />
+                            </Th>
+                            <Th onClick={() => handleSort('count')} style={{ cursor: 'pointer' }}>
+                                Count<SortIcon column="count" />
+                            </Th>
+                            {project?.settings?.indexes?.map((n) => (
+                                <Th
+                                    key={n}
+                                    onClick={() => handleSort(n)}
+                                    style={{ cursor: 'pointer' }}
+                                >
+                                    {n}<SortIcon column={n} />
+                                </Th>
+                            ))}
+                            <Th onClick={() => handleSort('lastSeen')} style={{ cursor: 'pointer' }}>
+                                Last Seen<SortIcon column="lastSeen" />
+                            </Th>
                             <Th></Th>
                         </Tr>
                     </Thead>
@@ -83,7 +95,7 @@ const TabLogs = ({
                                 </Td>
                                 {project?.settings?.indexes?.map((n) => {
                                     return (
-                                        <Th>{getNestedValue(log, n)}</Th>
+                                        <Th className="max-w-xs truncate">{getNestedValue(log, n)}</Th>
                                     )
                                 })}
                                 <Td>
