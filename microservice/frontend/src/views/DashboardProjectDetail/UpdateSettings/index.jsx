@@ -2,19 +2,23 @@
 
 import { FiSettings } from "react-icons/fi"
 import PrimaryButton from "../../../component/button/PrimaryButton"
-import { Modal, MultiSelect, NumberInput, TextInput } from "@mantine/core"
+import { Modal, MultiSelect, NumberInput, TagsInput, TextInput } from "@mantine/core"
 import SecondaryButton from "../../../component/button/SecondaryButton"
 import useUpdateSettings from "./hooks"
 
 const UpdateSettings = ({
-    project
+    project,
+    onUpdate
 }) => {
 
     const {
+        isSubmitting,
+        form,
         isModalVisible,
         openModal,
-        closeModal
-    } = useUpdateSettings()
+        closeModal,
+        handleSubmit
+    } = useUpdateSettings({ project, onUpdate })
     return (
         <>
             <PrimaryButton leftSection={<FiSettings />} onClick={openModal} >
@@ -27,35 +31,35 @@ const UpdateSettings = ({
                 title="Project Settings"
                 className="min-w-xl"
             >
-                <div className="space-y-4">
-                    <TextInput label="Project Title" defaultValue={project.title} />
-                    <TextInput label="Slug" defaultValue={project.slug} disabled />
-                    <MultiSelect
+                <form className="space-y-4" onSubmit={form.onSubmit(handleSubmit)}>
+                    <TextInput label="Project Title" {...form.getInputProps('title')} />
+                    <TagsInput
                         label="Indexed Fields"
-                        data={['userId', 'sessionId', 'errorCode', 'timestamp', 'endpoint']}
-                        defaultValue={project.settings.indexes}
-                        placeholder="Select fields to index"
+                        description="Initial indexes cannot be removed"
+                        placeholder="Enter fields to index"
+                        value={form.values.indexes}
+                        onChange={(value) => {
+                            const initialIndexes = project?.settings?.indexes || [];
+
+                            // Get unique values that include all initial indexes
+                            const uniqueValues = [...new Set([...initialIndexes, ...value])];
+
+                            form.setFieldValue('indexes', uniqueValues);
+                        }}
+                        error={form.errors.indexes}
                     />
-                    <MultiSelect
+                    <TagsInput
                         label="Allowed Origins"
-                        data={project.settings.allowedOrigin}
-                        defaultValue={project.settings.allowedOrigin}
                         placeholder="Add allowed origins"
-                        searchable
-                    />
-                    <NumberInput
-                        label="Retention Days"
-                        defaultValue={project.settings.retentionDays}
-                        min={1}
-                        max={365}
+                        {...form.getInputProps('allowedOrigin')}
                     />
                     <div className="flex justify-end gap-2 mt-4">
                         <SecondaryButton onClick={closeModal} >
                             Cancel
                         </SecondaryButton>
-                        <PrimaryButton>Save Changes</PrimaryButton>
+                        <PrimaryButton type="submit" disabled={isSubmitting}>Save Changes</PrimaryButton>
                     </div>
-                </div>
+                </form>
             </Modal>
         </>
     )

@@ -2,6 +2,7 @@
 
 import { ActionIcon, Badge, Code, CopyButton, Grid, Tooltip } from "@mantine/core"
 import { FiCopy } from "react-icons/fi"
+import moment from "moment-timezone"
 
 const TabOverview = ({
     project
@@ -23,13 +24,13 @@ const TabOverview = ({
                         <div className="text-sm text-gray-500">
                             Created At
                         </div>
-                        <div className="font-medium">{project.createdAt}</div>
+                        <div className="font-medium">{moment(project.createdAt).format("MMM, Do YYYY")}</div>
                     </Grid.Col>
                     <Grid.Col span={6}>
                         <div className="text-sm text-gray-500">
                             Last Updated
                         </div>
-                        <div className="font-medium">{project.updatedAt}</div>
+                        <div className="font-medium">{moment(project.updatedAt).format("MMM, Do YYYY")}</div>
                     </Grid.Col>
                     <Grid.Col span={12}>
                         <div className="text-sm text-gray-500 mb-1">

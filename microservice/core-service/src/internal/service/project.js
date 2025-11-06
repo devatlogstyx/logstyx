@@ -17,6 +17,19 @@ const { validateCustomIndex, getLogModel, isRecent } = require("../utils/helper"
 const { initLogger } = require("./../utils/helper");
 const moment = require("moment-timezone")
 
+const generateUniqueSlug = async (baseSlug) => {
+    let slug = baseSlug
+    let counter = 1
+
+    while (await projectModel.exists({ slug })) {
+        slug = `${baseSlug}-${counter}`
+        counter++
+    }
+
+    return slug
+}
+
+
 /**
  * 
  * @param {object} params 
@@ -66,7 +79,7 @@ const createProject = async (params) => {
         const projects = await projectModel.create([
             sanitizeObject({
                 title: striptags(params?.title),
-                slug: createSlug(params?.slug || params?.title),
+                slug: await generateUniqueSlug(createSlug(params?.slug || params?.title)),
                 secret,
                 settings: {
                     indexes: params?.settings?.indexes?.filter((n) => validateCustomIndex(n)),
@@ -118,7 +131,6 @@ const updateProject = async (id, params) => {
 
     const v = new Validator(params, {
         title: "required|string",
-        slug: "string",
         indexes: "arrayUnique",
         allowedOrigin: "arrayUnique"
     });
@@ -135,9 +147,8 @@ const updateProject = async (id, params) => {
         {
             $set: {
                 title: striptags(params?.title),
-                slug: createSlug(params?.slug || params?.title),
-                indexes: params?.indexes?.filter((n) => validateCustomIndex(n)),
-                allowedOrigin: params?.allowedOrigin?.map((n) => striptags(n))
+                "settings.indexes": params?.indexes?.filter((n) => validateCustomIndex(n)),
+                "settings.allowedOrigin": params?.allowedOrigin?.map((n) => striptags(n))
             }
         }
     )

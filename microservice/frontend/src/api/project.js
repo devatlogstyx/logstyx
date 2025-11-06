@@ -103,3 +103,10 @@ export const getLogTimeline = async (signal, projectId, logKey) => {
     });
     return data?.data;
 }
+
+export const updateProject = async (signal, projectId, payload) => {
+    let { data } = await Axios.put(`/v1/projects/${projectId}`, payload, {
+        signal
+    });
+    return data?.data;
+}

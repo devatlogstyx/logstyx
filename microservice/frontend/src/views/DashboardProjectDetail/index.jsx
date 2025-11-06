@@ -62,6 +62,7 @@ const DashboardProjectDetail = () => {
           </div>
           <UpdateSettings
             project={project}
+            onUpdate={refetchData}
           />
         </div>
 

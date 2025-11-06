@@ -81,21 +81,21 @@ const Registry = {};
  * @param {string[]} project.settings.indexes
  * @param {number} project.settings.retentionDays 
  */
-const initLogger = (project) => {
+const initLogger = async (project) => {
     const logModelName = `Log_${project.id}`;
     const logStampModelName = `Logstamp_${project.id}`;
 
-    // Check if models already exist in Mongoose
-    if (mongoose.models[logModelName] && mongoose.models[logStampModelName]) {
-        // Models already exist, just cache them in Registry
-        Registry[project.id] = {
-            log: mongoose.models[logModelName],
-            logstamp: mongoose.models[logStampModelName]
-        };
-        return null;
+    // Delete existing models so we can recreate with new schema
+    if (mongoose.models[logModelName]) {
+        delete mongoose.models[logModelName];
+        delete mongoose.connection.models[logModelName];
+    }
+    if (mongoose.models[logStampModelName]) {
+        delete mongoose.models[logStampModelName];
+        delete mongoose.connection.models[logStampModelName];
     }
 
-    // Models don't exist, create them with custom indexes
+    // Create fresh schemas with CURRENT project settings
     const schema = logSchema.clone();
     const stampSchema = logstampSchema.clone();
 
@@ -117,9 +117,15 @@ const initLogger = (project) => {
         );
     }
 
+    // Create models with NEW schema
     const logModel = mongoose.model(logModelName, schema, `logs_${project.id}`);
     const logStampModel = mongoose.model(logStampModelName, stampSchema, `logstamps_${project.id}`);
 
+    // Sync indexes: creates new ones, drops old ones
+    await logModel.syncIndexes();
+    await logStampModel.syncIndexes();
+
+    // Update Registry with new models
     Registry[project.id] = {
         log: logModel,
         logstamp: logStampModel
@@ -127,7 +133,6 @@ const initLogger = (project) => {
 
     return null;
 }
-
 /**
  * 
  * @param {string} projectId 

@@ -208,8 +208,6 @@ module.exports = {
             throw HttpError(NO_ACCESS_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
         }
 
-        delete project.secret
-
         HttpResponse(res).json({
             error: SUCCESS_ERR_CODE,
             message: SUCCESS_ERR_MESSAGE,
