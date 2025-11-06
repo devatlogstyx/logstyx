@@ -23,6 +23,9 @@ const logSchema = new mongoose.Schema(
         device: {
             type: Mixed,
         },
+        context: {
+            type: Mixed,
+        },
         data: {
             type: Mixed,
         },
@@ -44,7 +47,7 @@ const logSchema = new mongoose.Schema(
 logSchema.index({ createdAt: 1 });
 logSchema.index({ updatedAt: 1 });
 logSchema.plugin(fieldEncryption, {
-    fields: ["data"],
+    fields: ["context", "data"],
     secret: () => decryptSecret(process?.env?.ENC_CRYPTO_SECRET),
 });
 

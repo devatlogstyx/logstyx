@@ -21,6 +21,7 @@ const { ObjectId } = mongoose.Types
  * @param {string} param0.body.level
  * @param {string} param0.body.projectId
  * @param {object} param0.body.device
+ * @param {object} param0.body.context
  * @param {object} param0.body.data
  * @param {string} param0.body.appid
  * @param {string | number | Date} [param0.body.timestamp]
@@ -29,7 +30,7 @@ const { ObjectId } = mongoose.Types
  */
 const processWriteLog = async ({ headers, body }) => {
 
-    const { level, projectId, device, data, appid } = body
+    const { level, projectId, device, context, data, appid } = body
     const { deviceClientType, signature, origin } = headers
 
     const timestamp = headers?.timestamp || body?.timestamp || new Date()
@@ -52,6 +53,7 @@ const processWriteLog = async ({ headers, body }) => {
     await createLog(project, {
         level,
         device,
+        context,
         data,
         timestamp
     })
@@ -65,6 +67,7 @@ const processWriteLog = async ({ headers, body }) => {
  * @param {string} project.id
  * @param {object} params 
  * @param {object} params.device
+ * @param {object} params.context
  * @param {object} params.data
  * @param {string} params.level
  * @param {string|number|Date} params.timestamp
@@ -72,6 +75,7 @@ const processWriteLog = async ({ headers, body }) => {
 const createLog = async (project, params) => {
     let stringified = JSON.stringify({
         ...params?.device,
+        ...params?.context,
         ...params?.data
     });
 
@@ -79,6 +83,7 @@ const createLog = async (project, params) => {
     const { log, logstamp } = await getLogModel(project?.id)
 
     const hashes = generateIndexedHashes({
+        context: params?.context,
         data: params?.data
     }, project);
 
@@ -91,6 +96,7 @@ const createLog = async (project, params) => {
                 project: ObjectId.createFromHexString(project?.id),
                 level: params?.level,
                 device: params?.device,
+                context: params?.context,
                 data: params?.data,
                 hash: hashes,
                 createdAt: new Date(params?.timestamp)
@@ -113,6 +119,7 @@ const createLog = async (project, params) => {
  * 
  * @param {object} params 
  * @param {object} params.device
+ * @param {object} params.context
  * @param {object} params.data
  * @param {string} params.level
  * @param {string|number|Date} params.timestamp
