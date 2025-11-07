@@ -33,7 +33,7 @@ const processWriteLog = async ({ headers, body }) => {
     const { level, projectId, device, context, data, appid } = body
     const { deviceClientType, signature, origin } = headers
 
-    const timestamp = headers?.timestamp
+    const timestamp = headers?.timestamp || new Date().getTime()
 
     const project = await getProjectFromCache(projectId)
     if (!project) {
