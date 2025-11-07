@@ -73,7 +73,7 @@ const useTabLogs = ({ projectId }) => {
             const l = await paginateProjectLogs(
                 controllerRef.current.signal,
                 projectId,
-                sanitizeObject({ level, page, sortBy: sortConfig ? `${sortConfig.key}:${sortConfig.direction}` : undefined })
+                sanitizeObject({ level, page, sortBy: sortConfig?.key ? `${sortConfig.key}:${sortConfig.direction}` : undefined })
             )
             setList(l)
         } catch (e) {
