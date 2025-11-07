@@ -16,6 +16,7 @@ import { Loader } from "@mantine/core";
 import EmptyProjectViews from "../EmptyProjectViews";
 import PrimaryButton from "../../../component/button/PrimaryButton";
 import CreateProject from "../CreateProject";
+import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
 const ProjectViews = () => {
 
@@ -108,7 +109,7 @@ const ProjectViews = () => {
                                         {project.title.charAt(0)}
                                     </div>
                                     <div>
-                                        <h3 className="font-semibold text-gray-800">{project.title}</h3>
+                                        <h3 className="font-semibold text-gray-800 line-clamp-1">{project.title}</h3>
                                         <div className="flex items-center gap-2 mt-1">
                                             <span
                                                 className={`w-2 h-2 rounded-full ${project.status === "active" ? "bg-green-500" : "bg-gray-400"
@@ -144,14 +145,16 @@ const ProjectViews = () => {
                             </div>
 
                             {/* Mini Activity Chart */}
-                            <div className="flex items-end gap-1 h-12 mb-4">
-                                {project.activity.map((value, index) => (
-                                    <div
-                                        key={index}
-                                        className={`flex-1 ${project.color} rounded-t opacity-70`}
-                                        style={{ height: `${(value / 60) * 100}%` }}
-                                    ></div>
-                                ))}
+                            <div className="flex items-end gap-1 h-[180px] mb-4">
+                                <ResponsiveContainer width="100%" height={200}>
+                                    <BarChart
+                                        data={project.activity.map((val, idx) => ({ val }))}
+                                        margin={{ top: 10, right: 10, left: 10, bottom: 10 }}
+                                    >
+                                        <Bar dataKey="val" fill="#228be6" />
+                                    </BarChart>
+                                </ResponsiveContainer>
+
                             </div>
 
                             {/* Action Buttons */}
