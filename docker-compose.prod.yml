@@ -2,13 +2,13 @@
 x-microservice-base: &microservice-base
   env_file: .env.encrypted
   environment: &microservice-base-env
-    AUTH_WSHOST: ws://auth-service:5001/rpc
-    CACHE_WSHOST: ws://cache-service:5002/rpc
-    UTILITY_WSHOST: ws://utility-service:5003/rpc
-    CORE_WSHOST: ws://core-service:5004/rpc
-    REDIS_URL: redis://redis:6379
-    MONGODB_HOST: mongodb://mongodb:27017
-    AMQP_HOST: amqp://rabbitmq:5672
+    AUTH_WSHOST: ws://logstyx_auth_service:5001/rpc
+    CACHE_WSHOST: ws://logstyx_cache_service:5002/rpc
+    UTILITY_WSHOST: ws://logstyx_utility_service:5003/rpc
+    CORE_WSHOST: ws://logstyx_core_service:5004/rpc
+    REDIS_URL: redis://logstyx_redis:6379
+    MONGODB_HOST: mongodb://logstyx_mongodb:27017
+    AMQP_HOST: amqp://logstyx_rabbitmq:5672
   logging:
     driver: "json-file"
     options:
@@ -23,57 +23,57 @@ x-microservice-base: &microservice-base
 
 services:
       
-  gateway-service:
+  logstyx_gateway_service:
     image: devatlogstyx/logstyx-gateway-service
-    container_name: gateway-service
+    container_name: logstyx_gateway_service
     ports:
       - "5000:80"
     depends_on:
-      - auth-service
-      - utility-service
+      - logstyx_auth_service
+      - logstyx_utility_service
       
-  auth-service:
+  logstyx_auth_service:
     image: devatlogstyx/logstyx-auth-service
-    container_name: auth-service
+    container_name: logstyx_auth_service
     <<: *microservice-base
     environment:
       <<: *microservice-base-env
       PORT: 5001
     depends_on:
-      rabbitmq:
+      logstyx_rabbitmq:
         condition: service_healthy
 
-  cache-service:
+  logstyx_cache_service:
     image: devatlogstyx/logstyx-cache-service
-    container_name: cache-service
+    container_name: logstyx_cache_service
     <<: *microservice-base
     environment:
       <<: *microservice-base-env
       PORT: 5002
     depends_on:
-      rabbitmq:
+      logstyx_rabbitmq:
         condition: service_healthy
-      redis:
+      logstyx_redis:
         condition: service_healthy
 
-  utility-service:
+  logstyx_utility_service:
     image: devatlogstyx/logstyx-utility-service
-    container_name: utility-service
+    container_name: logstyx_utility_service
     <<: *microservice-base
     environment:
       <<: *microservice-base-env
       PORT: 5003
     depends_on:
-      rabbitmq:
+      logstyx_rabbitmq:
         condition: service_healthy
 
-  core-service:
+  logstyx_core_service:
     image: devatlogstyx/logstyx-core-service
-    container_name: core-service
+    container_name: logstyx_core_service
     <<: *microservice-base
     environment:
       <<: *microservice-base-env
       PORT: 5004
     depends_on:
-      rabbitmq:
+      logstyx_rabbitmq:
         condition: service_healthy

@@ -1,9 +1,9 @@
 # docker-compose.yml - Development infrastructure
 services:
   # Development-only services
-  rabbitmq:
+  logstyx_rabbitmq:
     image: rabbitmq:3-management
-    container_name: rabbitmq
+    container_name: logstyx_rabbitmq
     volumes:
       - rabbitmq-data:/var/lib/rabbitmq
     healthcheck:
@@ -12,9 +12,9 @@ services:
       timeout: 5s
       retries: 5
 
-  mongodb:
+  logstyx_mongodb:
     image: mongo:latest
-    container_name: mongodb
+    container_name: logstyx_mongodb
     command: ["--replSet", "rs0", "--bind_ip_all"]
     volumes:
       - mongo-data:/data/db
@@ -24,17 +24,19 @@ services:
         try { 
           rs.status(); 
         } catch(e) { 
-          rs.initiate({
-            _id: 'rs0',
-            members: [{ _id: 0, host: 'mongodb:27017' }]
-          });
-        }"
+          if (e.codeName === 'NotYetInitialized') {
+            rs.initiate({
+              _id: 'rs0',
+              members: [{ _id: 0, host: 'logstyx_mongodb:27017' }]
+            });
+          }
+        }" || exit 1
       interval: 5s
       timeout: 10s
       retries: 5
-  redis:
+  logstyx_redis:
     image: redis:7
-    container_name: redis
+    container_name: logstyx_redis
     volumes:
       - redis-data:/data
     healthcheck:

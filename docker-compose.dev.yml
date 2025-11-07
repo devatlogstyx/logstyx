@@ -2,13 +2,13 @@
 x-microservice-base: &microservice-base
   env_file: .env.encrypted
   environment: &microservice-base-env
-    AUTH_WSHOST: ws://auth-service:5001/rpc
-    CACHE_WSHOST: ws://cache-service:5002/rpc
-    UTILITY_WSHOST: ws://utility-service:5003/rpc
-    CORE_WSHOST: ws://core-service:5004/rpc
-    REDIS_URL: redis://redis:6379
-    MONGODB_HOST: mongodb://mongodb:27017
-    AMQP_HOST: amqp://rabbitmq:5672
+    AUTH_WSHOST: ws://logstyx_auth_service:5001/rpc
+    CACHE_WSHOST: ws://logstyx_cache_service:5002/rpc
+    UTILITY_WSHOST: ws://logstyx_utility_service:5003/rpc
+    CORE_WSHOST: ws://logstyx_core_service:5004/rpc
+    REDIS_URL: redis://logstyx_redis:6379
+    MONGODB_HOST: mongodb://logstyx_mongodb:27017
+    AMQP_HOST: amqp://logstyx_rabbitmq:5672
   logging:
     driver: "json-file"
     options:
@@ -22,9 +22,9 @@ x-microservice-base: &microservice-base
         memory: "512M"
 
 services:
-  gateway-service:
+  logstyx_gateway_service:
     image: nginx:alpine
-    container_name: gateway-service
+    container_name: logstyx_gateway_service
     ports:
       - "5000:80"
     volumes:
@@ -33,65 +33,65 @@ services:
       - ./microservice/gateway-service/default.conf:/etc/nginx/conf.d/default.conf:ro
       - ./microservice/frontend/dist:/usr/share/nginx/html:ro
     depends_on:
-      - auth-service
-      - utility-service
+      - logstyx_auth_service
+      - logstyx_utility_service
       
-  auth-service:
+  logstyx_auth_service:
     build:
       context: .
       dockerfile: microservice/auth-service/Dockerfile
-    container_name: auth-service
+    container_name: logstyx_auth_service
     <<: *microservice-base
     environment:
       <<: *microservice-base-env
       PORT: 5001
     depends_on:
-      rabbitmq:
+      logstyx_rabbitmq:
         condition: service_healthy
-      mongodb:
+      logstyx_mongodb:
         condition: service_healthy
 
-  cache-service:
+  logstyx_cache_service:
     build:
       context: .
       dockerfile: microservice/cache-service/Dockerfile
-    container_name: cache-service
+    container_name: logstyx_cache_service
     <<: *microservice-base
     environment:
       <<: *microservice-base-env
       PORT: 5002
     depends_on:
-      rabbitmq:
+      logstyx_rabbitmq:
         condition: service_healthy
-      mongodb:
+      logstyx_mongodb:
         condition: service_healthy
 
-  utility-service:
+  logstyx_utility_service:
     build:
       context: .
       dockerfile: microservice/utility-service/Dockerfile
-    container_name: utility-service
+    container_name: logstyx_utility_service
     <<: *microservice-base
     environment:
       <<: *microservice-base-env
       PORT: 5003
     depends_on:
-      rabbitmq:
+      logstyx_rabbitmq:
         condition: service_healthy
-      mongodb:
+      logstyx_mongodb:
         condition: service_healthy
 
-  core-service:
+  logstyx_core_service:
     build:
       context: .
       dockerfile: microservice/core-service/Dockerfile
-    container_name: core-service
+    container_name: logstyx_core_service
     <<: *microservice-base
     environment:
       <<: *microservice-base-env
       PORT: 5004
     depends_on:
-      rabbitmq:
+      logstyx_rabbitmq:
         condition: service_healthy
-      mongodb:
+      logstyx_mongodb:
         condition: service_healthy
