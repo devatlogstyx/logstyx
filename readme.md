@@ -178,7 +178,7 @@ If you want to use separate services (external Redis, MongoDB, or RabbitMQ), you
 
 3. Run docker compose:
    ```bash
-   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+   docker compose -f docker-compose.prod.yml up -d
    ```
 
 **Note**: Environment variables in your `.env` file will automatically override the values in `docker-compose.prod.yml`. You don't need to remove anything from the compose file.
