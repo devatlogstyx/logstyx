@@ -23,8 +23,8 @@ function useMQConsumer({ amqp, log, prefetch: defaultPrefetch = 5 }) {
     let connection = null;
     let isReconnecting = false;
     const consumers = [];
-    const AMQP_HOST = process.env.AMQP_HOST
-        || (process.env.ENC_AMQP_HOST && decryptSecret(process.env.ENC_AMQP_HOST))
+    const AMQP_HOST = (process.env.ENC_AMQP_HOST && decryptSecret(process.env.ENC_AMQP_HOST))
+        || process.env.AMQP_HOST
         || 'amqp://rabbitmq:5672'
 
     const use = (queue, fn, options = {}) => {

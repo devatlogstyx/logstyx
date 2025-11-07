@@ -21,6 +21,7 @@
     "amqplib": "^0.10.8",
     "common": "workspace:*",
     "dotenv": "^16.5.0",
+    "ioredis": "^5.8.2",
     "jsonrpc-ws": "gitlab:angga2oioi/jsonrpc-ws",
     "node-cache": "^5.1.2"
   },

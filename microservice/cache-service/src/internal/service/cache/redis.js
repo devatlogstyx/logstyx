@@ -2,8 +2,8 @@ const Redis = require("ioredis");
 const { decryptSecret } = require("common/function")
 
 // Decrypt your single env variable
-const REDIS_URL = process.env.REDIS_URL
-  || (process.env.ENC_REDIS_URL && decryptSecret(process.env.ENC_REDIS_URL))
+const REDIS_URL =(process.env.ENC_REDIS_URL && decryptSecret(process.env.ENC_REDIS_URL))
+  ||  process.env.REDIS_URL
   || 'redis://redis:6379'
 
 const url = new URL(REDIS_URL.includes("://") ? REDIS_URL : `rediss://${REDIS_URL}`);

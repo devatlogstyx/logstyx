@@ -9,8 +9,8 @@ const useMongoose = ({ Mongoose, DbName, Log }) => {
       return Mongoose.connection;
     }
 
-    const MONGO_DB_SERVER = process.env.MONGODB_HOST
-      || (process.env.ENC_MONGODB_HOST && decryptSecret(process.env.ENC_MONGODB_HOST))
+    const MONGO_DB_SERVER = (process.env.ENC_MONGODB_HOST && decryptSecret(process.env.ENC_MONGODB_HOST)) 
+      || process.env.MONGODB_HOST
       || 'mongodb://mongodb:27017'
     const uri = `${MONGO_DB_SERVER}/${DbName}`;
 
