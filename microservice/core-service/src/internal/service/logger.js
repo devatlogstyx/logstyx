@@ -160,6 +160,7 @@ const processCreateLog = async (params) => {
  * 
  * @param {object} [params] 
  * @param {string} [params.search]
+ * @param {string} [params.level]
  * @param {*} project 
  * @returns 
  */
@@ -190,12 +191,13 @@ const buildLogsSearchQuery = (project, params = {}) => {
  * @param {object} [query] 
  * @param {string} [query.project]
  * @param {string} [query.search]
+ * @param {string} [query.level]
  * @param {string} sortBy 
  * @param {number} limit 
  * @param {number} page 
  * @returns 
  */
-const paginateLogs = async (query, sortBy = "createdAt:desc", limit = 10, page = 1) => {
+const paginateLogs = async (query, sortBy = "updatedAt:desc", limit = 10, page = 1) => {
 
     if (!query?.project) {
         throw HttpError(INVALID_INPUT_ERR_CODE, `Unknown Project`)
