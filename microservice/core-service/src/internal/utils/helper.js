@@ -46,7 +46,6 @@ const validateSignature = (project, headers, body) => {
     const { timestamp, signature } = headers;
 
     const payload = {
-        timestamp,
         level,
         projectId,
         device,

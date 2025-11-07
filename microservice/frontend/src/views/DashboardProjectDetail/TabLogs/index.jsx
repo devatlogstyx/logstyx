@@ -73,8 +73,8 @@ const TabLogs = ({
                                     {n}<SortIcon column={n} />
                                 </Th>
                             ))}
-                            <Th onClick={() => handleSort('lastSeen')} style={{ cursor: 'pointer' }}>
-                                Last Seen<SortIcon column="lastSeen" />
+                            <Th onClick={() => handleSort('updatedAt')} style={{ cursor: 'pointer' }}>
+                                Last Seen<SortIcon column="updatedAt" />
                             </Th>
                             <Th></Th>
                         </Tr>
@@ -100,7 +100,7 @@ const TabLogs = ({
                                 })}
                                 <Td>
                                     <span className="text-sm text-gray-500">
-                                        {moment(log.lastSeen)?.fromNow()}
+                                        {moment(log.updatedAt)?.fromNow()}
                                     </span>
                                 </Td>
                                 <Td>
