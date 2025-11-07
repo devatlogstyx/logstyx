@@ -117,8 +117,8 @@ const initLogger = async (project) => {
     }
 
     // Create models with NEW schema
-    const logModel = mongoose.model(logModelName, schema, `logs_${project.id}`);
-    const logStampModel = mongoose.model(logStampModelName, stampSchema, `logstamps_${project.id}`);
+    const logModel = mongoose.model(logModelName, schema, `log_${project.id}`);
+    const logStampModel = mongoose.model(logStampModelName, stampSchema, `logstamp_${project.id}`);
 
     // Sync indexes: creates new ones, drops old ones
     await logModel.syncIndexes();
@@ -151,7 +151,7 @@ const getLogModel = async (projectId) => {
 
     // Check if models already exist in Mongoose, otherwise create them
     const logModel = mongoose.models[logModelName] ||
-        mongoose.model(logModelName, logSchema.clone(), `logs_${project.id}`);
+        mongoose.model(logModelName, logSchema.clone(), `log_${project.id}`);
 
     const logStampModel = mongoose.models[logStampModelName] ||
         mongoose.model(logStampModelName, logstampSchema.clone(), `logstamp_${project.id}`);
