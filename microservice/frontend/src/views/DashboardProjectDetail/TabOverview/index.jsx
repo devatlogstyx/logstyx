@@ -28,7 +28,7 @@ const TabOverview = ({
                             <div className="text-sm text-gray-500">
                                 Project ID
                             </div>
-                            <div className="font-medium">{project.slug}</div>
+                            <div className="font-medium">{project.id}</div>
                         </Grid.Col>
                         <Grid.Col span={6}>
                             <div className="text-sm text-gray-500">
