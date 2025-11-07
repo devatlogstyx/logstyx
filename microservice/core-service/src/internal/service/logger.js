@@ -2,7 +2,7 @@
 
 const { mongoose } = require("./../../shared/mongoose");
 const { getProjectFromCache } = require("../../shared/cache");
-const { HttpError, hashString, decryptSecret, createSlug } = require("common/function");
+const { HttpError, hashString, decryptSecret, createSlug, num2Int } = require("common/function");
 const { NOT_FOUND_ERR_CODE, NOT_FOUND_ERR_MESSAGE, BROWSER_CLIENT_TYPE, INVALID_INPUT_ERR_CODE, INVALID_INPUT_ERR_MESSAGE } = require("common/constant");
 const { validateOrigin, validateSignature, getLogModel, generateIndexedHashes } = require("../utils/helper");
 const projectModel = require("../model/project.model");
@@ -33,7 +33,7 @@ const processWriteLog = async ({ headers, body }) => {
     const { level, projectId, device, context, data, appid } = body
     const { deviceClientType, signature, origin } = headers
 
-    const timestamp = headers?.timestamp || new Date().getTime()
+    const timestamp = headers?.timestamp
 
     const project = await getProjectFromCache(projectId)
     if (!project) {
@@ -55,7 +55,7 @@ const processWriteLog = async ({ headers, body }) => {
         device,
         context,
         data,
-        timestamp
+        timestamp: num2Int(timestamp)
     })
 
     return null
