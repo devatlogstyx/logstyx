@@ -93,7 +93,6 @@ const createLog = async (project, params) => {
             $set: { updatedAt: new Date(params?.timestamp) },
             $inc: { count: 1 },
             $setOnInsert: {
-                project: ObjectId.createFromHexString(project?.id),
                 level: params?.level,
                 device: params?.device,
                 context: params?.context,
@@ -107,7 +106,6 @@ const createLog = async (project, params) => {
 
     await logstamp.create(
         {
-            project: ObjectId.createFromHexString(project?.id),
             key,
             level: params?.level,
             createdAt: new Date(params?.timestamp)
