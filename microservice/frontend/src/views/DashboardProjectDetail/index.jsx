@@ -49,7 +49,7 @@ const DashboardProjectDetail = () => {
   }
 
   return (
-    <Container className="max-w-7xl py-8">
+    <Container className="py-8">
       {/* Header */}
       <div className="space-y-4 mb-8">
         <div className="flex justify-between items-start">

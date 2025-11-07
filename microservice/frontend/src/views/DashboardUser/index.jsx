@@ -3,6 +3,7 @@ import {
     Text,
     Paper,
     Tabs,
+    Container,
 
 } from '@mantine/core';
 import {
@@ -26,7 +27,7 @@ const DashboardUser = () => {
 
 
     return (
-        <div className="max-w-7xl mx-auto py-8 px-4">
+        <Container className="py-8">
             <div className="space-y-8">
                 {/* Header */}
                 <div>
@@ -80,7 +81,7 @@ const DashboardUser = () => {
                 </Tabs>
 
             </div>
-        </div>
+        </Container>
     );
 };
 

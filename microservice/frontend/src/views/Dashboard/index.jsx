@@ -1,6 +1,6 @@
 //@ts-check
 
-import { Loader, Text, Title } from "@mantine/core";
+import { Container, Loader, Text, Title } from "@mantine/core";
 import { useUser } from "../../context/useUser";
 import { Navigate } from "react-router-dom";
 import ProjectViews from "./ProjectViews";
@@ -25,12 +25,12 @@ const DashboardPage = () => {
     }
 
     return (
-        <div className="flex flex-col gap-4">
+        <Container className="py-8" >
             <div>
                 <Title order={1} className="mb-2">Projects</Title>
             </div>
             <ProjectViews />
-        </div>
+        </Container>
     );
 };
 
