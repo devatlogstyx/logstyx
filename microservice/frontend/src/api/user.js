@@ -140,3 +140,29 @@ export const listMyProject = async (signal) => {
     });
     return data?.data;
 }
+
+/**
+ * 
+ * @param {*} signal 
+ * @param {object} payload 
+ * @returns 
+ */
+export const updateMyProfile = async (signal, payload) => {
+    let { data } = await Axios.put(`/v1/users/me`, payload, {
+        signal
+    });
+    return data?.data;
+}
+
+/**
+ * 
+ * @param {*} signal 
+ * @param {object} payload 
+ * @returns 
+ */
+export const updateMyPassword = async (signal, payload) => {
+    let { data } = await Axios.patch(`/v1/users/me/password`, payload, {
+        signal
+    });
+    return data?.data;
+}

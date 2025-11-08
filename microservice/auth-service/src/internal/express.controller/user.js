@@ -20,7 +20,7 @@ const {
     READ_USER_USER_ROLE,
 
 } = require("common/constant");
-const { paginateUser, removeUser, handleUserLogin, createUserToken, updateUser } = require("../service/user");
+const { paginateUser, removeUser, handleUserLogin, createUserToken, patchUserPermission, updateUserProfile, patchUserPassword } = require("../service/user");
 const { createRefreshToken, expireRefreshToken } = require("../service/auth");
 const { getUserDashboardProjectStats, listUsersProject } = require("../../shared/provider/core.service");
 const { CanUserDo } = require("../utils/helper");
@@ -127,7 +127,7 @@ module.exports = {
             throw HttpError(INVALID_INPUT_ERR_CODE, `You cant remove yourself`)
         }
 
-        await updateUser(req?.params?.id, req?.body)
+        await patchUserPermission(req?.params?.id, req?.body?.permissions)
 
         HttpResponse(res).json({
             error: SUCCESS_ERR_CODE,
@@ -222,5 +222,38 @@ module.exports = {
         });
     },
 
-    
+    /**
+     * 
+     * @param {*} req 
+     * @param {*} res 
+     */
+    async UserUpdateProfile(req, res) {
+        if (!req?.user) {
+            throw HttpError(NO_ACCESS_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
+        }
+
+        await updateUserProfile(req?.user?.id, req?.body)
+
+        HttpResponse(res).json({
+            error: SUCCESS_ERR_CODE,
+            message: SUCCESS_ERR_MESSAGE,
+        });
+    },
+    /**
+     * 
+     * @param {*} req 
+     * @param {*} res 
+     */
+    async UserPatchPassword(req, res) {
+        if (!req?.user) {
+            throw HttpError(NO_ACCESS_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
+        }
+
+        await patchUserPassword(req?.user?.id, req?.body)
+
+        HttpResponse(res).json({
+            error: SUCCESS_ERR_CODE,
+            message: SUCCESS_ERR_MESSAGE,
+        });
+    },
 };

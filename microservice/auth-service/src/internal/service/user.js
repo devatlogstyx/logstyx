@@ -222,25 +222,16 @@ const removeUser = async (id) => {
  * @param {string[]} params.permissions
  * @returns 
  */
-const updateUser = async (id, params) => {
+const patchUserPermission = async (id, permissions) => {
 
     const user = await getUserFromCache(id)
     if (!user) {
         throw HttpError(NOT_FOUND_ERR_CODE, NOT_FOUND_ERR_MESSAGE)
     }
 
-    const v = new Validator(params, {
-        permissions: "required|arrayUnique"
-    });
-
-    let match = await v.check();
-    if (!match) {
-        throw HttpError(INVALID_INPUT_ERR_CODE, v.errors);
-    }
-
-    const raw = await userModel.findByIdAndUpdate(id, {
+    await userModel.findByIdAndUpdate(id, {
         $set: {
-            permissions: params?.permissions
+            permissions
         }
     }, {
         new: true,
@@ -390,7 +381,155 @@ const ensureSelfProject = async (userId) => {
     });
 };
 
+/**
+ * 
+ * @param {string} id 
+ * @param {object} params 
+ * @param {string} params.fullname
+ * @param {string} params.email
+ */
+const updateUserProfile = async (id, params) => {
+    const user = await getUserFromCache(id);
+    if (!user) {
+        throw HttpError(NOT_FOUND_ERR_CODE, NOT_FOUND_ERR_MESSAGE);
+    }
 
+    const v = new Validator(params, {
+        fullname: "required|string",
+        email: "required|string",
+    });
+
+    let match = await v.check();
+    if (!match) {
+        throw HttpError(INVALID_INPUT_ERR_CODE, v.errors);
+    }
+
+    let email = striptags(params.email.toString()).trim().toLowerCase();
+    const hashedEmail = hashString(email);
+
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
+    try {
+        // Check for email conflicts within transaction
+        const conflictingLogin = await userLoginModel.findOne({
+            "hash.key": hashedEmail,
+            type: EMAIL_PASSWORD_LOGIN_TYPE,
+            user: { $ne: user.id }
+        }).session(session);
+
+        if (conflictingLogin) {
+            throw HttpError(INVALID_INPUT_ERR_CODE, `${email} is used by someone else`);
+        }
+
+        // Find user's own login document
+        const userLogin = await userLoginModel.findOne({
+            user: user.id,
+            type: EMAIL_PASSWORD_LOGIN_TYPE
+        }).session(session);
+
+        if (!userLogin) {
+            throw HttpError(NOT_FOUND_ERR_CODE, 'User login not found');
+        }
+
+        // Update both documents
+        await userModel.findByIdAndUpdate(user.id, {
+            $set: sanitizeObject({
+                fullname: striptags(params.fullname),
+                email,
+                hash: { email: hashedEmail }
+            })
+        }).session(session);
+
+        await userLoginModel.findByIdAndUpdate(userLogin._id, {
+            $set: {
+                key: email,
+                hash: { key: hashedEmail }
+            }
+        }).session(session);
+
+        await session.commitTransaction();
+
+        return updateUserCache(user.id)
+        
+    } catch (e) {
+        await session.abortTransaction();
+        throw e;
+    } finally {
+        await session.endSession();
+    }
+};
+/**
+ * 
+ * @param {string} id 
+ * @param {object} params 
+ * @param {string} params.oldpassword
+ * @param {string} params.newpassword
+ * @param {string} params.repassword
+ */
+const patchUserPassword = async (id, params) => {
+    const user = await getUserFromCache(id);
+    if (!user) {
+        throw HttpError(NOT_FOUND_ERR_CODE, NOT_FOUND_ERR_MESSAGE);
+    }
+
+    const v = new Validator(params, {
+        oldpassword: "required|string",
+        newpassword: "required|string", // Add minimum length
+        repassword: "required|string",
+    });
+
+    let match = await v.check();
+    if (!match) {
+        throw HttpError(INVALID_INPUT_ERR_CODE, v.errors);
+    }
+
+    if (params.newpassword !== params.repassword) {
+        throw HttpError(INVALID_INPUT_ERR_CODE, `New password did not match`);
+    }
+
+    // Find user's login document OUTSIDE transaction
+    const userLogin = await userLoginModel.findOne({
+        user: user.id,
+        type: EMAIL_PASSWORD_LOGIN_TYPE
+    });
+
+    if (!userLogin) {
+        throw HttpError(NOT_FOUND_ERR_CODE, 'User login not found');
+    }
+
+    // Verify old password OUTSIDE transaction (slow operation)
+    const isValid = await verifyUserPassword(userLogin.credentials, params.oldpassword);
+    if (!isValid) {
+        throw HttpError(INVALID_INPUT_ERR_CODE, INVALID_EMAIL_PASSWORD_ERR_MESSAGE);
+    }
+
+    // Hash new password OUTSIDE transaction (slow operation)
+    const salt = await bcrypt.genSalt(10);
+    const hash = await bcrypt.hash(params.newpassword, salt);
+    const encryptedCredentials = encrypt(JSON.stringify({ password: hash }));
+
+    // Only the fast database update happens in transaction
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
+    try {
+        // Quick update operation
+        await userLoginModel.findByIdAndUpdate(userLogin._id, {
+            $set: {
+                credentials: encryptedCredentials,
+            }
+        }).session(session);
+
+        await session.commitTransaction();
+
+    } catch (e) {
+        await session.abortTransaction();
+        throw e;
+    } finally {
+        await session.endSession();
+    }
+};
 
 module.exports = {
     findUserById,
@@ -399,5 +538,7 @@ module.exports = {
     removeUser,
     createUserToken,
     seedUser,
-    updateUser
+    patchUserPermission,
+    updateUserProfile,
+    patchUserPassword
 }

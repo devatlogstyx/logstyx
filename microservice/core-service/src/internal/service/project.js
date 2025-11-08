@@ -413,22 +413,22 @@ const getUsersDashboardProjectsStats = async (userId) => {
                     $facet: {
                         // Logs today
                         logsToday: [
-                            { $match: { createdAt: { $gte: todayStart } } },
+                            { $match: { updatedAt: { $gte: todayStart } } },
                             { $group: { _id: null, total: { $sum: "$count" } } }
                         ],
 
                         // Last log
                         lastLog: [
-                            { $sort: { createdAt: -1 } },
+                            { $sort: { updatedAt: -1 } },
                             { $limit: 1 },
-                            { $project: { createdAt: 1, key: 1, level: 1 } }
+                            { $project: { updatedAt: 1, key: 1, level: 1 } }
                         ],
 
                         // Activity per hour (last 7 hours)
                         activity: [
                             {
                                 $match: {
-                                    createdAt: { $gte: new Date(Date.now() - 7 * 60 * 60 * 1000) }
+                                    updatedAt: { $gte: new Date(Date.now() - 7 * 60 * 60 * 1000) }
                                 }
                             },
                             {
@@ -436,7 +436,7 @@ const getUsersDashboardProjectsStats = async (userId) => {
                                     _id: {
                                         $dateToString: {
                                             format: "%Y-%m-%d-%H",
-                                            date: "$createdAt"
+                                            date: "$updatedAt"
                                         }
                                     },
                                     count: { $sum: "$count" }
@@ -449,7 +449,7 @@ const getUsersDashboardProjectsStats = async (userId) => {
                         errorsToday: [
                             {
                                 $match: {
-                                    createdAt: { $gte: todayStart },
+                                    updatedAt: { $gte: todayStart },
                                     level: ERROR_LOG_LEVEL
                                 }
                             },
@@ -460,7 +460,7 @@ const getUsersDashboardProjectsStats = async (userId) => {
                         criticalToday: [
                             {
                                 $match: {
-                                    createdAt: { $gte: todayStart },
+                                    updatedAt: { $gte: todayStart },
                                     level: CRITICAL_LOG_LEVEL
                                 }
                             },
@@ -492,8 +492,8 @@ const getUsersDashboardProjectsStats = async (userId) => {
                 id: project.id,
                 title: project.title,
                 slug: project.slug,
-                status: lastLogData && isRecent(lastLogData.createdAt) ? 'active' : 'inactive',
-                lastLog: lastLogData ? moment(lastLogData.createdAt).fromNow() : 'Never',
+                status: lastLogData && isRecent(lastLogData.updatedAt) ? 'active' : 'inactive',
+                lastLog: lastLogData ? moment(lastLogData.updatedAt).fromNow() : 'Never',
                 logsToday: logsToday,
                 errorCount: errorCount,
                 criticalCount: criticalCount,

@@ -3,6 +3,14 @@ const { JSONParseX, decrypt } = require("common/function");
 const bcrypt = require("bcryptjs");
 const { getUserFromCache } = require("../../shared/cache");
 
+/**
+ * 
+ * @param {object} credentials 
+ * @param {string} credentials.iv
+ * @param {string} credentials.content
+ * @param {string} inputPassword 
+ * @returns 
+ */
 const verifyUserPassword = async (credentials, inputPassword) => {
     const { password } = await JSONParseX(decrypt(credentials));
     const isPasswordMatch = await bcrypt.compare(inputPassword, password);

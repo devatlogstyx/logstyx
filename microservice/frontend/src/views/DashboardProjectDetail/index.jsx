@@ -125,13 +125,13 @@ const DashboardProjectDetail = () => {
       {/* Tabs */}
       <Tabs value={activeTab} onChange={changeActiveTab}>
         <Tabs.List>
-          <Tabs.Tab value="overview" icon={<FiInfo className="w-3.5 h-3.5" />}>
+          <Tabs.Tab value="overview" leftSection={<FiInfo className="w-3.5 h-3.5" />}>
             Overview
           </Tabs.Tab>
-          <Tabs.Tab value="logs" icon={<FiActivity className="w-3.5 h-3.5" />}>
+          <Tabs.Tab value="logs" leftSection={<FiActivity className="w-3.5 h-3.5" />}>
             Logs
           </Tabs.Tab>
-          <Tabs.Tab value="users" icon={<FiUsers className="w-3.5 h-3.5" />}>
+          <Tabs.Tab value="users" leftSection={<FiUsers className="w-3.5 h-3.5" />}>
             Users
           </Tabs.Tab>
         </Tabs.List>

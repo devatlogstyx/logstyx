@@ -4,6 +4,7 @@ module.exports = {
     mapUser: (json) => {
         return {
             id: json?.id || json?._id?.toString(),
+            email: json?.email,
             fullname: json?.fullname,
             image: json?.image,
             permissions: json?.permissions,
