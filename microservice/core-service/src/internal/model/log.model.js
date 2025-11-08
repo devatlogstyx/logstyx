@@ -1,11 +1,8 @@
 //@ts-check
 const { mongoose } = require("../../shared/mongoose");
 const {
-    ObjectId,
     Mixed
 } = mongoose.Schema.Types
-const { fieldEncryption } = require("../../shared/mongoose/plugins");
-const { decryptSecret } = require("common/function");
 
 const logSchema = new mongoose.Schema(
     {
@@ -46,9 +43,5 @@ const logSchema = new mongoose.Schema(
 
 logSchema.index({ createdAt: 1 });
 logSchema.index({ updatedAt: 1 });
-logSchema.plugin(fieldEncryption, {
-    fields: ["context", "data"],
-    secret: () => decryptSecret(process?.env?.ENC_CRYPTO_SECRET),
-});
 
 module.exports = logSchema

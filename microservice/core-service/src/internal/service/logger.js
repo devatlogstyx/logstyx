@@ -2,10 +2,11 @@
 
 const { mongoose } = require("./../../shared/mongoose");
 const { getProjectFromCache } = require("../../shared/cache");
-const { HttpError, hashString, decryptSecret, createSlug } = require("common/function");
+const { HttpError, hashString, decryptSecret, createSlug, encrypt } = require("common/function");
 const { NOT_FOUND_ERR_CODE, NOT_FOUND_ERR_MESSAGE, BROWSER_CLIENT_TYPE, INVALID_INPUT_ERR_CODE, INVALID_INPUT_ERR_MESSAGE } = require("common/constant");
 const { validateOrigin, validateSignature, getLogModel, generateIndexedHashes } = require("../utils/helper");
 const projectModel = require("../model/project.model");
+const { mapLog } = require("../utils/mapper");
 const { ObjectId } = mongoose.Types
 
 
@@ -102,8 +103,8 @@ const createLog = async (project, params) => {
             $setOnInsert: {
                 level: params?.level,
                 device: params?.device,
-                context: params?.context,
-                data: params?.data,
+                context: encrypt(JSON.stringify(params?.context)),
+                data: encrypt(JSON.stringify(params?.data)),
                 hash: hashes,
                 createdAt: timestampDate
             }
@@ -218,7 +219,7 @@ const paginateLogs = async (query, sortBy = "updatedAt:desc", limit = 10, page =
     const { log: logModel } = await getLogModel(project?.id)
 
     const list = await logModel.paginate(queryParams, { sortBy, limit, page })
-    list.results = list?.results?.map((n) => n?.toJSON())
+    list.results = list?.results?.map(mapLog)
 
     return list
 }

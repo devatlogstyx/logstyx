@@ -31,6 +31,10 @@ const encrypt = (text) => {
  * @returns 
  */
 const decrypt = (hash) => {
+    if (!hash.iv || !hash.content) {
+        return hash
+    }
+
     const secretKey = decryptSecret(process?.env?.ENC_CRYPTO_SECRET)
     const decipher = crypto.createDecipheriv(
         algorithm,
