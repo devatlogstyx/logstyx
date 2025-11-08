@@ -16,20 +16,20 @@ const logstampSchema = new mongoose.Schema({
     createdAt: {
         type: Date,
         required: true,
-        default: () => new Date()  // Auto-generate if not provided
+        default: () => new Date()
     }
 }, {
     timeseries: {
         timeField: 'createdAt',
-        metaField: 'level',  // Groups data by project
-        granularity: 'seconds' // or 'minutes' for less frequent logs
+        metaField: 'level',
+        granularity: 'seconds'
+        // expireAfterSeconds will be set dynamically
     },
-    timestamps: false,  // Don't use Mongoose timestamps
+    timestamps: false,
     versionKey: false,
 });
 
-// Indexes for common queries
-logstampSchema.index({ project: 1, level: 1, createdAt: -1 });
-logstampSchema.index({ project: 1, key: 1, createdAt: -1 });
+logstampSchema.index({ level: 1, createdAt: -1 });
+logstampSchema.index({ key: 1, createdAt: -1 });
 
-module.exports = logstampSchema
+module.exports = logstampSchema;

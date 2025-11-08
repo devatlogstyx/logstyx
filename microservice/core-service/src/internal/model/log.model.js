@@ -41,7 +41,6 @@ const logSchema = new mongoose.Schema(
     }
 );
 
-logSchema.index({ createdAt: 1 });
 logSchema.index({ updatedAt: 1 });
 
 module.exports = logSchema

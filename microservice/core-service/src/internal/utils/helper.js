@@ -84,7 +84,7 @@ const initLogger = async (project) => {
     const logModelName = `Log_${project.id}`;
     const logStampModelName = `Logstamp_${project.id}`;
 
-    // Delete existing models so we can recreate with new schema
+    // Delete existing models
     if (mongoose.models[logModelName]) {
         delete mongoose.models[logModelName];
         delete mongoose.connection.models[logModelName];
@@ -94,37 +94,119 @@ const initLogger = async (project) => {
         delete mongoose.connection.models[logStampModelName];
     }
 
-    // Create fresh schemas with CURRENT project settings
+    // === LOG COLLECTION ===
     const schema = logSchema.clone();
-    const stampSchema = logstampSchema.clone();
 
+    // Clear any existing createdAt indexes from schema
+    schema._indexes = schema._indexes.filter(idx => {
+        const fields = Object.keys(idx[0]);
+        return !fields.includes('createdAt');
+    });
+
+    // Add custom indexes
     for (const field of project.settings.indexes) {
         const hashField = `hash.${field.replace(/\./g, '_')}`;
         schema.index({ [hashField]: 1 });
     }
 
-    if (project.settings.retentionDays) {
+    // Add TTL index
+    const retentionDays = project.settings.retentionDays;
+    if (retentionDays && retentionDays > 0) {
         schema.index(
             { createdAt: 1 },
-            { expireAfterSeconds: project.settings.retentionDays * 24 * 60 * 60 }
+            { 
+                expireAfterSeconds: retentionDays * 24 * 60 * 60,
+                name: 'createdAt_ttl'
+            }
         );
     }
 
-    if (project.settings.retentionDays) {
-        stampSchema.set('expireAfterSeconds',
-            project.settings.retentionDays * 24 * 60 * 60
-        );
-    }
-
-    // Create models with NEW schema
     const logModel = mongoose.model(logModelName, schema, `log_${project.id}`);
-    const logStampModel = mongoose.model(logStampModelName, stampSchema, `logstamp_${project.id}`);
 
-    // Sync indexes: creates new ones, drops old ones
+    // Drop the problematic index specifically
+    try {
+        const existingIndexes = await logModel.collection.indexes();
+        
+        for (const idx of existingIndexes) {
+            if (idx.name.includes('createdAt') && idx.name !== 'createdAt_ttl') {
+                await logModel.collection.dropIndex(idx.name);
+            }
+        }
+    } catch (e) {
+        // Ignore
+    }
+    
     await logModel.syncIndexes();
-    await logStampModel.syncIndexes();
 
-    // Update Registry with new models
+    // === TIMESERIES COLLECTION ===
+    const collectionName = `logstamp_${project.id}`;
+    
+    try {
+        // Check if collection exists
+        const collections = await mongoose.connection.db
+            .listCollections({ name: collectionName })
+            .toArray();
+        
+        const collectionExists = collections.length > 0;
+        
+        if (collectionExists) {
+            // Collection exists - check if TTL matches
+            const collInfo = collections[0];
+            const currentTTL = collInfo?.options?.expireAfterSeconds;
+            const desiredTTL = retentionDays ? retentionDays * 24 * 60 * 60 : null;
+            
+            //drop if ttl ttl mismatched
+            if (currentTTL !== desiredTTL) {
+                
+                await mongoose.connection.db.dropCollection(collectionName);
+                
+                // Create with new TTL
+                const createOptions = {
+                    timeseries: {
+                        timeField: 'createdAt',
+                        metaField: 'level',
+                        granularity: 'seconds'
+                    }
+                };
+                
+                if (retentionDays && retentionDays > 0) {
+                    createOptions.expireAfterSeconds = retentionDays * 24 * 60 * 60;
+                }
+            
+                await mongoose.connection.db.createCollection(collectionName, createOptions);
+            }
+        } else {
+            // Collection doesn't exist - create it
+            const createOptions = {
+                timeseries: {
+                    timeField: 'createdAt',
+                    metaField: 'level',
+                    granularity: 'seconds'
+                }
+            };
+            
+            if (retentionDays && retentionDays > 0) {
+                createOptions.expireAfterSeconds = retentionDays * 24 * 60 * 60;
+            }
+            
+            await mongoose.connection.db.createCollection(collectionName, createOptions);
+        }
+    } catch (e) {
+        throw e;
+    }
+
+    // Create Mongoose model
+    const stampSchema = logstampSchema.clone();
+    delete stampSchema.options.timeseries;
+    
+    const logStampModel = mongoose.model(logStampModelName, stampSchema, collectionName);
+    
+    try {
+        await logStampModel.syncIndexes();
+    } catch (e) {
+        console.log('Note: Could not sync indexes on timeseries:', e.message);
+    }
+
     Registry[project.id] = {
         log: logModel,
         logstamp: logStampModel
