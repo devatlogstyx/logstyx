@@ -30,7 +30,9 @@ module.exports = {
             context: json?.context?.iv && json?.context?.content ? JSON.parse(decrypt(json?.context)) : json?.context,
             data: json?.data?.iv && json?.data?.content ? JSON.parse(decrypt(json?.data)) : json?.data,
             hash: json?.hash,
-            count: json?.count
+            count: json?.count,
+            createdAt:json?.createdAt,
+            updatedAt:json?.updatedAt,
         }
     }
 }
