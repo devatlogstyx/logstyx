@@ -18,8 +18,15 @@ const useTabUserInvitation = ({
 
     const clipboard = useClipboard({ timeout: 500 });
 
-    const copyInvitationMessage = (id) => {
-        clipboard.copy(`You've been invited to manage ${PROJECT_TITLE || 'LOGSTYX'}.\nVisit ${window.location.protocol}//${window.location.host}/invitations/${id} to set up your credentials.`)
+    /**
+     * 
+     * @param {object} invitation 
+     * @param {string} invitation.id
+     * @param {string} invitation.email
+     * @returns 
+     */
+    const copyInvitationMessage = (invitation) => {
+        clipboard.copy(`${PROJECT_TITLE || 'LOGSTYX'} invitation: Visit ${window.location.protocol}//${window.location.host}/invitations/${invitation?.id} with ${invitation?.email} to activate your access.`)
         SuccessMessage(`Invitation copied!`)
         return null
     }

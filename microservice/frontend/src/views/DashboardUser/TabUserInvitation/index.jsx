@@ -63,7 +63,7 @@ const TabUserInvitation = ({
                                     <ActionIcon
                                         variant="light"
                                         onClick={() => {
-                                            copyInvitationMessage(invitation.id)
+                                            copyInvitationMessage(invitation)
                                         }}
                                     >
                                         <MdContentCopy size={18} />
