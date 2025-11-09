@@ -115,7 +115,6 @@ const createLog = async (project, params) => {
     await logstamp.create(
         {
             key,
-            level: params?.level,
             createdAt: timestampDate
         },
     );

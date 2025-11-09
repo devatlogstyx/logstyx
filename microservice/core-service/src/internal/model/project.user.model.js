@@ -10,9 +10,7 @@ const projectUserSchema = new mongoose.Schema(
         project: {
             type: ObjectId,
             required: true,
-            trim: true,
             index: true,
-            maxLength: 128,
         },
         user: {
             type: userSchema,

@@ -8,11 +8,6 @@ const logstampSchema = new mongoose.Schema({
         index: true,
         trim: true
     },
-    level: {
-        type: String,
-        required: true,
-        index: true,
-    },
     createdAt: {
         type: Date,
         required: true,
