@@ -100,7 +100,7 @@ const initLogger = async (project) => {
     // Clear any existing createdAt indexes from schema
     schema._indexes = schema._indexes.filter(idx => {
         const fields = Object.keys(idx[0]);
-        return !fields.includes('createdAt');
+        return !fields.includes('createdAt') && !fields.includes('updatedAt');
     });
 
     // Add custom indexes
@@ -113,13 +113,14 @@ const initLogger = async (project) => {
     const retentionDays = project.settings.retentionDays;
     if (retentionDays && retentionDays > 0) {
         schema.index(
-            { createdAt: 1 },
+            { updatedAt: 1 },  // ← Changed from createdAt
             { 
                 expireAfterSeconds: retentionDays * 24 * 60 * 60,
-                name: 'createdAt_ttl'
+                name: 'updatedAt_ttl'
             }
         );
     }
+
 
     const logModel = mongoose.model(logModelName, schema, `log_${project.id}`);
 
@@ -128,7 +129,8 @@ const initLogger = async (project) => {
         const existingIndexes = await logModel.collection.indexes();
         
         for (const idx of existingIndexes) {
-            if (idx.name.includes('createdAt') && idx.name !== 'createdAt_ttl') {
+            if ((idx.name.includes('createdAt') || idx.name.includes('updatedAt')) 
+                && idx.name !== 'updatedAt_ttl') {
                 await logModel.collection.dropIndex(idx.name);
             }
         }
