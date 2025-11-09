@@ -16,7 +16,7 @@ const SelectUserProject = ({
         <>
             <MultiSelect
                 placeholder="Select Project"
-                onLoad={isLoading}
+                disabled={isLoading}
                 data={projects?.map((n) => {
                     return {
                         value: n?.id,

@@ -26,7 +26,7 @@ const useTabUserInvitation = ({
      * @returns 
      */
     const copyInvitationMessage = (invitation) => {
-        clipboard.copy(`${PROJECT_TITLE || 'LOGSTYX'} invitation: Visit ${window.location.protocol}//${window.location.host}/invitations/${invitation?.id} with ${invitation?.email} to activate your access.`)
+        clipboard.copy(`${PROJECT_TITLE || 'LOGSTYX'} invitation: Visit ${window.location.protocol}//${window.location.host}/invitations/${invitation?.id} and use ${invitation?.email} to activate your access.`)
         SuccessMessage(`Invitation copied!`)
         return null
     }

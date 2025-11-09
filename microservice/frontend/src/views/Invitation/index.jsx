@@ -18,7 +18,7 @@ const InvitationPage = () => {
     if (!user) {
         return (
             <>
-                <div className="flex justify-center items-center h-screen">
+                <div className="flex justify-center items-center h-screen px-4">
                     {
                         isLoading ?
                             <Loader /> :

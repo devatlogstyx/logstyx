@@ -43,7 +43,7 @@ const TabLogs = ({
     }
     return (
         <>
-            <div className="p-6 rounded-md border shadow-sm bg-white flex flex-col gap-4">
+            <div className="p-6 rounded-md border shadow-sm bg-white flex flex-col gap-4 overflow-x-auto">
                 <div className="flex justify-between items-center mb-4">
                     <h3 className="text-xl font-semibold">Recent Logs</h3>
                     <Select

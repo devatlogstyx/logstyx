@@ -1,12 +1,14 @@
 //@ts-check
 
 import { Avatar, ActionIcon, Menu } from "@mantine/core"
-import { IoNotificationsOutline, IoSearchOutline, IoHelpCircleOutline, IoChevronDown } from "react-icons/io5"
+import { IoNotificationsOutline, IoSearchOutline, IoHelpCircleOutline, IoChevronDown, IoMenuOutline } from "react-icons/io5"
 import { useUser } from "../../../context/useUser"
 import useHeader from "./hook"
 import ModalUpdateProfile from "../ModalUpdateProfile"
 
-const DashboardHeader = () => {
+const DashboardHeader = ({
+    onMenuClick
+}) => {
     const { user } = useUser()
     const {
         isEditProfileModalVisible,
@@ -18,9 +20,20 @@ const DashboardHeader = () => {
             <header className="px-6 py-4 bg-gradient-to-r from-blue-500 via-cyan-500 to-teal-500 text-white shadow-lg">
                 <div className="flex items-center justify-between">
                     {/* Left: Brand & Greeting */}
-                    <div>
-                        <h1 className="text-xl font-bold">Welcome back!</h1>
-                        <p className="text-sm text-blue-50 opacity-90">{user?.fullname}</p>
+                    <div className="flex items-center gap-3">
+                        <button
+                            onClick={onMenuClick}
+                            className="lg:hidden p-2 hover:bg-white/20 rounded-lg transition-colors"
+                            aria-label="Toggle menu"
+                        >
+                            <IoMenuOutline size={24} />
+                        </button>
+                        <div>
+                            <h1 className="text-lg md:text-xl font-bold">Welcome back!</h1>
+                            <p className="text-xs md:text-sm text-blue-50 opacity-90 truncate max-w-[150px] md:max-w-none">
+                                {user?.fullname}
+                            </p>
+                        </div>
                     </div>
 
                     {/* Right: Actions */}
@@ -49,8 +62,8 @@ const DashboardHeader = () => {
                 </div>
             </header>
             {
-                isEditProfileModalVisible && 
-                <ModalUpdateProfile 
+                isEditProfileModalVisible &&
+                <ModalUpdateProfile
                     opened={isEditProfileModalVisible}
                     onClose={CloseEditModal}
                 />

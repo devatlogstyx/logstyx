@@ -23,31 +23,31 @@ const TabOverview = ({
                     <h3 className="text-xl font-semibold mb-4">
                         Project Details
                     </h3>
-                    <Grid>
-                        <Grid.Col span={6}>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
                             <div className="text-sm text-gray-500">
                                 Project ID
                             </div>
                             <div className="font-medium">{project.id}</div>
-                        </Grid.Col>
-                        <Grid.Col span={6}>
+                        </div>
+                        <div>
                             <div className="text-sm text-gray-500">
                                 Created At
                             </div>
                             <div className="font-medium">{moment(project.createdAt).format("MMM, Do YYYY")}</div>
-                        </Grid.Col>
-                        <Grid.Col span={6}>
+                        </div>
+                        <div>
                             <div className="text-sm text-gray-500">
                                 Last Updated
                             </div>
                             <div className="font-medium">{moment(project.updatedAt).format("MMM, Do YYYY")}</div>
-                        </Grid.Col>
-                        <Grid.Col span={12}>
+                        </div>
+                        <div className="sm:col-span-2">
                             <div className="text-sm text-gray-500 mb-1">
                                 API Secret
                             </div>
                             <div className="flex gap-2">
-                                <Code className="flex-1">{project.secret}</Code>
+                                <Code className="flex-1 break-all">{project.secret}</Code>
                                 <CopyButton value={project.secret}>
                                     {({ copied, copy }) => (
                                         <Tooltip label={copied ? 'Copied' : 'Copy'}>
@@ -58,14 +58,15 @@ const TabOverview = ({
                                     )}
                                 </CopyButton>
                             </div>
-                        </Grid.Col>
-                        <Grid.Col className="flex justify-end">
+                        </div>
+                        <div className="sm:col-span-2 flex justify-end">
                             <DangerButton
                                 onClick={handleDelete}
                                 disabled={isSubmitting}
+                                className="w-full max-w-48 py-3"
                             >Delete Project</DangerButton>
-                        </Grid.Col>
-                    </Grid>
+                        </div>
+                    </div>
                 </div>
 
                 <div className="p-6 rounded-md border shadow-sm bg-white">

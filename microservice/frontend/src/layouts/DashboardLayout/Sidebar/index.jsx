@@ -4,8 +4,14 @@ import { useNavigate, useLocation } from "react-router-dom"
 import { IoPeopleOutline, IoSettingsOutline, IoDocumentTextOutline, IoLogOutOutline, IoBriefcase, IoBriefcaseOutline } from "react-icons/io5"
 import { useUser } from "../../../context/useUser"
 import { PROJECT_TITLE, READ_PROJECT_USER_ROLE, READ_SETTINGS_USER_ROLE, READ_USER_USER_ROLE } from "../../../utils/constant"
+import React from "react"
 
-const DashboardSidebar = () => {
+const DashboardSidebar = ({
+    isOpen,
+    onClose
+}) => {
+    const [activeItem, setActiveItem] = React.useState('projects');
+
     const navigate = useNavigate()
     const location = useLocation()
     const {
@@ -18,22 +24,42 @@ const DashboardSidebar = () => {
     }
 
 
-    const menuItems = []
+    const menuItems = [];
 
     if (user?.permissions?.includes(READ_PROJECT_USER_ROLE)) {
-        menuItems.push({ id: 'projects', label: 'Projects', icon: IoBriefcaseOutline, path: '/dashboard' })
+        menuItems.push({
+            id: 'projects',
+            label: 'Projects',
+            icon: IoBriefcaseOutline,
+            path: '/dashboard'
+        });
     }
 
     if (user?.permissions?.includes(READ_USER_USER_ROLE)) {
-        menuItems.push({ id: 'users', label: 'Users', icon: IoPeopleOutline, path: '/dashboard/users' })
+        menuItems.push({
+            id: 'users',
+            label: 'Users',
+            icon: IoPeopleOutline,
+            path: '/dashboard/users'
+        });
     }
-
     // if (user?.permissions?.includes(READ_SETTINGS_USER_ROLE)) {
     //     menuItems.push({ id: 'settings', label: 'Settings', icon: IoSettingsOutline, path: '/dashboard/settings' })
     // }
 
+    const handleNavigation = (itemId, path) => {
+        setActiveItem(itemId);
+        onClose(); // Close sidebar on mobile after navigation
+        navigate(path)
+    };
+
     return (
-        <aside className="w-64 bg-white border-r border-gray-200 flex flex-col">
+        <aside className={`
+        fixed lg:static inset-y-0 left-0 z-40
+        w-64 bg-white border-r border-gray-200 flex flex-col
+        transform transition-transform duration-300 ease-in-out
+        ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+      `}>
             {/* Logo/Brand */}
             <div className="px-6 py-5 border-b border-gray-200">
                 <h2 className="text-xl font-bold bg-gradient-to-r from-blue-500 via-cyan-500 to-teal-500 bg-clip-text text-transparent">
@@ -50,7 +76,7 @@ const DashboardSidebar = () => {
                     return (
                         <button
                             key={item.id}
-                            onClick={() => navigate(item.path)}
+                            onClick={() => handleNavigation(item.id, item.path)}
                             className={`cursor-pointer w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${isActive
                                 ? 'bg-gradient-to-r from-blue-500 via-cyan-500 to-teal-500 text-white shadow-md'
                                 : 'text-gray-700 hover:bg-gray-100'
