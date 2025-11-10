@@ -7,13 +7,29 @@ import ModalLogDetail from "../ModalLogDetail"
 import ModalTimeline from "../ModalTimeline"
 import { sanitizeObject } from "../../../utils/function"
 
-const useTabLogs = ({ projectId }) => {
+const useTabLogs = ({ project }) => {
     const [isLoading, setIsLoading] = React.useState(true)
     const [page, setPage] = React.useState(1)
     const [level, setLevel] = React.useState("")
     const [list, setList] = React.useState({})
     const [sortConfig, setSortConfig] = React.useState({ key: null, direction: 'asc' });
-    
+
+    // Add state for column visibility
+    const [visibleColumns, setVisibleColumns] = React.useState(
+        project?.settings?.indexes?.sort((a, b) => a?.localeCompare(b))?.reduce((acc, col) => {
+            acc[col] = true;
+            return acc;
+        }, {}) || {}
+    );
+
+    // Toggle function
+    const toggleColumn = (columnName) => {
+        setVisibleColumns(prev => ({
+            ...prev,
+            [columnName]: !prev[columnName]
+        }));
+    };
+
     const [detailModalProps, setDetailModalProps] = React.useState({
         opened: false,
         log: null,
@@ -36,7 +52,7 @@ const useTabLogs = ({ projectId }) => {
     const [timelineModalProps, setTimelineModalProps] = React.useState({
         opened: false,
         logKey: "",
-        projectId,
+        projectId: project?.id,
     });
 
     const closeTimelineModal = () => {
@@ -50,7 +66,7 @@ const useTabLogs = ({ projectId }) => {
         setTimelineModalProps({
             opened: true,
             logKey,
-            projectId,
+            projectId: project?.id,
         });
     };
 
@@ -72,7 +88,7 @@ const useTabLogs = ({ projectId }) => {
             setIsLoading(true)
             const l = await paginateProjectLogs(
                 controllerRef.current.signal,
-                projectId,
+                project?.id,
                 sanitizeObject({ level, page, sortBy: sortConfig?.key ? `${sortConfig.key}:${sortConfig.direction}` : undefined })
             )
             setList(l)
@@ -84,7 +100,7 @@ const useTabLogs = ({ projectId }) => {
         } finally {
             setIsLoading(false)
         }
-    }, [ErrorMessage, page, projectId, level, sortConfig])
+    }, [ErrorMessage, page, project, level, sortConfig])
 
     React.useEffect(() => {
         fetchData()
@@ -130,7 +146,9 @@ const useTabLogs = ({ projectId }) => {
         TimelineModalComponent,
         openTimelineModal,
         SortIcon,
-        handleSort
+        handleSort,
+        visibleColumns,
+        toggleColumn
     }
 }
 

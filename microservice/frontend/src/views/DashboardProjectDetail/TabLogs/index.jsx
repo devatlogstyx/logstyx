@@ -1,8 +1,8 @@
 //@ts-check
 
-import { ActionIcon, Badge, Code, Loader, Menu, Pagination, Select, Table, Tooltip } from "@mantine/core"
+import { ActionIcon, Badge, Button, Code, Loader, Menu, Pagination, Select, Table, Tooltip } from "@mantine/core"
 import { getLevelColor, getNestedValue } from "../../../utils/function"
-import { FiActivity, FiInfo, FiMoreVertical } from "react-icons/fi"
+import { FiActivity, FiCheck, FiColumns, FiInfo, FiMoreVertical } from "react-icons/fi"
 const {
     Thead,
     Tbody,
@@ -29,9 +29,11 @@ const TabLogs = ({
         TimelineModalComponent,
         openTimelineModal,
         handleSort,
-        SortIcon
+        SortIcon,
+        visibleColumns,
+        toggleColumn
     } = useTabLogs({
-        projectId: project?.id
+        project
     })
 
     if (isLoading) {
@@ -46,14 +48,38 @@ const TabLogs = ({
             <div className="p-6 rounded-md border shadow-sm bg-white flex flex-col gap-4 overflow-x-auto">
                 <div className="flex justify-between items-center mb-4">
                     <h3 className="text-xl font-semibold">Recent Logs</h3>
-                    <Select
-                        placeholder="Filter by level"
-                        data={["All Levels", ...logStatistic.map((n) => n?.level)]}
-                        defaultValue="All Levels"
-                        value={level}
-                        onChange={setLevel}
-                        className="w-52"
-                    />
+                    <div className="flex gap-2">
+                        {/* Column visibility menu */}
+                        <Menu shadow="md" width={200}>
+                            <Menu.Target>
+                                <Button variant="subtle" size="sm">
+                                    <FiColumns className="w-4 h-4 mr-2" />
+                                    Columns
+                                </Button>
+                            </Menu.Target>
+                            <Menu.Dropdown>
+                                <Menu.Label>Toggle Columns</Menu.Label>
+                                {project?.settings?.indexes?.map((col) => (
+                                    <Menu.Item
+                                        key={col}
+                                        onClick={() => toggleColumn(col)}
+                                        leftSection={visibleColumns[col] ? <FiCheck /> : null}
+                                    >
+                                        {col}
+                                    </Menu.Item>
+                                ))}
+                            </Menu.Dropdown>
+                        </Menu>
+
+                        <Select
+                            placeholder="Filter by level"
+                            data={["All Levels", ...logStatistic.map((n) => n?.level)]}
+                            defaultValue="All Levels"
+                            value={level}
+                            onChange={setLevel}
+                            className="w-52"
+                        />
+                    </div>
                 </div>
                 <Table highlightOnHover>
                     <Thead>
@@ -67,15 +93,17 @@ const TabLogs = ({
                             <Th onClick={() => handleSort('device.type')} style={{ cursor: 'pointer' }}>
                                 Device<SortIcon column="device.type" />
                             </Th>
-                            {project?.settings?.indexes?.map((n) => (
-                                <Th
-                                    key={n}
-                                    onClick={() => handleSort(n)}
-                                    style={{ cursor: 'pointer' }}
-                                >
-                                    {n}<SortIcon column={n} />
-                                </Th>
-                            ))}
+                            {project?.settings?.indexes?.map((n) =>
+                                visibleColumns[n] && (
+                                    <Th
+                                        key={n}
+                                        onClick={() => handleSort(n)}
+                                        style={{ cursor: 'pointer' }}
+                                    >
+                                        {n}<SortIcon column={n} />
+                                    </Th>
+                                )
+                            )}
                             <Th onClick={() => handleSort('updatedAt')} style={{ cursor: 'pointer' }}>
                                 Last Seen<SortIcon column="updatedAt" />
                             </Th>
@@ -99,11 +127,13 @@ const TabLogs = ({
                                 <Td>
                                     <span className="font-medium truncate">{log.device?.type}</span>
                                 </Td>
-                                {project?.settings?.indexes?.map((n) => {
-                                    return (
-                                        <Th className="max-w-xs truncate">{getNestedValue(log, n)}</Th>
+                                {project?.settings?.indexes?.map((n) =>
+                                    visibleColumns[n] && (
+                                        <Td key={n} className="max-w-xs truncate">
+                                            {getNestedValue(log, n)}
+                                        </Td>
                                     )
-                                })}
+                                )}
                                 <Td>
                                     <span className="text-sm text-gray-500">
                                         {moment(log.updatedAt)?.fromNow()}
