@@ -170,26 +170,34 @@ const processCreateLog = async (params) => {
  * @returns 
  */
 const buildLogsSearchQuery = (params = {}) => {
-    let query = {
+    let query = {}
 
-    }
+    // Handle multiple filters
+    if (params.filterFields && params.filterValues &&
+        params.filterFields.length > 0 &&
+        params.filterFields.length === params.filterValues.length) {
 
-    if (params.filterField && params?.filterValue) {
-        if (validateCustomIndex(params?.filterField)) {
-            // @ts-ignore
-            query[`hash.${params?.filterField.replace(/\./g, '_')}`] = hashString(
-                String(params?.filterValue),
-                params?.filterField
-            );
-        } else {
-            // @ts-ignore
-            query[params.filterField] = params?.filterValue
-        }
+        params.filterFields.forEach((field, index) => {
+            const value = params.filterValues[index]
 
+            if (field && value) {
+                if (validateCustomIndex(field)) {
+                    // Handle custom indexed fields
+                    query[`hash.${field.replace(/\./g, '_')}`] = hashString(
+                        String(value),
+                        field
+                    )
+                } else {
+                    // Handle regular fields
+                    query[field] = value
+                }
+            }
+        })
     }
 
     return query
 }
+
 
 /**
  * 

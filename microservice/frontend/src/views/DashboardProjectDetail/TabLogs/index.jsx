@@ -2,7 +2,7 @@
 
 import { ActionIcon, Badge, Button, Code, Loader, Menu, Pagination, Select, Table, Tooltip } from "@mantine/core"
 import { getLevelColor, getNestedValue } from "../../../utils/function"
-import { FiActivity, FiCheck, FiColumns, FiInfo, FiMoreVertical } from "react-icons/fi"
+import { FiActivity, FiCheck, FiColumns, FiInfo, FiMoreVertical, FiPlus, FiX } from "react-icons/fi"
 const {
     Thead,
     Tbody,
@@ -18,24 +18,26 @@ const TabLogs = ({
     logStatistic = []
 }) => {
     const {
+        list,
         isLoading,
         isFieldLoading,
-        list,
         page,
-        fields,
-        fieldValues,
-        filter,
-        setFilterField,
-        setFilterValue,
         setPage,
         DetailModalComponent,
         openDetailModal,
         TimelineModalComponent,
         openTimelineModal,
-        handleSort,
         SortIcon,
+        handleSort,
         visibleColumns,
-        toggleColumn
+        toggleColumn,
+        filters,
+        fields,
+        addFilter,
+        removeFilter,
+        updateFilterField,
+        updateFilterValue,
+        fieldValues,
     } = useTabLogs({
         project
     })
@@ -52,48 +54,80 @@ const TabLogs = ({
             <div className="p-6 rounded-md border shadow-sm bg-white flex flex-col gap-4 overflow-x-auto">
                 <div className="flex justify-between items-center mb-4">
                     <h3 className="text-xl font-semibold">Recent Logs</h3>
-                    <div className="flex gap-2">
-                        {/* Column visibility menu */}
-                        <Menu shadow="md" width={200}>
-                            <Menu.Target>
-                                <Button variant="subtle" size="sm">
-                                    <FiColumns className="w-4 h-4 mr-2" />
-                                    Columns
-                                </Button>
-                            </Menu.Target>
-                            <Menu.Dropdown>
-                                <Menu.Label>Toggle Columns</Menu.Label>
-                                {project?.settings?.indexes?.map((col) => (
-                                    <Menu.Item
-                                        key={col}
-                                        onClick={() => toggleColumn(col)}
-                                        leftSection={visibleColumns[col] ? <FiCheck /> : null}
+                    <div className="flex flex-col gap-3">
+                        <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center">
+                            {/* Column visibility menu */}
+                            <Menu shadow="md" width={200}>
+                                <Menu.Target>
+                                    <Button variant="subtle" size="sm" fullWidth className="sm:w-auto">
+                                        <FiColumns className="w-4 h-4 mr-2" />
+                                        Columns
+                                    </Button>
+                                </Menu.Target>
+                                <Menu.Dropdown>
+                                    <Menu.Label>Toggle Columns</Menu.Label>
+                                    {project?.settings?.indexes?.map((col) => (
+                                        <Menu.Item
+                                            key={col}
+                                            onClick={() => toggleColumn(col)}
+                                            leftSection={visibleColumns[col] ? <FiCheck /> : null}
+                                        >
+                                            {col}
+                                        </Menu.Item>
+                                    ))}
+                                </Menu.Dropdown>
+                            </Menu>
+
+                            <Button
+                                variant="light"
+                                size="sm"
+                                onClick={addFilter}
+                                fullWidth
+                                className="sm:w-auto"
+                            >
+                                <FiPlus className="w-4 h-4 mr-2" />
+                                Add Filter
+                            </Button>
+                        </div>
+
+                        {/* Filter rows */}
+                        <div className="flex flex-col gap-3">
+                            {filters.map((filter, index) => (
+                                <div key={filter.id} className="flex flex-col sm:flex-row gap-2 p-3 sm:p-0 bg-gray-50 sm:bg-transparent rounded-lg sm:rounded-none">
+                                    <Select
+                                        placeholder="Filter field"
+                                        data={fields}
+                                        value={filter.field}
+                                        onChange={(value) => updateFilterField(filter.id, value)}
+                                        className="w-full sm:w-52"
+                                        size="sm"
+                                    />
+
+                                    <Select
+                                        disabled={!filter.field || isFieldLoading[filter.id]}
+                                        placeholder={`Filter by ${filter.field || 'value'}`}
+                                        data={["All", ...(fieldValues[filter.id] || [])]}
+                                        value={filter.value || undefined}
+                                        onChange={(value) => updateFilterValue(filter.id, value)}
+                                        className="w-full sm:w-52"
+                                        limit={99}
+                                        searchable
+                                        size="sm"
+                                    />
+
+                                    <Button
+                                        variant="subtle"
+                                        color="red"
+                                        size="sm"
+                                        onClick={() => removeFilter(filter.id)}
+                                        className="sm:w-auto"
                                     >
-                                        {col}
-                                    </Menu.Item>
-                                ))}
-                            </Menu.Dropdown>
-                        </Menu>
-
-                        <Select
-                            placeholder={`Filter`}
-                            data={fields}
-                            value={filter?.field}
-                            onChange={setFilterField}
-                            className="w-52"
-                        />
-
-                        <Select
-                            
-                            disabled={!filter?.field || isFieldLoading}
-                            placeholder={`Filter by ${filter?.field}`}
-                            data={["All", ...fieldValues]}
-                            value={filter?.value || undefined}
-                            onChange={setFilterValue}
-                            className="w-52"
-                            limit={99}
-                            searchable
-                        />
+                                        <FiX className="w-4 h-4 sm:mr-0" />
+                                        <span className="sm:hidden ml-2">Remove Filter</span>
+                                    </Button>
+                                </div>
+                            ))}
+                        </div>
                     </div>
                 </div>
                 <Table highlightOnHover>
