@@ -1,8 +1,20 @@
+const { hashString } = require("common/function");
+const { validateCustomIndex } = require("./helper");
+
+const VALID_VISUAL_TYPES = ['number', 'pie', 'bar', 'line'];
+const VALID_AGGREGATION_TYPES = ['total', 'timeline'];
+const VALID_OPERATORS = ['eq', 'ne', 'in', 'nin', 'exists', 'gt', 'gte', 'lt', 'lte'];
+const VALID_FILTER_LOGIC = ['AND', 'OR'];
+const VALID_TIME_INTERVALS = ['minute', 'hour', 'day', 'week', 'month'];
+const VALID_DATE_RANGE_TYPES = ['none', 'absolute', 'relative'];
+const VALID_TIME_UNITS = ['minutes', 'hours', 'days', 'weeks', 'months'];
+
+
 /**
  * Generate MongoDB aggregation pipeline for log widgets
  * FIXED: Timeline aggregations now properly handle filters using $lookup
  */
-function generateWidgetPipeline(config) {
+function generateWidgetPipeline(projectId, config) {
     const {
         aggregationType,
         filters = [],
@@ -12,13 +24,13 @@ function generateWidgetPipeline(config) {
     // - Use logstamp directly ONLY if no field-based filters (date-only filters are OK)
     // - Use log + lookup to logstamp if field-based filters exist
     const hasFieldFilters = filters.some(f => f.field !== 'createdAt');
-    
+
     let collection, pipeline;
 
     if (aggregationType === 'timeline' && hasFieldFilters) {
         // Timeline with field filters: Start from log, lookup to logstamp
         collection = 'log';
-        pipeline = buildTimelineWithFilters(config);
+        pipeline = buildTimelineWithFilters(projectId, config);
     } else if (aggregationType === 'timeline') {
         // Timeline without field filters: Use logstamp directly
         collection = 'logstamp';
@@ -36,7 +48,7 @@ function generateWidgetPipeline(config) {
  * Build timeline aggregation with field-based filters
  * Strategy: log -> filter -> lookup logstamp -> aggregate by time
  */
-function buildTimelineWithFilters(config) {
+function buildTimelineWithFilters(projectId, config) {
     const {
         filters = [],
         filterLogic = 'AND',
@@ -64,9 +76,13 @@ function buildTimelineWithFilters(config) {
     // Step 2: Apply field-based filters on log collection
     if (filters.length > 0) {
         const filterConditions = filters.map(filter => {
-            const hashField = convertToHashField(filter.field);
-            return buildFilterCondition(hashField, filter.operator, filter.value);
+            const isCustomIndex = validateCustomIndex(filter?.field);
+            const field = isCustomIndex ? convertToHashField(filter.field) : filter.field;
+            const value = isCustomIndex ? hashString(filter.value, filter?.field) : filter.value;
+
+            return buildFilterCondition(field, filter.operator, value, filter?.field);
         });
+
 
         if (filterLogic === 'AND') {
             matchConditions.push(...filterConditions);
@@ -77,10 +93,10 @@ function buildTimelineWithFilters(config) {
 
     if (matchConditions.length > 0) {
         pipeline.push({
-            $match: filterLogic === 'AND' 
+            $match: filterLogic === 'AND'
                 ? { $and: matchConditions }
-                : matchConditions.length === 1 
-                    ? matchConditions[0] 
+                : matchConditions.length === 1
+                    ? matchConditions[0]
                     : { $or: matchConditions }
         });
     }
@@ -88,7 +104,7 @@ function buildTimelineWithFilters(config) {
     // Step 3: Lookup to logstamp collection for time-series data
     // We need to match by key and within the time range
     const lookupMatch = { $expr: { $eq: ['$key', '$$logKey'] } };
-    
+
     if (dateRange) {
         const resolvedDateRange = resolveDateRange(dateRange);
         if (resolvedDateRange) {
@@ -102,7 +118,7 @@ function buildTimelineWithFilters(config) {
             }
             if (resolvedDateRange.end) {
                 lookupMatch.$expr = {
-                    $and: Array.isArray(lookupMatch.$expr.$and) 
+                    $and: Array.isArray(lookupMatch.$expr.$and)
                         ? [...lookupMatch.$expr.$and, { $lte: ['$createdAt', resolvedDateRange.end] }]
                         : [lookupMatch.$expr, { $lte: ['$createdAt', resolvedDateRange.end] }]
                 };
@@ -112,7 +128,7 @@ function buildTimelineWithFilters(config) {
 
     pipeline.push({
         $lookup: {
-            from: 'logstamps', // Your logstamp collection name
+            from: `Logstamp_${projectId}`, // Your logstamp collection name
             let: { logKey: '$key' },
             pipeline: [
                 { $match: lookupMatch }
@@ -129,12 +145,12 @@ function buildTimelineWithFilters(config) {
     // Step 5: Group by time interval and optional field
     const timeInterval = groupBy?.timeInterval || 'hour';
     const groupId = buildTimeGroupId(timeInterval, '$timestamps.createdAt');
-    
+
     if (groupBy?.field) {
-        const hashField = groupBy.field === 'level' || groupBy.field === 'key' 
-            ? groupBy.field 
+        const hashField = groupBy.field === 'level' || groupBy.field === 'key'
+            ? groupBy.field
             : convertToHashField(groupBy.field);
-        
+
         groupId[sanitizeFieldName(hashField)] = `$${hashField}`;
     }
 
@@ -249,9 +265,13 @@ function buildTotalAggregation(config) {
     // Field filters
     if (filters.length > 0) {
         const filterConditions = filters.map(filter => {
-            const hashField = convertToHashField(filter.field);
-            return buildFilterCondition(hashField, filter.operator, filter.value);
+            const isCustomIndex = validateCustomIndex(filter?.field);
+            const field = isCustomIndex ? convertToHashField(filter.field) : filter.field;
+            const value = isCustomIndex ? hashString(filter.value, filter?.field) : filter.value;
+
+            return buildFilterCondition(field, filter.operator, value, filter?.field);
         });
+
 
         if (filterLogic === 'AND') {
             matchConditions.push(...filterConditions);
@@ -262,10 +282,10 @@ function buildTotalAggregation(config) {
 
     if (matchConditions.length > 0) {
         pipeline.push({
-            $match: filterLogic === 'AND' 
+            $match: filterLogic === 'AND'
                 ? { $and: matchConditions }
-                : matchConditions.length === 1 
-                    ? matchConditions[0] 
+                : matchConditions.length === 1
+                    ? matchConditions[0]
                     : { $or: matchConditions }
         });
     }
@@ -277,7 +297,7 @@ function buildTotalAggregation(config) {
                 total: { $sum: '$count' }
             }
         });
-        
+
         pipeline.push({
             $project: {
                 _id: 0,
@@ -289,8 +309,8 @@ function buildTotalAggregation(config) {
             throw new Error('groupBy.field is required for pie/bar/line charts');
         }
 
-        const hashField = groupBy.field === 'level' || groupBy.field === 'key' 
-            ? groupBy.field 
+        const hashField = groupBy.field === 'level' || groupBy.field === 'key'
+            ? groupBy.field
             : convertToHashField(groupBy.field);
 
         pipeline.push({
@@ -326,10 +346,10 @@ function buildTotalAggregation(config) {
  * Apply pivot formatting to pipeline
  */
 function applyPivotFormatting(pipeline, field) {
-    const hashField = field === 'level' || field === 'key' 
-        ? field 
+    const hashField = field === 'level' || field === 'key'
+        ? field
         : convertToHashField(field);
-    
+
     const sanitizedField = sanitizeFieldName(hashField);
 
     pipeline.push({
@@ -379,8 +399,8 @@ function applyNonPivotFormatting(pipeline, field) {
     };
 
     if (field) {
-        const hashField = field === 'level' || field === 'key' 
-            ? field 
+        const hashField = field === 'level' || field === 'key'
+            ? field
             : convertToHashField(field);
         const sanitizedField = sanitizeFieldName(hashField);
         projection.group = `$_id.${sanitizedField}`;
@@ -552,298 +572,227 @@ function resolveDateRange(dateRange) {
     return null;
 }
 
-// Example 1: Pie chart of error logs by service (last 24 hours)
-const pieChartConfig = {
-    visualType: 'pie',
-    aggregationType: 'total',
-    groupBy: {
-        field: 'context.service'
-    },
-    filters: [
-        {
-            field: 'level',
-            operator: 'eq',
-            value: 'error'
-        }
-    ],
-    filterLogic: 'AND',
-    dateRange: {
-        type: 'relative',
-        relative: {
-            value: 24,
-            unit: 'hours'
-        }
-    },
-    limit: 10
-};
-// Expected Result:
-// [
-//   { label: 'auth-service', value: 245 },
-//   { label: 'payment-service', value: 189 },
-//   { label: 'api-gateway', value: 156 },
-//   { label: 'user-service', value: 98 }
-// ]
+/**
+ * Main validation function
+ * @param {Object} config - Widget configuration object
+ * @returns {Object} { valid: boolean, errors: string[] }
+ */
+function validateWidgetConfig(config) {
+    const errors = [];
 
-// Example 2: Line chart timeline - NON-PIVOTED (last 7 days)
-const lineChartNonPivot = {
-    visualType: 'line',
-    aggregationType: 'timeline',
-    groupBy: {
-        field: 'level',
-        timeInterval: 'hour'
-    },
-    dateRange: {
-        type: 'relative',
-        relative: {
-            value: 7,
-            unit: 'days'
-        }
-    },
-    pivotGroups: false
-};
-// Expected Result:
-// [
-//   { timestamp: 2024-01-01T00:00:00.000Z, group: 'error', count: 45 },
-//   { timestamp: 2024-01-01T00:00:00.000Z, group: 'critical', count: 12 },
-//   { timestamp: 2024-01-01T00:00:00.000Z, group: 'info', count: 234 },
-//   { timestamp: 2024-01-01T01:00:00.000Z, group: 'error', count: 38 },
-//   { timestamp: 2024-01-01T01:00:00.000Z, group: 'critical', count: 8 },
-//   { timestamp: 2024-01-01T01:00:00.000Z, group: 'info', count: 198 }
-// ]
+    if (!config) {
+        return { valid: false, errors: ['Config is required'] };
+    }
 
-// Example 3: Line chart timeline - PIVOTED ⭐ (last 30 days)
-const lineChartPivot = {
-    visualType: 'line',
-    aggregationType: 'timeline',
-    groupBy: {
-        field: 'level',
-        timeInterval: 'hour'
-    },
-    dateRange: {
-        type: 'relative',
-        relative: {
-            value: 30,
-            unit: 'days'
-        }
-    },
-    pivotGroups: true
-};
-// Expected Result:
-// [
-//   { timestamp: 2024-01-01T00:00:00.000Z, error: 45, critical: 12, info: 234, warning: 67 },
-//   { timestamp: 2024-01-01T01:00:00.000Z, error: 38, critical: 8, info: 198, warning: 52 },
-//   { timestamp: 2024-01-01T02:00:00.000Z, error: 42, critical: 15, info: 221, warning: 71 }
-// ]
+    // Validate all aspects of config
+    validateVisualType(config, errors);
+    validateAggregationType(config, errors);
+    validateGroupBy(config, errors);
+    validateFilters(config, errors);
+    validateFilterLogic(config, errors);
+    validateDateRange(config, errors);
+    validateLimit(config, errors);
+    validatePivotGroups(config, errors);
 
-// Example 4: Bar chart with multiple filters - last 12 hours
-const barChartConfig = {
-    visualType: 'bar',
-    aggregationType: 'total',
-    groupBy: {
-        field: 'data.userId'
-    },
-    filters: [
-        {
-            field: 'context.service',
-            operator: 'eq',
-            value: 'auth-service'
-        },
-        {
-            field: 'context.service',
-            operator: 'eq',
-            value: 'payment-service'
-        }
-    ],
-    filterLogic: 'OR',
-    dateRange: {
-        type: 'relative',
-        relative: {
-            value: 12,
-            unit: 'hours'
-        }
-    },
-    limit: 5
-};
-// Expected Result:
-// [
-//   { label: 'user_12345', value: 892 },
-//   { label: 'user_67890', value: 745 },
-//   { label: 'user_11111', value: 623 },
-//   { label: 'user_22222', value: 501 },
-//   { label: 'user_33333', value: 489 }
-// ]
+    return {
+        valid: errors.length === 0,
+        errors
+    };
+}
 
-// Example 5: Total count widget (last 24 hours)
-const numberConfig = {
-    visualType: 'number',
-    aggregationType: 'total',
-    filters: [
-        {
-            field: 'level',
-            operator: 'eq',
-            value: 'error'
-        },
-        {
-            field: 'context.environment',
-            operator: 'eq',
-            value: 'production'
-        }
-    ],
-    filterLogic: 'AND',
-    dateRange: {
-        type: 'relative',
-        relative: {
-            value: 24,
-            unit: 'hours'
+function validateVisualType(config, errors) {
+    if (!config.visualType) {
+        errors.push('visualType is required');
+        return;
+    }
+
+    if (!VALID_VISUAL_TYPES.includes(config.visualType)) {
+        errors.push(`visualType must be one of: ${VALID_VISUAL_TYPES.join(', ')}`);
+    }
+}
+
+function validateAggregationType(config, errors) {
+    if (!config.aggregationType) {
+        errors.push('aggregationType is required');
+        return;
+    }
+
+    if (!VALID_AGGREGATION_TYPES.includes(config.aggregationType)) {
+        errors.push(`aggregationType must be one of: ${VALID_AGGREGATION_TYPES.join(', ')}`);
+    }
+}
+
+function validateGroupBy(config, errors) {
+    const { visualType, aggregationType, groupBy } = config;
+
+    // groupBy.field is required for non-number visualizations in total aggregation
+    if (visualType !== 'number' && aggregationType === 'total') {
+        if (!groupBy || !groupBy.field) {
+            errors.push('groupBy.field is required for pie/bar/line charts with total aggregation');
         }
     }
-};
-// Expected Result:
-// [
-//   { total: 1247 }
-// ]
 
-// Example 6: Timeline grouped by service with pivoted data ⭐ (last 48 hours)
-const serviceTimeline = {
-    visualType: 'line',
-    aggregationType: 'timeline',
-    groupBy: {
-        field: 'context.service',
-        timeInterval: 'hour'
-    },
-    filters: [
-        {
-            field: 'level',
-            operator: 'in',
-            value: ['error', 'critical']
+    // groupBy.timeInterval is required for timeline aggregation
+    if (aggregationType === 'timeline') {
+        if (!groupBy || !groupBy.timeInterval) {
+            errors.push('groupBy.timeInterval is required for timeline aggregation');
+            return;
         }
-    ],
-    dateRange: {
-        type: 'relative',
-        relative: {
-            value: 48,
-            unit: 'hours'
-        }
-    },
-    pivotGroups: true
-};
-// Expected Result:
-// [
-//   { timestamp: 2024-01-01T00:00:00.000Z, 'auth-service': 120, 'payment-service': 45, 'api-gateway': 89, 'user-service': 34 },
-//   { timestamp: 2024-01-01T01:00:00.000Z, 'auth-service': 95, 'payment-service': 52, 'api-gateway': 76, 'user-service': 28 },
-//   { timestamp: 2024-01-01T02:00:00.000Z, 'auth-service': 108, 'payment-service': 61, 'api-gateway': 82, 'user-service': 41 }
-// ]
 
-// Example 7: Timeline without grouping (last 7 days)
-const simpleTimeline = {
-    visualType: 'line',
-    aggregationType: 'timeline',
-    groupBy: {
-        timeInterval: 'day'
-    },
-    dateRange: {
-        type: 'relative',
-        relative: {
-            value: 7,
-            unit: 'days'
+        if (!VALID_TIME_INTERVALS.includes(groupBy.timeInterval)) {
+            errors.push(`groupBy.timeInterval must be one of: ${VALID_TIME_INTERVALS.join(', ')}`);
         }
     }
-};
-// Expected Result:
-// [
-//   { timestamp: 2024-01-01T00:00:00.000Z, count: 15234 },
-//   { timestamp: 2024-01-02T00:00:00.000Z, count: 14892 },
-//   { timestamp: 2024-01-03T00:00:00.000Z, count: 16445 },
-//   { timestamp: 2024-01-04T00:00:00.000Z, count: 15678 }
-// ]
 
-// Example 8: Using absolute date range (for historical analysis)
-const absoluteDateRange = {
-    visualType: 'bar',
-    aggregationType: 'total',
-    groupBy: {
-        field: 'level'
-    },
-    dateRange: {
-        type: 'absolute',
-        absolute: {
-            start: new Date('2024-01-01T00:00:00Z'),
-            end: new Date('2024-01-31T23:59:59Z')
+    // Validate groupBy.field if present
+    if (groupBy && groupBy.field) {
+        if (typeof groupBy.field !== 'string' || groupBy.field.trim() === '') {
+            errors.push('groupBy.field must be a non-empty string');
         }
     }
-};
-// Expected Result:
-// [
-//   { label: 'error', value: 12450 },
-//   { label: 'warning', value: 8932 },
-//   { label: 'info', value: 45678 }
-// ]
+}
 
-// Example 9: No date range (all time)
-const allTimeWidget = {
-    visualType: 'number',
-    aggregationType: 'total',
-    filters: [
-        {
-            field: 'level',
-            operator: 'eq',
-            value: 'critical'
-        }
-    ],
-    dateRange: {
-        type: 'none'
+function validateFilters(config, errors) {
+    if (!config.filters) {
+        return; // filters are optional
     }
-};
-// Generate and log pipelines
-console.log('=== Example 1: Pie Chart (Last 24h) ===');
-const result1 = generateWidgetPipeline(pieChartConfig);
-console.log('Collection:', result1.collection);
-console.log('Pipeline:', JSON.stringify(result1.pipeline, null, 2));
 
-console.log('\n=== Example 2: Line Chart Non-Pivoted (Last 7 days) ===');
-const result2 = generateWidgetPipeline(lineChartNonPivot);
-console.log('Collection:', result2.collection);
-console.log('Pipeline:', JSON.stringify(result2.pipeline, null, 2));
+    if (!Array.isArray(config.filters)) {
+        errors.push('filters must be an array');
+        return;
+    }
 
-console.log('\n=== Example 3: Line Chart Pivoted (Last 30 days) ⭐ ===');
-const result3 = generateWidgetPipeline(lineChartPivot);
-console.log('Collection:', result3.collection);
-console.log('Pipeline:', JSON.stringify(result3.pipeline, null, 2));
+    config.filters.forEach((filter, index) => {
+        if (!filter.field) {
+            errors.push(`Filter at index ${index}: field is required`);
+        } else if (typeof filter.field !== 'string' || filter.field.trim() === '') {
+            errors.push(`Filter at index ${index}: field must be a non-empty string`);
+        }
 
-console.log('\n=== Example 4: Bar Chart (Last 12h) ===');
-const result4 = generateWidgetPipeline(barChartConfig);
-console.log('Collection:', result4.collection);
-console.log('Pipeline:', JSON.stringify(result4.pipeline, null, 2));
+        if (!filter.operator) {
+            errors.push(`Filter at index ${index}: operator is required`);
+        } else if (!VALID_OPERATORS.includes(filter.operator)) {
+            errors.push(`Filter at index ${index}: operator must be one of: ${VALID_OPERATORS.join(', ')}`);
+        }
 
-console.log('\n=== Example 5: Number Widget (Last 24h) ===');
-const result5 = generateWidgetPipeline(numberConfig);
-console.log('Collection:', result5.collection);
-console.log('Pipeline:', JSON.stringify(result5.pipeline, null, 2));
+        if (filter.value === undefined) {
+            errors.push(`Filter at index ${index}: value is required`);
+        }
 
-console.log('\n=== Example 6: Service Timeline Pivoted (Last 48h) ⭐ ===');
-const result6 = generateWidgetPipeline(serviceTimeline);
-console.log('Collection:', result6.collection);
-console.log('Pipeline:', JSON.stringify(result6.pipeline, null, 2));
+        // Validate value type for specific operators
+        if (['in', 'nin'].includes(filter.operator)) {
+            if (!Array.isArray(filter.value) && typeof filter.value !== 'string') {
+                errors.push(`Filter at index ${index}: value must be an array or string for 'in'/'nin' operators`);
+            }
+        }
 
-console.log('\n=== Example 7: Simple Timeline (Last 7 days) ===');
-const result7 = generateWidgetPipeline(simpleTimeline);
-console.log('Collection:', result7.collection);
-console.log('Pipeline:', JSON.stringify(result7.pipeline, null, 2));
+        if (filter.operator === 'exists') {
+            if (typeof filter.value !== 'boolean' && filter.value !== 'true' && filter.value !== 'false') {
+                errors.push(`Filter at index ${index}: value must be boolean for 'exists' operator`);
+            }
+        }
 
-console.log('\n=== Example 8: Absolute Date Range ===');
-const result8 = generateWidgetPipeline(absoluteDateRange);
-console.log('Collection:', result8.collection);
-console.log('Pipeline:', JSON.stringify(result8.pipeline, null, 2));
+        if (['gt', 'gte', 'lt', 'lte'].includes(filter.operator)) {
+            if (typeof filter.value !== 'number' && !(filter.value instanceof Date) && isNaN(Date.parse(filter.value))) {
+                errors.push(`Filter at index ${index}: value must be a number or valid date for comparison operators`);
+            }
+        }
+    });
+}
 
-console.log('\n=== Example 9: All Time (No Date Range) ===');
-const result9 = generateWidgetPipeline(allTimeWidget);
-console.log('Collection:', result9.collection);
-console.log('Pipeline:', JSON.stringify(result9.pipeline, null, 2));
+function validateFilterLogic(config, errors) {
+    if (config.filterLogic && !VALID_FILTER_LOGIC.includes(config.filterLogic)) {
+        errors.push(`filterLogic must be one of: ${VALID_FILTER_LOGIC.join(', ')}`);
+    }
+}
 
+function validateDateRange(config, errors) {
+    if (!config.dateRange) {
+        return; // dateRange is optional
+    }
 
-module.exports = { 
-    generateWidgetPipeline, 
-    convertToHashField, 
+    const { dateRange } = config;
+
+    if (!dateRange.type) {
+        errors.push('dateRange.type is required when dateRange is specified');
+        return;
+    }
+
+    if (!VALID_DATE_RANGE_TYPES.includes(dateRange.type)) {
+        errors.push(`dateRange.type must be one of: ${VALID_DATE_RANGE_TYPES.join(', ')}`);
+        return;
+    }
+
+    if (dateRange.type === 'absolute') {
+        if (!dateRange.absolute) {
+            errors.push('dateRange.absolute is required when type is "absolute"');
+            return;
+        }
+
+        const { start, end } = dateRange.absolute;
+
+        if (start && isNaN(Date.parse(start))) {
+            errors.push('dateRange.absolute.start must be a valid date');
+        }
+
+        if (end && isNaN(Date.parse(end))) {
+            errors.push('dateRange.absolute.end must be a valid date');
+        }
+
+        if (start && end && new Date(start) > new Date(end)) {
+            errors.push('dateRange.absolute.start must be before end');
+        }
+    }
+
+    if (dateRange.type === 'relative') {
+        if (!dateRange.relative) {
+            errors.push('dateRange.relative is required when type is "relative"');
+            return;
+        }
+
+        const { value, unit } = dateRange.relative;
+
+        if (value === undefined || value === null) {
+            errors.push('dateRange.relative.value is required');
+        } else if (typeof value !== 'number' || value <= 0) {
+            errors.push('dateRange.relative.value must be a positive number');
+        }
+
+        if (!unit) {
+            errors.push('dateRange.relative.unit is required');
+        } else if (!VALID_TIME_UNITS.includes(unit)) {
+            errors.push(`dateRange.relative.unit must be one of: ${VALID_TIME_UNITS.join(', ')}`);
+        }
+    }
+}
+
+function validateLimit(config, errors) {
+    if (config.limit !== undefined && config.limit !== null) {
+        if (typeof config.limit !== 'number' || config.limit < 1 || !Number.isInteger(config.limit)) {
+            errors.push('limit must be a positive integer');
+        }
+    }
+}
+
+function validatePivotGroups(config, errors) {
+    if (config.pivotGroups !== undefined && config.pivotGroups !== null) {
+        if (typeof config.pivotGroups !== 'boolean') {
+            errors.push('pivotGroups must be a boolean');
+        }
+
+        // pivotGroups only makes sense with timeline + groupBy.field
+        if (config.pivotGroups && config.aggregationType === 'timeline') {
+            if (!config.groupBy || !config.groupBy.field) {
+                errors.push('pivotGroups requires groupBy.field to be specified');
+            }
+        }
+    }
+}
+
+module.exports = {
+    generateWidgetPipeline,
+    convertToHashField,
     resolveDateRange,
-    sanitizeFieldName
+    sanitizeFieldName,
+    validateWidgetConfig
 };

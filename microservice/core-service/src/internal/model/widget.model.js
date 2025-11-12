@@ -1,18 +1,23 @@
 //@ts-check
 const { mongoose } = require("../../shared/mongoose");
 const {
-    ObjectId,
-    Mixed
+    Mixed,
+    ObjectId
 } = mongoose.Schema.Types
 
 const widgetSchema = new mongoose.Schema(
     {
         title: {
-            type: ObjectId,
+            type: String,
             required: true,
             trim: true,
             index: true,
             maxLength: 128,
+        },
+        project: {
+            type: ObjectId,
+            required: true,
+            index: true
         },
         config: {
             type: Mixed,
