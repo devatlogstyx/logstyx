@@ -294,8 +294,8 @@ const useMiddleware = ({
                                     message: "Request completed successfully",
                                     query: redactObject(req.query),
                                     body: redactObject(req.body),
-                                    admin: req.admin,
-                                    user: req.user,
+                                    admin: redactObject(req.admin),
+                                    user: redactObject(req.user),
                                     response: method === "json" || method === "send" ? redactObject(args[0]) : null
                                 });
                             }
@@ -319,8 +319,8 @@ const useMiddleware = ({
                 stack: err?.stack,
                 query: redactObject(req.query),
                 body: redactObject(req.body),
-                admin: req.admin,
-                user: req.user,
+                admin: redactObject(req.admin),
+                user: redactObject(req.user),
             });
         }
     }

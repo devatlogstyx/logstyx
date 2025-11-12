@@ -94,6 +94,23 @@ export const paginateProjectLogs = async (signal, projectId, params) => {
  * 
  * @param {*} signal 
  * @param {string} projectId 
+ * @param {string} field 
+ * @returns 
+ */
+export const listProjectDistinctValues = async (signal, projectId, field) => {
+    let { data } = await Axios.get(`/v1/projects/${projectId}/logs/field-values`, {
+        signal,
+        params: {
+            field
+        }
+    });
+    return data?.data;
+}
+
+/**
+ * 
+ * @param {*} signal 
+ * @param {string} projectId 
  * @param {string} logKey 
  * @returns 
  */
@@ -137,7 +154,7 @@ export const createProject = async (signal, payload) => {
  * @param {string} projectId 
  * @returns 
  */
-export const removeProject = async (signal, projectId="") => {
+export const removeProject = async (signal, projectId = "") => {
     let { data } = await Axios.delete(`/v1/projects/${projectId}`, {
         signal
     });
