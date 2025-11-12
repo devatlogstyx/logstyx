@@ -60,7 +60,7 @@ const JSONParseX = (str) => {
 const sanitizeForHTML = (data, options = {}, striptags) => {
     function sanitizeValue(value) {
         if (typeof value === 'string') {
-            return striptags?.(value, options);
+            return striptags?.(value, options?.allowedTags);
         }
 
         if (Array.isArray(value)) {
@@ -72,7 +72,7 @@ const sanitizeForHTML = (data, options = {}, striptags) => {
             for (const [key, val] of Object.entries(value)) {
                 // Don't sanitize keys unless they're suspicious
                 const sanitizedKey = typeof key === 'string' && key.includes('<')
-                    ? striptags?.(key, options)
+                    ? striptags?.(key, options?.allowedTags)
                     : key;
                 sanitized[sanitizedKey] = sanitizeValue(val);
             }

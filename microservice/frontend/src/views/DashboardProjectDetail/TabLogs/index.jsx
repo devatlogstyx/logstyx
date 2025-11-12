@@ -19,11 +19,15 @@ const TabLogs = ({
 }) => {
     const {
         isLoading,
+        isFieldLoading,
         list,
         page,
+        fields,
+        fieldValues,
+        filter,
+        setFilterField,
+        setFilterValue,
         setPage,
-        level,
-        setLevel,
         DetailModalComponent,
         openDetailModal,
         TimelineModalComponent,
@@ -72,12 +76,23 @@ const TabLogs = ({
                         </Menu>
 
                         <Select
-                            placeholder="Filter by level"
-                            data={["All Levels", ...logStatistic.map((n) => n?.level)]}
-                            defaultValue="All Levels"
-                            value={level}
-                            onChange={setLevel}
+                            placeholder={`Filter`}
+                            data={fields}
+                            value={filter?.field}
+                            onChange={setFilterField}
                             className="w-52"
+                        />
+
+                        <Select
+                            
+                            disabled={!filter?.field || isFieldLoading}
+                            placeholder={`Filter by ${filter?.field}`}
+                            data={["All", ...fieldValues]}
+                            value={filter?.value || undefined}
+                            onChange={setFilterValue}
+                            className="w-52"
+                            limit={99}
+                            searchable
                         />
                     </div>
                 </div>

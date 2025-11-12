@@ -15,7 +15,7 @@ const {
 
 } = require("common/constant");
 const { createProject, canUserModifyProject, removeProject, paginateProject, addUserToProject, removeUserFromProject, listUserFromProject, updateProject, findProjectBySlug, findProjectById, canUserReadProject, getProjectLogStats } = require("../service/project");
-const { paginateLogs } = require("../service/logger");
+const { paginateLogs, getDistinctValue } = require("../service/logger");
 
 module.exports = {
 
@@ -282,8 +282,8 @@ module.exports = {
         }
 
         const {
-            search,
-            level,
+            filterField,
+            filterValue,
             sortBy,
             limit,
             page
@@ -291,9 +291,38 @@ module.exports = {
 
         const data = await paginateLogs({
             project: project?.id,
-            search,
-            level
+            filterField,
+            filterValue,
         }, sortBy, limit, page)
+
+        HttpResponse(res).json({
+            error: SUCCESS_ERR_CODE,
+            message: SUCCESS_ERR_MESSAGE,
+            data
+        });
+    },
+    async ProjectListDistinctValues(req, res) {
+        if (!req?.user) {
+            throw HttpError(NO_ACCESS_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
+        }
+
+
+        let project = await findProjectBySlug(req?.params?.id)
+        if (!project) {
+            project = await findProjectById(req?.params?.id)
+        }
+
+        if (!project) {
+            throw HttpError(NOT_FOUND_ERR_CODE, NOT_FOUND_ERR_MESSAGE)
+        }
+
+        const canAccess = await canUserReadProject(req?.user?.id, project?.id)
+        if (!canAccess) {
+            throw HttpError(NO_ACCESS_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
+        }
+
+
+        const data = await getDistinctValue(project?.id, req?.query?.field)
 
         HttpResponse(res).json({
             error: SUCCESS_ERR_CODE,

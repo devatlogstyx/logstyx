@@ -2,9 +2,9 @@
 
 const { mongoose } = require("./../../shared/mongoose");
 const { getProjectFromCache } = require("../../shared/cache");
-const { HttpError, hashString, decryptSecret, createSlug, encrypt } = require("common/function");
+const { HttpError, hashString, decryptSecret, createSlug, encrypt, decrypt } = require("common/function");
 const { NOT_FOUND_ERR_CODE, NOT_FOUND_ERR_MESSAGE, BROWSER_CLIENT_TYPE, INVALID_INPUT_ERR_CODE, INVALID_INPUT_ERR_MESSAGE } = require("common/constant");
-const { validateOrigin, validateSignature, getLogModel, generateIndexedHashes } = require("../utils/helper");
+const { validateOrigin, validateSignature, getLogModel, generateIndexedHashes, validateCustomIndex } = require("../utils/helper");
 const projectModel = require("../model/project.model");
 const { mapLog } = require("../utils/mapper");
 const { ObjectId } = mongoose.Types
@@ -165,28 +165,27 @@ const processCreateLog = async (params) => {
 /**
  * 
  * @param {object} [params] 
- * @param {string} [params.search]
- * @param {string} [params.level]
- * @param {*} project 
+ * @param {string} [params.filterField]
+ * @param {string} [params.filterValue]
  * @returns 
  */
-const buildLogsSearchQuery = (project, params = {}) => {
+const buildLogsSearchQuery = (params = {}) => {
     let query = {
 
     }
 
-    if (params.search) {
-        // @ts-ignore
-        query.$or = project?.settings?.indexes?.map((/** @type {string} */ fieldName) => {
-            return {
-                // @ts-ignore
-                [fieldName]: hashString(params.search)
-            }
-        })
-    }
+    if (params.filterField && params?.filterValue) {
+        if (validateCustomIndex(params?.filterField)) {
+            // @ts-ignore
+            query[`hash.${params?.filterField.replace(/\./g, '_')}`] = hashString(
+                String(params?.filterValue),
+                params?.filterField
+            );
+        } else {
+            // @ts-ignore
+            query[params.filterField] = params?.filterValue
+        }
 
-    if (params?.level) {
-        query.level = params?.level
     }
 
     return query
@@ -196,8 +195,8 @@ const buildLogsSearchQuery = (project, params = {}) => {
  * 
  * @param {object} [query] 
  * @param {string} [query.project]
- * @param {string} [query.search]
- * @param {string} [query.level]
+ * @param {string} [query.filterField]
+ * @param {string} [query.filterValue]
  * @param {string} sortBy 
  * @param {number} limit 
  * @param {number} page 
@@ -214,7 +213,7 @@ const paginateLogs = async (query, sortBy = "updatedAt:desc", limit = 10, page =
         throw HttpError(NOT_FOUND_ERR_CODE, `Project Not Found`)
     }
 
-    let queryParams = buildLogsSearchQuery(project, query)
+    let queryParams = buildLogsSearchQuery(query)
 
     const { log: logModel } = await getLogModel(project?.id)
 
@@ -263,9 +262,57 @@ const logTimeline = async (projectId, key) => {
     return hourlyStats
 }
 
+const getDistinctValue = async (projectId, field) => {
+    const { log } = await getLogModel(projectId);
+    let distinctValues = [];
+
+    if (validateCustomIndex(field)) {
+        const hashField = `hash.${field.replace(/\./g, '_')}`;
+        const [fieldType, fieldName] = field.split('.'); // 'context' or 'data', and the field name
+
+        // Aggregate to get unique hash values with their encrypted context/data
+        const results = await log.aggregate([
+            {
+                $group: {
+                    _id: `$${hashField}`,
+                    encrypted: { $first: `$${fieldType}` }
+                }
+            },
+            { $limit: 999 }
+        ]);
+
+        // Decrypt and extract the field values
+        distinctValues = results
+            .map(result => {
+                if (result.encrypted) {
+                    try {
+                        const decrypted = result.encrypted?.iv && result.encrypted?.content ? JSON.parse(decrypt(result.encrypted)) : result.encrypted
+                        return decrypted[fieldName];
+                    } catch (err) {
+                        console.error('Decryption error:', err);
+                        return null;
+                    }
+                }
+                return null;
+            })
+            .filter(Boolean);
+
+    } else {
+        // Regular field
+        distinctValues = await log.distinct(field);
+    }
+
+    const filtered = distinctValues
+        .filter(Boolean)
+        .slice(0, 999);
+
+    return filtered
+}
+
 module.exports = {
     processWriteLog,
     processCreateLog,
     paginateLogs,
-    logTimeline
+    logTimeline,
+    getDistinctValue
 }
