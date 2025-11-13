@@ -284,16 +284,24 @@ module.exports = {
         const {
             filterField,
             filterValue,
+            'filterField[]': filterFieldArray,
+            'filterValue[]': filterValueArray,
             sortBy,
             limit,
             page
         } = req?.query ?? {}
 
-        const data = await paginateLogs({
-            project: project?.id,
-            filterField,
-            filterValue,
-        }, sortBy, limit, page)
+        // Handle both formats: with and without [] suffix
+        const filterFields = filterFieldArray || filterField
+        const filterValues = filterValueArray || filterValue
+
+        // Convert to arrays if they're not already
+        const filterFieldsArray = Array.isArray(filterFields) ? filterFields : (filterFields ? [filterFields] : [])
+        const filterValuesArray = Array.isArray(filterValues) ? filterValues : (filterValues ? [filterValues] : [])
+
+        const params = { project: project?.id, filterFields: filterFieldsArray, filterValues: filterValuesArray }
+
+        const data = await paginateLogs(params, sortBy, limit, page)
 
         HttpResponse(res).json({
             error: SUCCESS_ERR_CODE,
