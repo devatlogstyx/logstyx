@@ -22,6 +22,7 @@ const parseContent = async (content, version) => {
 
 
 module.exports = {
+    parseContent,
     mapProjectUser: (json) => {
         return {
             id: json?.user?.userId?.toString(),

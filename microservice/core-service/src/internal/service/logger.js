@@ -6,7 +6,7 @@ const { HttpError, hashString, decryptSecret, createSlug, encrypt, decrypt } = r
 const { NOT_FOUND_ERR_CODE, NOT_FOUND_ERR_MESSAGE, BROWSER_CLIENT_TYPE, INVALID_INPUT_ERR_CODE, INVALID_INPUT_ERR_MESSAGE } = require("common/constant");
 const { validateOrigin, validateSignature, getLogModel, generateIndexedHashes, validateCustomIndex } = require("../utils/helper");
 const projectModel = require("../model/project.model");
-const { mapLog } = require("../utils/mapper");
+const { mapLog, parseContent } = require("../utils/mapper");
 const { compressAndEncrypt } = require("../utils/compression");
 const { ObjectId } = mongoose.Types
 
@@ -281,23 +281,25 @@ const getDistinctValue = async (projectId, field) => {
         const hashField = `hash.${field.replace(/\./g, '_')}`;
         const [fieldType, fieldName] = field.split('.'); // 'context' or 'data', and the field name
 
-        // Aggregate to get unique hash values with their encrypted context/data
+        // Aggregate to get unique hash values with their encrypted context/data AND version
         const results = await log.aggregate([
             {
                 $group: {
                     _id: `$${hashField}`,
-                    encrypted: { $first: `$${fieldType}` }
+                    encrypted: { $first: `$${fieldType}` },
+                    version: { $first: '$version' } // Add version to the group
                 }
             },
             { $limit: 999 }
         ]);
 
         // Decrypt and extract the field values
-        distinctValues = results
-            .map(result => {
+        distinctValues = await Promise.all(
+            results.map(async result => {
                 if (result.encrypted) {
                     try {
-                        const decrypted = result.encrypted?.iv && result.encrypted?.content ? JSON.parse(decrypt(result.encrypted)) : result.encrypted
+                        const version = result.version || 1; // Default to v1 for old records
+                        const decrypted = await parseContent(result.encrypted, version);
                         return decrypted[fieldName];
                     } catch (err) {
                         console.error('Decryption error:', err);
@@ -306,7 +308,10 @@ const getDistinctValue = async (projectId, field) => {
                 }
                 return null;
             })
-            .filter(Boolean);
+        );
+
+        // Filter out null values from the results
+        distinctValues = distinctValues.filter(Boolean);
 
     } else {
         // Regular field
@@ -317,7 +322,7 @@ const getDistinctValue = async (projectId, field) => {
         .filter(Boolean)
         .slice(0, 999);
 
-    return filtered
+    return filtered;
 }
 
 module.exports = {
