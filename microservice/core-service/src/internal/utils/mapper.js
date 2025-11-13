@@ -1,4 +1,25 @@
-const { decrypt } = require("common/function")
+const { decrypt } = require("common/function");
+const { decryptAndDecompress } = require("./compression");
+
+
+const parseContent = async (content, version) => {
+    let result
+    if (content?.iv && content?.content) {
+        if (version === 2) {
+            // New: decrypt then decompress
+            result = JSON.parse(await decryptAndDecompress(content));
+        } else {
+            // Old: just decrypt
+            result = JSON.parse(decrypt(content));
+        }
+    } else {
+        result = content;
+    }
+
+    return result
+
+}
+
 
 module.exports = {
     mapProjectUser: (json) => {
@@ -21,18 +42,21 @@ module.exports = {
             createdAt: json?.createdAt
         }
     },
-    mapLog: (json) => {
+    mapLog: async (json) => {
+        // Check version to determine how to decrypt
+        const version = json?.version || 1; // Default to v1 for old records
+
         return {
             id: json?.id || json?._id?.toString(),
             key: json?.key,
             level: json?.level,
             device: json?.device,
-            context: json?.context?.iv && json?.context?.content ? JSON.parse(decrypt(json?.context)) : json?.context,
-            data: json?.data?.iv && json?.data?.content ? JSON.parse(decrypt(json?.data)) : json?.data,
+            context: await parseContent(json?.context, version),
+            data: await parseContent(json?.data, version),
             hash: json?.hash,
             count: json?.count,
-            createdAt:json?.createdAt,
-            updatedAt:json?.updatedAt,
+            createdAt: json?.createdAt,
+            updatedAt: json?.updatedAt,
         }
     }
 }

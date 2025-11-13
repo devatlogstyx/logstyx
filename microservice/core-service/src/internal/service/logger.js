@@ -7,6 +7,7 @@ const { NOT_FOUND_ERR_CODE, NOT_FOUND_ERR_MESSAGE, BROWSER_CLIENT_TYPE, INVALID_
 const { validateOrigin, validateSignature, getLogModel, generateIndexedHashes, validateCustomIndex } = require("../utils/helper");
 const projectModel = require("../model/project.model");
 const { mapLog } = require("../utils/mapper");
+const { compressAndEncrypt } = require("../utils/compression");
 const { ObjectId } = mongoose.Types
 
 
@@ -74,11 +75,10 @@ const processWriteLog = async ({ headers, body }) => {
  * @param {string|number|Date} params.timestamp
  */
 const createLog = async (project, params) => {
-
     let timestampDate = new Date(params?.timestamp)
     if (isNaN(timestampDate.getTime())) {
         console.error(`Invalid timestamp received: ${params?.timestamp}, using current time as fallback`)
-        timestampDate = new Date() // Fallback to current time
+        timestampDate = new Date()
     }
 
     let stringified = JSON.stringify({
@@ -95,6 +95,10 @@ const createLog = async (project, params) => {
         data: params?.data
     }, project);
 
+    // NEW: Compress then encrypt
+    const compressedContext = await compressAndEncrypt(JSON.stringify(params?.context))
+    const compressedData = await compressAndEncrypt(JSON.stringify(params?.data))
+
     await log.findOneAndUpdate(
         { key },
         {
@@ -103,22 +107,21 @@ const createLog = async (project, params) => {
             $setOnInsert: {
                 level: params?.level,
                 device: params?.device,
-                context: encrypt(JSON.stringify(params?.context)),
-                data: encrypt(JSON.stringify(params?.data)),
+                context: compressedContext,
+                data: compressedData,
                 hash: hashes,
-                createdAt: timestampDate
+                createdAt: timestampDate,
+                version: 2
             }
         },
         { upsert: true }
     );
 
-    await logstamp.create(
-        {
-            key,
-            level: params?.level,
-            createdAt: timestampDate
-        },
-    );
+    await logstamp.create({
+        key,
+        level: params?.level,
+        createdAt: timestampDate
+    });
 }
 
 /**
@@ -226,7 +229,7 @@ const paginateLogs = async (query, sortBy = "updatedAt:desc", limit = 10, page =
     const { log: logModel } = await getLogModel(project?.id)
 
     const list = await logModel.paginate(queryParams, { sortBy, limit, page })
-    list.results = list?.results?.map(mapLog)
+    list.results = await Promise.all(list?.results?.map(mapLog)) // Changed this line
 
     return list
 }

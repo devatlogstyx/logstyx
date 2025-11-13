@@ -139,9 +139,6 @@ const TabLogs = ({
                             <Th onClick={() => handleSort('count')} style={{ cursor: 'pointer' }}>
                                 Count<SortIcon column="count" />
                             </Th>
-                            <Th onClick={() => handleSort('device.type')} style={{ cursor: 'pointer' }}>
-                                Device<SortIcon column="device.type" />
-                            </Th>
                             {project?.settings?.indexes?.map((n) =>
                                 visibleColumns[n] && (
                                     <Th
@@ -172,9 +169,6 @@ const TabLogs = ({
                                 </Td>
                                 <Td>
                                     <span className="font-medium">{log.count}</span>
-                                </Td>
-                                <Td>
-                                    <span className="font-medium truncate">{log.device?.type}</span>
                                 </Td>
                                 {project?.settings?.indexes?.map((n) =>
                                     visibleColumns[n] && (

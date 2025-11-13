@@ -12,7 +12,6 @@ const useTabLogs = ({ project }) => {
     const fields = [
         ...project?.settings?.indexes || [],
         "level",
-        "device.type"
     ]
 
     const [isLoading, setIsLoading] = React.useState(true)
