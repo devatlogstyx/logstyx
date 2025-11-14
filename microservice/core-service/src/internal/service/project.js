@@ -395,7 +395,6 @@ const listUserFromProject = async (projectId) => {
  * @returns 
  */
 const getUsersDashboardProjectsStats = async (userId) => {
-    // 1. Get all projects for the user
     const projectUsers = await projectUserModel.find({ 'user.userId': ObjectId.createFromHexString(userId) })
 
     const projectsWithStats = await Promise.all(
@@ -404,16 +403,11 @@ const getUsersDashboardProjectsStats = async (userId) => {
 
             const { log, logstamp } = await getLogModel(project?.id?.toString())
 
-            const todayStart = new Date();
-            todayStart.setHours(0, 0, 0, 0);
-
-            // ⭐ PUT THE ULTRA-OPTIMIZED QUERY HERE ⭐
             const [result] = await log.aggregate([
                 {
                     $facet: {
-                        // Logs today
-                        logsToday: [
-                            { $match: { updatedAt: { $gte: todayStart } } },
+                        // Total logs (all time)
+                        totalLogs: [
                             { $group: { _id: null, total: { $sum: "$count" } } }
                         ],
 
@@ -445,24 +439,18 @@ const getUsersDashboardProjectsStats = async (userId) => {
                             { $sort: { _id: 1 } }
                         ],
 
-                        // Errors today
-                        errorsToday: [
+                        // Total errors (all time)
+                        totalErrors: [
                             {
-                                $match: {
-                                    updatedAt: { $gte: todayStart },
-                                    level: ERROR_LOG_LEVEL
-                                }
+                                $match: { level: ERROR_LOG_LEVEL }
                             },
                             { $group: { _id: null, total: { $sum: "$count" } } }
                         ],
 
-                        // Critical today
-                        criticalToday: [
+                        // Total critical (all time)
+                        totalCritical: [
                             {
-                                $match: {
-                                    updatedAt: { $gte: todayStart },
-                                    level: CRITICAL_LOG_LEVEL
-                                }
+                                $match: { level: CRITICAL_LOG_LEVEL }
                             },
                             { $group: { _id: null, total: { $sum: "$count" } } }
                         ]
@@ -470,13 +458,11 @@ const getUsersDashboardProjectsStats = async (userId) => {
                 }
             ]);
 
-            // Extract data from aggregation result
-            const logsToday = result.logsToday[0]?.total || 0;
+            const totalLogs = result.totalLogs[0]?.total || 0;
             const lastLogData = result.lastLog[0];
-            const errorCount = result.errorsToday[0]?.total || 0;
-            const criticalCount = result.criticalToday[0]?.total || 0;
+            const errorCount = result.totalErrors[0]?.total || 0;
+            const criticalCount = result.totalCritical[0]?.total || 0;
 
-            // Process activity data (fill gaps for missing hours)
             const activityMap = new Map(
                 result.activity.map(item => [item._id, item.count])
             );
@@ -487,14 +473,13 @@ const getUsersDashboardProjectsStats = async (userId) => {
                 return activityMap.get(key) || 0;
             });
 
-            // Return formatted project data
             return {
                 id: project.id,
                 title: project.title,
                 slug: project.slug,
                 status: lastLogData && isRecent(lastLogData.updatedAt) ? 'active' : 'inactive',
                 lastLog: lastLogData ? moment(lastLogData.updatedAt).fromNow() : 'Never',
-                logsToday: logsToday,
+                totalLogs: totalLogs,
                 errorCount: errorCount,
                 criticalCount: criticalCount,
                 activity: activity

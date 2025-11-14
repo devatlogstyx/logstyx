@@ -56,7 +56,7 @@ const ProjectViews = () => {
                         <div>
                             <p className="text-sm text-gray-600">Logs Today</p>
                             <p className="text-2xl font-bold text-gray-800">
-                                {numify(sumInt(projects?.map((p) => p.logsToday)))}
+                                {numify(sumInt(projects?.map((p) => p.totalLogs)))}
                             </p>
                         </div>
                         <div className="bg-green-100 p-3 rounded-lg">
@@ -132,7 +132,7 @@ const ProjectViews = () => {
                             <div className="grid grid-cols-3 gap-2 mb-4">
                                 <div className="text-center p-2 bg-gray-50 rounded">
                                     <p className="text-xs text-gray-600">Logs</p>
-                                    <p className="text-sm font-semibold text-gray-800">{numify(project.logsToday)}</p>
+                                    <p className="text-sm font-semibold text-gray-800">{numify(project.totalLogs)}</p>
                                 </div>
                                 <div className="text-center p-2 bg-orange-50 rounded">
                                     <p className="text-xs text-orange-600">Errors</p>
