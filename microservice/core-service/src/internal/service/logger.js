@@ -32,8 +32,8 @@ const { ObjectId } = mongoose.Types
  */
 const processWriteLog = async ({ headers, body }) => {
 
-    const { level, projectId, device, context, data, appid } = body
-    const { deviceClientType, signature, origin } = headers
+    const { level, projectId, device, context, data, appid } = body ?? {}
+    const { deviceClientType, signature, origin } = headers ?? {}
 
     const timestamp = headers?.timestamp || new Date()
 
