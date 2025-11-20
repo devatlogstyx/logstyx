@@ -23,25 +23,29 @@ const useCors = ({ Detector, Cors, allowedOrigins = ALLOWED_ORIGIN }) => {
       credentials: true,
       origin: false // Default to deny
     };
-
-    if (origin) {
-      // Validate origin header against allowlist
-      corsOptions.origin = allowedOrigins.includes(origin) ? origin : false;
+    if (allowedOrigins === "*") {
+      corsOptions.origin = true;
     } else {
-      // Fallback to referer for browsers without origin header
-      const referer = req.headers.referer || req.headers.referrer || "";
-      if (referer && device?.client?.type === BROWSER_CLIENT_TYPE) {
-        try {
-          const refererOrigin = new URL(referer).origin;
-          corsOptions.origin = allowedOrigins.includes(refererOrigin) ? refererOrigin : false;
-        } catch {
-          corsOptions.origin = false;
-        }
+      if (origin) {
+        // Validate origin header against allowlist
+        corsOptions.origin = allowedOrigins.includes(origin) ? origin : false;
       } else {
-        // Allow non-browser clients (mobile apps, etc)
-        corsOptions.origin = true;
+        // Fallback to referer for browsers without origin header
+        const referer = req.headers.referer || req.headers.referrer || "";
+        if (referer && device?.client?.type === BROWSER_CLIENT_TYPE) {
+          try {
+            const refererOrigin = new URL(referer).origin;
+            corsOptions.origin = allowedOrigins.includes(refererOrigin) ? refererOrigin : false;
+          } catch {
+            corsOptions.origin = false;
+          }
+        } else {
+          // Allow non-browser clients (mobile apps, etc)
+          corsOptions.origin = true;
+        }
       }
     }
+
 
     Cors(corsOptions)(req, res, next);
   };
