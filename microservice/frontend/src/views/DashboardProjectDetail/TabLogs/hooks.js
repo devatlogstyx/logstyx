@@ -272,6 +272,7 @@ const useTabLogs = ({ project }) => {
         updateFilterField,
         updateFilterValue,
         fieldValues,
+        refetchData: fetchData
     }
 }
 

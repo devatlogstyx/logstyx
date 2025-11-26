@@ -2,7 +2,8 @@
 
 import { ActionIcon, Badge, Button, Code, Loader, Menu, Pagination, Select, Table, Tooltip } from "@mantine/core"
 import { getLevelColor, getNestedValue } from "../../../utils/function"
-import { FiActivity, FiCheck, FiColumns, FiInfo, FiMoreVertical, FiPlus, FiX } from "react-icons/fi"
+import { FiActivity, FiCheck, FiColumns, FiInfo, FiLoader, FiMoreVertical, FiPlus, FiX } from "react-icons/fi"
+import { LuLoaderCircle } from "react-icons/lu"
 const {
     Thead,
     Tbody,
@@ -12,6 +13,7 @@ const {
 } = Table
 import moment from "moment-timezone"
 import useTabLogs from "./hooks"
+import SecondaryButton from "../../../component/button/SecondaryButton"
 
 const TabLogs = ({
     project,
@@ -38,6 +40,7 @@ const TabLogs = ({
         updateFilterField,
         updateFilterValue,
         fieldValues,
+        refetchData
     } = useTabLogs({
         project
     })
@@ -88,6 +91,12 @@ const TabLogs = ({
                                 <FiPlus className="w-4 h-4 mr-2" />
                                 Add Filter
                             </Button>
+
+                            <ActionIcon
+                                onClick={refetchData}
+                            >
+                                <LuLoaderCircle size={16} />
+                            </ActionIcon>
                         </div>
 
                         {/* Filter rows */}
