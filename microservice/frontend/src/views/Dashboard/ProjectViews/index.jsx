@@ -17,7 +17,8 @@ import EmptyProjectViews from "../EmptyProjectViews";
 import PrimaryButton from "../../../component/button/PrimaryButton";
 import CreateProject from "../CreateProject";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-
+import SecondaryButton from "../../../component/button/SecondaryButton";
+import { GoGear } from "react-icons/go"
 const ProjectViews = () => {
 
     const { projects, isLoading, refetchData } = useProjectViews()
@@ -158,7 +159,7 @@ const ProjectViews = () => {
                             </div>
 
                             {/* Action Buttons */}
-                            <div className="flex gap-2 justify-end">
+                            <div className="flex gap-2 justify-end items-center">
                                 <a
                                     href={`/dashboard/projects/${project.slug}?tab=logs`}
                                     className="flex w-full"
@@ -166,6 +167,13 @@ const ProjectViews = () => {
                                     <PrimaryButton leftSection={<IoEyeOutline size={16} />} className="w-full px-3 py-2 text-sm">
                                         View Logs
                                     </PrimaryButton>
+                                </a>
+                                <a
+                                    href={`/dashboard/projects/${project.slug}?tab=overview`}
+                                >
+                                    <SecondaryButton className="px-3 py-2 text-sm">
+                                        <GoGear size={16} />
+                                    </SecondaryButton>
                                 </a>
                             </div>
                         </div>
