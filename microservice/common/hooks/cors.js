@@ -47,7 +47,7 @@ const useCors = ({ Detector, Cors, allowedOrigins = ALLOWED_ORIGIN }) => {
     }
 
 
-    Cors(corsOptions)(req, res, next);
+    return Cors(corsOptions)(req, res, next);
   };
 };
 
