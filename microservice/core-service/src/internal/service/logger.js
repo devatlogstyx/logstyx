@@ -4,7 +4,7 @@ const { mongoose } = require("./../../shared/mongoose");
 const { getProjectFromCache } = require("../../shared/cache");
 const { HttpError, hashString, decryptSecret, createSlug, encrypt, decrypt } = require("common/function");
 const { NOT_FOUND_ERR_CODE, NOT_FOUND_ERR_MESSAGE, BROWSER_CLIENT_TYPE, INVALID_INPUT_ERR_CODE, INVALID_INPUT_ERR_MESSAGE } = require("common/constant");
-const { validateOrigin, validateSignature, getLogModel, generateIndexedHashes, validateCustomIndex } = require("../utils/helper");
+const { validateOrigin, validateSignature, getLogModel, generateIndexedHashes, validateCustomIndex, generateRawValues } = require("../utils/helper");
 const projectModel = require("../model/project.model");
 const { mapLog, parseContent } = require("../utils/mapper");
 const { compressAndEncrypt } = require("../utils/compression");
@@ -95,7 +95,12 @@ const createLog = async (project, params) => {
         data: params?.data
     }, project);
 
-    // NEW: Compress then encrypt
+    // Generate raw values for rawIndexes
+    const rawValues = generateRawValues({
+        context: params?.context,
+        data: params?.data
+    }, project);
+
     const compressedContext = await compressAndEncrypt(JSON.stringify(params?.context))
     const compressedData = await compressAndEncrypt(JSON.stringify(params?.data))
 
@@ -110,6 +115,7 @@ const createLog = async (project, params) => {
                 context: compressedContext,
                 data: compressedData,
                 hash: hashes,
+                raw: rawValues,
                 createdAt: timestampDate,
                 version: 2
             }
@@ -170,28 +176,54 @@ const processCreateLog = async (params) => {
  * @param {object} [params] 
  * @param {string} [params.filterField]
  * @param {string} [params.filterValue]
+ * @param {object} [project] 
  * @returns 
  */
-const buildLogsSearchQuery = (params = {}) => {
+const buildLogsSearchQuery = (params = {}, project) => {
     let query = {}
 
-    // Handle multiple filters
     if (params.filterFields && params.filterValues &&
         params.filterFields.length > 0 &&
         params.filterFields.length === params.filterValues.length) {
 
         params.filterFields.forEach((field, index) => {
             const value = params.filterValues[index]
+            const operator = params.filterOperators?.[index] || 'eq' // Default to equals
 
-            if (field && value) {
-                if (validateCustomIndex(field)) {
-                    // Handle custom indexed fields
+            if (field && value !== undefined && value !== null) {
+
+                // Check if field is in rawIndexes
+                if (project?.settings?.rawIndexes?.includes(field)) {
+                    const safeFieldName = field.replace(/\./g, '_')
+                    const queryField = `raw.${safeFieldName}`
+
+                    // Support range operators for numeric fields
+                    switch (operator) {
+                        case 'gt':
+                            query[queryField] = { $gt: Number(value) }
+                            break
+                        case 'gte':
+                            query[queryField] = { $gte: Number(value) }
+                            break
+                        case 'lt':
+                            query[queryField] = { $lt: Number(value) }
+                            break
+                        case 'lte':
+                            query[queryField] = { $lte: Number(value) }
+                            break
+                        case 'eq':
+                        default:
+                            query[queryField] = Number(value)
+                    }
+
+                } else if (validateCustomIndex(field)) {
+                    // Hashed fields only support exact match
                     query[`hash.${field.replace(/\./g, '_')}`] = hashString(
                         String(value),
                         field
                     )
                 } else {
-                    // Handle regular fields
+                    // Regular fields
                     query[field] = value
                 }
             }
@@ -224,7 +256,7 @@ const paginateLogs = async (query, sortBy = "updatedAt:desc", limit = 10, page =
         throw HttpError(NOT_FOUND_ERR_CODE, `Project Not Found`)
     }
 
-    let queryParams = buildLogsSearchQuery(query)
+    let queryParams = buildLogsSearchQuery(query, project)
 
     const { log: logModel } = await getLogModel(project?.id)
 

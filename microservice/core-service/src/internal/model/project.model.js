@@ -5,7 +5,11 @@ const { decryptSecret } = require("common/function");
 
 const SettingSchema = new mongoose.Schema(
     {
-        indexes: {
+        indexes: { // indexed field but hashed,
+            type: [String],
+            index: true,
+        },
+        rawIndexes: { // indexed field without being hashed
             type: [String],
             index: true,
         },

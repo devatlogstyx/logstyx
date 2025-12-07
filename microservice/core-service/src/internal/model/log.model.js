@@ -29,6 +29,9 @@ const logSchema = new mongoose.Schema(
         hash: {
             type: Mixed,
         },
+        raw: {
+            type: Mixed,
+        },
         count: {
             type: Number,
             default: 1,

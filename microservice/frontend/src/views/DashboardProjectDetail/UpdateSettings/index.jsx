@@ -34,20 +34,33 @@ const UpdateSettings = ({
                 <form className="space-y-4" onSubmit={form.onSubmit(handleSubmit)}>
                     <TextInput label="Project Title" {...form.getInputProps('title')} />
                     <TagsInput
-                        label="Indexed Fields"
-                        description="Initial indexes cannot be removed"
+                        label="Indexed Fields (Hashed)"
+                        description="Initial indexes cannot be removed. Good for strings and IDs."
                         placeholder="Enter fields to index"
                         value={form.values.indexes}
                         onChange={(value) => {
                             const initialIndexes = project?.settings?.indexes || [];
-
                             // Get unique values that include all initial indexes
                             const uniqueValues = [...new Set([...initialIndexes, ...value])];
-
                             form.setFieldValue('indexes', uniqueValues);
                         }}
                         error={form.errors.indexes}
                     />
+
+                    <TagsInput
+                        label="Raw Indexed Fields"
+                        description="Initial raw indexes cannot be removed. Good for numbers and sortable fields."
+                        placeholder="Enter fields to index without hashing"
+                        value={form.values.rawIndexes}
+                        onChange={(value) => {
+                            const initialRawIndexes = project?.settings?.rawIndexes || [];
+                            // Get unique values that include all initial raw indexes
+                            const uniqueValues = [...new Set([...initialRawIndexes, ...value])];
+                            form.setFieldValue('rawIndexes', uniqueValues);
+                        }}
+                        error={form.errors.rawIndexes}
+                    />
+
                     <TagsInput
                         label="Allowed Origins"
                         placeholder="Add allowed origins"

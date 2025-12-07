@@ -38,6 +38,7 @@ const generateUniqueSlug = async (baseSlug) => {
  * @param {string} [params.slug]
  * @param {object} [params.settings]
  * @param {string[]} [params.settings.indexes] 
+ * @param {string[]} [params.settings.rawIndexes]
  * @param {string[]} [params.settings.allowedOrigin]
  * @param {number | string} [params.settings.retentionDays]
  */
@@ -48,6 +49,7 @@ const createProject = async (params) => {
         slug: "string",
         creator: "required|string",
         "settings.indexes": "arrayUnique",
+        "settings.rawIndexes": "arrayUnique",
         "settings.allowedOrigin": "arrayUnique",
         "settings.retentionDays": "numeric",
     });
@@ -74,19 +76,23 @@ const createProject = async (params) => {
 
     try {
 
-
         const secret = randomstring.generate(32)
+        const payload = sanitizeObject({
+            title: striptags(params?.title),
+            slug: await generateUniqueSlug(createSlug(params?.slug || params?.title)),
+            secret,
+            settings: {
+                indexes: params?.settings?.indexes?.filter((n) => validateCustomIndex(n)),
+                rawIndexes: params?.settings?.rawIndexes?.filter((n) => validateCustomIndex(n)),
+                allowedOrigin: params?.settings?.allowedOrigin?.map((n) => striptags(n)),
+                retentionDays: params?.settings?.retentionDays || 1
+            }
+        })
+
+        console.log("payload", payload)
+
         const projects = await projectModel.create([
-            sanitizeObject({
-                title: striptags(params?.title),
-                slug: await generateUniqueSlug(createSlug(params?.slug || params?.title)),
-                secret,
-                settings: {
-                    indexes: params?.settings?.indexes?.filter((n) => validateCustomIndex(n)),
-                    allowedOrigin: params?.settings?.allowedOrigin?.map((n) => striptags(n)),
-                    retentionDays: params?.settings?.retentionDays || 1
-                }
-            })
+            payload
         ], { session })
 
         await projectUserModel.create([
@@ -121,6 +127,7 @@ const createProject = async (params) => {
  * @param {string} params.title
  * @param {string} [params.slug]
  * @param {string[]} [params.indexes] 
+ * @param {string[]} [params.rawIndexes] 
  * @param {string[]} [params.allowedOrigin]
  */
 const updateProject = async (id, params) => {
@@ -132,6 +139,7 @@ const updateProject = async (id, params) => {
     const v = new Validator(params, {
         title: "required|string",
         indexes: "arrayUnique",
+        rawIndexes: "arrayUnique",
         allowedOrigin: "arrayUnique"
     });
 
@@ -148,6 +156,7 @@ const updateProject = async (id, params) => {
             $set: {
                 title: striptags(params?.title),
                 "settings.indexes": params?.indexes?.filter((n) => validateCustomIndex(n)),
+                "settings.rawIndexes": params?.rawIndexes?.filter((n) => validateCustomIndex(n)),
                 "settings.allowedOrigin": params?.allowedOrigin?.map((n) => striptags(n))
             }
         }
@@ -401,7 +410,7 @@ const getUsersDashboardProjectsStats = async (userId) => {
         projectUsers.map(async (pu) => {
             const project = await getProjectFromCache(pu.project?.toString());
 
-            const { log, logstamp } = await getLogModel(project?.id?.toString())
+            const { log } = await getLogModel(project?.id?.toString())
 
             const [result] = await log.aggregate([
                 {

@@ -37,6 +37,7 @@ module.exports = {
             secret: json?.secret,
             settings: {
                 indexes: json?.settings?.indexes,
+                rawIndexes: json?.settings?.rawIndexes,
                 allowedOrigin: json?.settings?.allowedOrigin,
                 retentionDays: json?.settings?.retentionDays,
             },

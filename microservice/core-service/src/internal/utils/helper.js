@@ -78,6 +78,7 @@ const Registry = {};
  * @param {string} project.id 
  * @param {object} project.settings
  * @param {string[]} project.settings.indexes
+ * @param {string[]} project.settings.rawIndexes
  * @param {number} project.settings.retentionDays 
  */
 const initLogger = async (project) => {
@@ -107,6 +108,14 @@ const initLogger = async (project) => {
     for (const field of project.settings.indexes) {
         const hashField = `hash.${field.replace(/\./g, '_')}`;
         schema.index({ [hashField]: 1 });
+    }
+
+      // Add raw indexes (non-hashed, good for numbers)
+    if (project.settings.rawIndexes) {
+        for (const field of project.settings.rawIndexes) {
+            const rawField = `raw.${field.replace(/\./g, '_')}`;
+            schema.index({ [rawField]: 1 });
+        }
     }
 
     // Add TTL index
@@ -286,6 +295,33 @@ const generateIndexedHashes = (log, project) => {
 
 /**
  * 
+ * @param {*} data 
+ * @param {*} project 
+ * @returns 
+ */
+const generateRawValues = (data, project) => {
+    if (!project?.settings?.rawIndexes || project.settings.rawIndexes.length === 0) {
+        return {};
+    }
+
+    const rawValues = {};
+    const flatData = { ...data.context, ...data.data };
+
+    for (const field of project.settings.rawIndexes) {
+        const value = getNestedValue(flatData, field);
+        
+        if (value !== undefined && value !== null) {
+            const safeFieldName = field.replace(/\./g, '_');
+            rawValues[safeFieldName] = value;  // Store as-is, no hashing
+        }
+    }
+
+    return rawValues;
+};
+
+
+/**
+ * 
  * @param {number} date 
  * @param {number} thresholdHours 
  * @returns 
@@ -303,5 +339,6 @@ module.exports = {
     initLogger,
     getLogModel,
     generateIndexedHashes,
-    isRecent
+    isRecent,
+    generateRawValues
 }

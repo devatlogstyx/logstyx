@@ -9,26 +9,32 @@ import { sanitizeObject } from "../../../utils/function"
 
 const useTabLogs = ({ project }) => {
 
+    // ✅ Include both indexes and rawIndexes
     const fields = [
         ...project?.settings?.indexes || [],
+        ...project?.settings?.rawIndexes || [],
         "level",
     ]
 
+    // Helper to check if field is a raw index
+    const isRawIndex = (field) => {
+        return project?.settings?.rawIndexes?.includes(field)
+    }
+
     const [isLoading, setIsLoading] = React.useState(true)
-    const [isFieldLoading, setIsFieldLoading] = React.useState({}) // Changed to object to track each filter
+    const [isFieldLoading, setIsFieldLoading] = React.useState({})
 
     const [page, setPage] = React.useState(1)
 
-    // Changed to array of filters
+    // ✅ Filter now includes operator field
     const [filters, setFilters] = React.useState([])
+    // Filter structure: { id, field, value, operator }
 
-    // Changed to object keyed by filter id
     const [fieldValues, setFieldValues] = React.useState({})
 
     const [list, setList] = React.useState({})
     const [sortConfig, setSortConfig] = React.useState({ key: null, direction: 'asc' });
 
-    // Add state for column visibility
     const [visibleColumns, setVisibleColumns] = React.useState(
         fields?.sort((a, b) => a?.localeCompare(b))?.reduce((acc, col) => {
             acc[col] = true;
@@ -36,7 +42,6 @@ const useTabLogs = ({ project }) => {
         }, {}) || {}
     );
 
-    // Toggle function
     const toggleColumn = (columnName) => {
         setVisibleColumns(prev => ({
             ...prev,
@@ -86,16 +91,19 @@ const useTabLogs = ({ project }) => {
 
     const ErrorMessage = useErrorMessage()
 
-    // Create new controller for each fetch to allow proper cancellation
     const logsControllerRef = React.useRef(null)
     const fieldValuesControllersRef = React.useRef({})
 
-    // Add filter
+    // ✅ Add filter with default operator
     const addFilter = () => {
-        setFilters(prev => [...prev, { id: Date.now(), field: "", value: "" }])
+        setFilters(prev => [...prev, { 
+            id: Date.now(), 
+            field: "", 
+            value: "",
+            operator: "eq" // Default operator
+        }])
     }
 
-    // Remove filter
     const removeFilter = (filterId) => {
         setFilters(prev => prev.filter(f => f.id !== filterId))
         setFieldValues(prev => {
@@ -105,10 +113,15 @@ const useTabLogs = ({ project }) => {
         })
     }
 
-    // Update filter field
+    // ✅ Update filter field and reset operator if switching between raw/hashed
     const updateFilterField = (filterId, field) => {
         setFilters(prev => prev.map(f =>
-            f.id === filterId ? { ...f, field, value: "" } : f
+            f.id === filterId ? { 
+                ...f, 
+                field, 
+                value: "",
+                operator: isRawIndex(field) ? "eq" : "eq" // Keep operator for raw indexes
+            } : f
         ))
         setFieldValues(prev => {
             const newValues = { ...prev }
@@ -117,10 +130,16 @@ const useTabLogs = ({ project }) => {
         })
     }
 
-    // Update filter value
     const updateFilterValue = (filterId, value) => {
         setFilters(prev => prev.map(f =>
             f.id === filterId ? { ...f, value } : f
+        ))
+    }
+
+    // ✅ Add function to update operator
+    const updateFilterOperator = (filterId, operator) => {
+        setFilters(prev => prev.map(f =>
+            f.id === filterId ? { ...f, operator } : f
         ))
     }
 
@@ -131,7 +150,6 @@ const useTabLogs = ({ project }) => {
             return
         }
 
-        // Cancel previous request if still pending
         if (logsControllerRef.current) {
             logsControllerRef.current.abort()
         }
@@ -141,14 +159,16 @@ const useTabLogs = ({ project }) => {
         try {
             setIsLoading(true)
 
-            // Build filter arrays for API call
+            // ✅ Build filter arrays including operators
             const filterFields = []
             const filterValues = []
+            const filterOperators = []
 
             filters.forEach((filter) => {
                 if (filter.field && filter.value && filter.value !== "All") {
                     filterFields.push(filter.field)
                     filterValues.push(filter.value)
+                    filterOperators.push(filter.operator || "eq")
                 }
             })
 
@@ -158,6 +178,7 @@ const useTabLogs = ({ project }) => {
                 sanitizeObject({
                     filterField: filterFields.length > 0 ? filterFields : undefined,
                     filterValue: filterValues.length > 0 ? filterValues : undefined,
+                    filterOperator: filterOperators.length > 0 ? filterOperators : undefined, // ✅ Add operators
                     page,
                     sortBy: sortConfig?.key ? `${sortConfig.key}:${sortConfig.direction}` : undefined
                 })
@@ -165,7 +186,6 @@ const useTabLogs = ({ project }) => {
             setList(l)
 
         } catch (e) {
-            // Don't show error for aborted requests
             if (e.name !== 'AbortError') {
                 ErrorMessage(e)
             }
@@ -187,10 +207,20 @@ const useTabLogs = ({ project }) => {
                     continue
                 }
 
+                // ✅ Skip fetching distinct values for raw indexes with non-eq operators
+                // (range queries don't need a dropdown of values)
+                if (isRawIndex(filter.field) && filter.operator !== 'eq') {
+                    setFieldValues(prev => {
+                        const newValues = { ...prev }
+                        delete newValues[filter.id]
+                        return newValues
+                    })
+                    continue
+                }
+
                 setIsFieldLoading(prev => ({ ...prev, [filter.id]: true }))
 
                 try {
-                    // Cancel previous request for this filter
                     if (fieldValuesControllersRef.current[filter.id]) {
                         fieldValuesControllersRef.current[filter.id].abort()
                     }
@@ -227,7 +257,6 @@ const useTabLogs = ({ project }) => {
     React.useEffect(() => {
         fetchData()
 
-        // Cleanup: abort on unmount
         return () => {
             if (logsControllerRef.current) {
                 logsControllerRef.current.abort()
@@ -271,8 +300,10 @@ const useTabLogs = ({ project }) => {
         removeFilter,
         updateFilterField,
         updateFilterValue,
+        updateFilterOperator, // Export new function
         fieldValues,
-        refetchData: fetchData
+        refetchData: fetchData,
+        isRawIndex // Export helper function for UI to use
     }
 }
 

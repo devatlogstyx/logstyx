@@ -1,6 +1,6 @@
 //@ts-check
 
-import { ActionIcon, Badge, Button, Code, Loader, Menu, Pagination, Select, Table, Tooltip } from "@mantine/core"
+import { ActionIcon, Badge, Button, Code, Loader, Menu, NumberInput, Pagination, Select, Table, Tooltip } from "@mantine/core"
 import { getLevelColor, getNestedValue } from "../../../utils/function"
 import { FiActivity, FiCheck, FiColumns, FiInfo, FiLoader, FiMoreVertical, FiPlus, FiX } from "react-icons/fi"
 import { LuLoaderCircle } from "react-icons/lu"
@@ -39,8 +39,10 @@ const TabLogs = ({
         removeFilter,
         updateFilterField,
         updateFilterValue,
+        updateFilterOperator,
         fieldValues,
-        refetchData
+        refetchData,
+        isRawIndex
     } = useTabLogs({
         project
     })
@@ -103,6 +105,7 @@ const TabLogs = ({
                         <div className="flex flex-col gap-3">
                             {filters.map((filter, index) => (
                                 <div key={filter.id} className="flex flex-col sm:flex-row gap-2 p-3 sm:p-0 bg-gray-50 sm:bg-transparent rounded-lg sm:rounded-none">
+                                    {/* Field Select */}
                                     <Select
                                         placeholder="Filter field"
                                         data={fields}
@@ -112,18 +115,52 @@ const TabLogs = ({
                                         size="sm"
                                     />
 
-                                    <Select
-                                        disabled={!filter.field || isFieldLoading[filter.id]}
-                                        placeholder={`Filter by ${filter.field || 'value'}`}
-                                        data={["All", ...(fieldValues[filter.id] || [])]}
-                                        value={filter.value || undefined}
-                                        onChange={(value) => updateFilterValue(filter.id, value)}
-                                        className="w-full sm:w-52"
-                                        limit={99}
-                                        searchable
-                                        size="sm"
-                                    />
+                                    {/* Operator Select - Only show for raw indexes */}
+                                    {isRawIndex(filter.field) && (
+                                        <Select
+                                            placeholder="Operator"
+                                            data={[
+                                                { value: 'eq', label: '=' },
+                                                { value: 'gt', label: '>' },
+                                                { value: 'gte', label: '≥' },
+                                                { value: 'lt', label: '<' },
+                                                { value: 'lte', label: '≤' }
+                                            ]}
+                                            value={filter.operator || 'eq'}
+                                            onChange={(value) => updateFilterOperator(filter.id, value)}
+                                            className="w-full sm:w-32"
+                                            size="sm"
+                                        />
+                                    )}
 
+                                    {/* Value Input - Show different input based on field type and operator */}
+                                    {isRawIndex(filter.field) && filter.operator !== 'eq' ? (
+                                        // Number input for range queries on raw indexes
+                                        <NumberInput
+                                            disabled={!filter.field}
+                                            placeholder={`Enter ${filter.field || 'value'}`}
+                                            value={filter.value || ''}
+                                            onChange={(value) => updateFilterValue(filter.id, value)}
+                                            className="w-full sm:w-52"
+                                            size="sm"
+                                            hideControls
+                                        />
+                                    ) : (
+                                        // Select dropdown for exact match queries
+                                        <Select
+                                            disabled={!filter.field || isFieldLoading[filter.id]}
+                                            placeholder={`Filter by ${filter.field || 'value'}`}
+                                            data={["All", ...(fieldValues[filter.id] || [])]}
+                                            value={filter.value || undefined}
+                                            onChange={(value) => updateFilterValue(filter.id, value)}
+                                            className="w-full sm:w-52"
+                                            limit={99}
+                                            searchable
+                                            size="sm"
+                                        />
+                                    )}
+
+                                    {/* Remove Button */}
                                     <Button
                                         variant="subtle"
                                         color="red"

@@ -42,10 +42,16 @@ const CreateProject = ({
                     <form className="space-y-4" onSubmit={form.onSubmit(handleSubmit)}>
                         <TextInput label="Project Title" {...form.getInputProps('title')} />
                         <TagsInput
-                            label="Indexed Fields"
-                            description="Initial indexes cannot be removed"
+                            label="Indexed Fields (Hashed)"
+                            description="Initial indexes cannot be removed. Good for strings and IDs."
                             placeholder="Enter fields to index"
                             {...form.getInputProps('indexes')}
+                        />
+                        <TagsInput
+                            label="Raw Indexed Fields"
+                            description="Initial raw indexes cannot be removed. Good for numbers and sortable fields."
+                            placeholder="Enter fields to index"
+                            {...form.getInputProps('rawIndexes')}
                         />
                         <TagsInput
                             label="Allowed Origins"
