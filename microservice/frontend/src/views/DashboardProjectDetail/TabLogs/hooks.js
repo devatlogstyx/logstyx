@@ -10,11 +10,11 @@ import { sanitizeObject } from "../../../utils/function"
 const useTabLogs = ({ project }) => {
 
     // ✅ Include both indexes and rawIndexes
-    const fields = [
+    const fields = [...new Set([
         ...project?.settings?.indexes || [],
         ...project?.settings?.rawIndexes || [],
         "level",
-    ]
+    ])]
 
     // Helper to check if field is a raw index
     const isRawIndex = (field) => {
@@ -96,9 +96,9 @@ const useTabLogs = ({ project }) => {
 
     // ✅ Add filter with default operator
     const addFilter = () => {
-        setFilters(prev => [...prev, { 
-            id: Date.now(), 
-            field: "", 
+        setFilters(prev => [...prev, {
+            id: Date.now(),
+            field: "",
             value: "",
             operator: "eq" // Default operator
         }])
@@ -116,9 +116,9 @@ const useTabLogs = ({ project }) => {
     // ✅ Update filter field and reset operator if switching between raw/hashed
     const updateFilterField = (filterId, field) => {
         setFilters(prev => prev.map(f =>
-            f.id === filterId ? { 
-                ...f, 
-                field, 
+            f.id === filterId ? {
+                ...f,
+                field,
                 value: "",
                 operator: isRawIndex(field) ? "eq" : "eq" // Keep operator for raw indexes
             } : f
