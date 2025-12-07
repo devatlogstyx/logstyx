@@ -13,6 +13,7 @@ const {
     BROWSER_CLIENT_TYPE,
     NOT_FOUND_ERR_CODE,
     NOT_FOUND_ERR_MESSAGE,
+    FORBIDDEN_ERR_CODE,
 
 } = require("common/constant");
 const { submitWriteLog } = require("../../shared/provider/mq-producer");
@@ -76,7 +77,7 @@ module.exports = {
 
         const canAccess = await canUserReadProject(req?.user?.id, project?.id)
         if (!canAccess) {
-            throw HttpError(NO_ACCESS_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
+            throw HttpError(FORBIDDEN_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
         }
 
         const data = await logTimeline(req?.params?.id, req?.params?.key)

@@ -6,6 +6,7 @@ const {
 } = require("common/function")
 
 const {
+    FORBIDDEN_ERR_CODE,
     NO_ACCESS_ERR_CODE,
     NO_ACCESS_ERR_MESSAGE,
     SUCCESS_ERR_CODE,
@@ -57,7 +58,7 @@ module.exports = {
 
         const canManage = await CanUserDo(req?.user?.id, READ_USER_USER_ROLE)
         if (!canManage) {
-            throw HttpError(NO_ACCESS_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
+            throw HttpError(FORBIDDEN_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
         }
 
         const {
@@ -94,7 +95,7 @@ module.exports = {
 
         const canManage = await CanUserDo(req?.user?.id, WRITE_USER_USER_ROLE)
         if (!canManage) {
-            throw HttpError(NO_ACCESS_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
+            throw HttpError(FORBIDDEN_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
         }
 
         if (req?.params?.id === req?.user?.id) {
@@ -120,7 +121,7 @@ module.exports = {
 
         const canManage = await CanUserDo(req?.user?.id, WRITE_USER_USER_ROLE)
         if (!canManage) {
-            throw HttpError(NO_ACCESS_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
+            throw HttpError(FORBIDDEN_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
         }
 
         if (req?.params?.id === req?.user?.id) {

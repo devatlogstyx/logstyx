@@ -1,6 +1,6 @@
 //@ts-check
 
-const { NO_ACCESS_ERR_CODE, NO_ACCESS_ERR_MESSAGE, WRITE_USER_INVITATION_USER_ROLE, SUCCESS_ERR_CODE, SUCCESS_ERR_MESSAGE, READ_USER_INVITATION_USER_ROLE } = require("common/constant")
+const { FORBIDDEN_ERR_CODE, NO_ACCESS_ERR_CODE, NO_ACCESS_ERR_MESSAGE, WRITE_USER_INVITATION_USER_ROLE, SUCCESS_ERR_CODE, SUCCESS_ERR_MESSAGE, READ_USER_INVITATION_USER_ROLE } = require("common/constant")
 const { HttpError, HttpResponse } = require("common/function")
 const { CanUserDo } = require("../utils/helper")
 const { createUserInvitation, paginateUserInvitation, removeUserInvitation, updateUserInvitation, validateUserInvitation } = require("../service/user.invitation")
@@ -18,7 +18,7 @@ module.exports = {
 
         const canManage = await CanUserDo(req?.user?.id, WRITE_USER_INVITATION_USER_ROLE)
         if (!canManage) {
-            throw HttpError(NO_ACCESS_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
+            throw HttpError(FORBIDDEN_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
         }
 
         const data = await createUserInvitation({
@@ -43,7 +43,7 @@ module.exports = {
 
         const canManage = await CanUserDo(req?.user?.id, READ_USER_INVITATION_USER_ROLE)
         if (!canManage) {
-            throw HttpError(NO_ACCESS_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
+            throw HttpError(FORBIDDEN_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
         }
 
         const {
@@ -78,7 +78,7 @@ module.exports = {
 
         const canManage = await CanUserDo(req?.user?.id, WRITE_USER_INVITATION_USER_ROLE)
         if (!canManage) {
-            throw HttpError(NO_ACCESS_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
+            throw HttpError(FORBIDDEN_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
         }
 
         const data = await updateUserInvitation(req?.params?.id, {
@@ -103,7 +103,7 @@ module.exports = {
 
         const canManage = await CanUserDo(req?.user?.id, WRITE_USER_INVITATION_USER_ROLE)
         if (!canManage) {
-            throw HttpError(NO_ACCESS_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
+            throw HttpError(FORBIDDEN_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
         }
 
         await removeUserInvitation(req?.params?.id)

@@ -1,6 +1,6 @@
 //@ts-check
 
-const { INVALID_INPUT_ERR_CODE, EMAIL_PASSWORD_LOGIN_TYPE, NOT_FOUND_ERR_CODE, NOT_FOUND_ERR_MESSAGE, WRITE_USER_INVITATION_USER_ROLE, NO_ACCESS_ERR_CODE } = require("common/constant");
+const { INVALID_INPUT_ERR_CODE, EMAIL_PASSWORD_LOGIN_TYPE, NOT_FOUND_ERR_CODE, NOT_FOUND_ERR_MESSAGE, WRITE_USER_INVITATION_USER_ROLE, NO_ACCESS_ERR_CODE, FORBIDDEN_ERR_CODE } = require("common/constant");
 const { HttpError, hashString, num2Ceil, num2Floor, sanitizeObject, encrypt } = require("common/function");
 const { Validator } = require("node-input-validator");
 const { default: striptags } = require("striptags");
@@ -140,7 +140,7 @@ const updateUserInvitation = async (id, params) => {
         }
 
         if (!creator.permissions?.includes(WRITE_USER_INVITATION_USER_ROLE)) {
-            throw HttpError(NO_ACCESS_ERR_CODE, "Insufficient permissions");
+            throw HttpError(FORBIDDEN_ERR_CODE, "Insufficient permissions");
         }
 
         const creatorsProjects = await listUsersProject(params.creator);

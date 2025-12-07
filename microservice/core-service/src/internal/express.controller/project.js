@@ -12,6 +12,7 @@ const {
     SUCCESS_ERR_MESSAGE,
     NOT_FOUND_ERR_CODE,
     NOT_FOUND_ERR_MESSAGE,
+    FORBIDDEN_ERR_CODE,
 
 } = require("common/constant");
 const { createProject, canUserModifyProject, removeProject, paginateProject, addUserToProject, removeUserFromProject, listUserFromProject, updateProject, findProjectBySlug, findProjectById, canUserReadProject, getProjectLogStats } = require("../service/project");
@@ -53,7 +54,7 @@ module.exports = {
 
         const canAccess = await canUserModifyProject(req?.user?.id, req?.params?.id)
         if (!canAccess) {
-            throw HttpError(NO_ACCESS_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
+            throw HttpError(FORBIDDEN_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
         }
 
         const data = await updateProject(req?.params?.id, req?.body)
@@ -86,7 +87,7 @@ module.exports = {
 
         const canAccess = await canUserModifyProject(req?.user?.id, project?.id)
         if (!canAccess) {
-            throw HttpError(NO_ACCESS_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
+            throw HttpError(FORBIDDEN_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
         }
 
         await removeProject(project?.id)
@@ -136,7 +137,7 @@ module.exports = {
 
         const canAccess = await canUserModifyProject(req?.user?.id, req?.params?.id)
         if (!canAccess) {
-            throw HttpError(NO_ACCESS_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
+            throw HttpError(FORBIDDEN_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
         }
 
         const data = await addUserToProject(req?.params?.userId, req?.params?.id)
@@ -159,7 +160,7 @@ module.exports = {
 
         const canAccess = await canUserModifyProject(req?.user?.id, req?.params?.id)
         if (!canAccess) {
-            throw HttpError(NO_ACCESS_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
+            throw HttpError(FORBIDDEN_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
         }
 
         await removeUserFromProject(req?.params?.userId, req?.params?.id)
@@ -181,7 +182,7 @@ module.exports = {
 
         const canAccess = await canUserReadProject(req?.user?.id, req?.params?.id)
         if (!canAccess) {
-            throw HttpError(NO_ACCESS_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
+            throw HttpError(FORBIDDEN_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
         }
 
         const data = await listUserFromProject(req?.params?.id)
@@ -214,7 +215,7 @@ module.exports = {
 
         const canAccess = await canUserReadProject(req?.user?.id, project?.id)
         if (!canAccess) {
-            throw HttpError(NO_ACCESS_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
+            throw HttpError(FORBIDDEN_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
         }
 
         HttpResponse(res).json({
@@ -245,7 +246,7 @@ module.exports = {
 
         const canAccess = await canUserReadProject(req?.user?.id, project?.id)
         if (!canAccess) {
-            throw HttpError(NO_ACCESS_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
+            throw HttpError(FORBIDDEN_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
         }
 
         const data = await getProjectLogStats(project?.id)
@@ -278,14 +279,16 @@ module.exports = {
 
         const canAccess = await canUserReadProject(req?.user?.id, project?.id)
         if (!canAccess) {
-            throw HttpError(NO_ACCESS_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
+            throw HttpError(FORBIDDEN_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
         }
 
         const {
             filterField,
             filterValue,
+            filterOperator,
             'filterField[]': filterFieldArray,
             'filterValue[]': filterValueArray,
+            'filterOperator[]': filterOperatorArray,
             sortBy,
             limit,
             page
@@ -294,12 +297,13 @@ module.exports = {
         // Handle both formats: with and without [] suffix
         const filterFields = filterFieldArray || filterField
         const filterValues = filterValueArray || filterValue
-
+        const filterOperators = filterOperatorArray || filterOperator
         // Convert to arrays if they're not already
         const filterFieldsArray = Array.isArray(filterFields) ? filterFields : (filterFields ? [filterFields] : [])
         const filterValuesArray = Array.isArray(filterValues) ? filterValues : (filterValues ? [filterValues] : [])
+        const filterOperatorsArray = Array.isArray(filterOperators) ? filterOperators : (filterOperators ? [filterOperators] : [])
 
-        const params = { project: project?.id, filterFields: filterFieldsArray, filterValues: filterValuesArray }
+        const params = { project: project?.id, filterFields: filterFieldsArray, filterValues: filterValuesArray, filterOperators: filterOperatorsArray }
 
         const data = await paginateLogs(params, sortBy, limit, page)
 
@@ -309,6 +313,11 @@ module.exports = {
             data
         });
     },
+    /**
+     * 
+     * @param {*} req 
+     * @param {*} res 
+     */
     async ProjectListDistinctValues(req, res) {
         if (!req?.user) {
             throw HttpError(NO_ACCESS_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
@@ -326,7 +335,7 @@ module.exports = {
 
         const canAccess = await canUserReadProject(req?.user?.id, project?.id)
         if (!canAccess) {
-            throw HttpError(NO_ACCESS_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
+            throw HttpError(FORBIDDEN_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
         }
 
 

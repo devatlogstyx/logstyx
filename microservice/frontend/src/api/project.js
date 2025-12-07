@@ -1,11 +1,6 @@
 //@ts-check
-import axios from "axios"
-import { API_HOST } from "../utils/constant";
 
-const Axios = axios.create({
-    baseURL: API_HOST,
-    withCredentials: true,
-});
+import Axios from "./AxiosClient";
 
 /**
  * 

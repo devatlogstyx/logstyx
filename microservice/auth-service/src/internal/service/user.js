@@ -7,7 +7,6 @@ const { Validator } = require("node-input-validator")
 const {
     INVALID_INPUT_ERR_CODE,
     EMAIL_PASSWORD_LOGIN_TYPE,
-    NO_ACCESS_ERR_CODE,
     INVALID_EMAIL_PASSWORD_ERR_MESSAGE,
     USER_CACHE_KEY,
     USER_LOGIN_CACHE_KEY,
