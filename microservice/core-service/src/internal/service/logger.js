@@ -6,8 +6,8 @@ const { HttpError, hashString, decryptSecret, createSlug, encrypt, decrypt } = r
 const { NOT_FOUND_ERR_CODE, NOT_FOUND_ERR_MESSAGE, BROWSER_CLIENT_TYPE, INVALID_INPUT_ERR_CODE, INVALID_INPUT_ERR_MESSAGE } = require("common/constant");
 const { validateOrigin, validateSignature, getLogModel, generateIndexedHashes, validateCustomIndex, generateRawValues } = require("../utils/helper");
 const projectModel = require("../model/project.model");
-const { mapLog, parseContent } = require("../utils/mapper");
-const { compressAndEncrypt } = require("../utils/compression");
+const { mapLog } = require("../utils/mapper");
+const { compressAndEncrypt, decryptAndDecompress } = require("../utils/compression");
 const { ObjectId } = mongoose.Types
 
 
@@ -101,8 +101,8 @@ const createLog = async (project, params) => {
         data: params?.data
     }, project);
 
-    const compressedContext = await compressAndEncrypt(JSON.stringify(params?.context))
-    const compressedData = await compressAndEncrypt(JSON.stringify(params?.data))
+    const compressedContext = await compressAndEncrypt(params?.context)
+    const compressedData = await compressAndEncrypt(params?.data)
 
     await log.findOneAndUpdate(
         { key },
@@ -117,7 +117,6 @@ const createLog = async (project, params) => {
                 hash: hashes,
                 raw: rawValues,
                 createdAt: timestampDate,
-                version: 2
             }
         },
         { upsert: true }
@@ -313,13 +312,12 @@ const getDistinctValue = async (projectId, field) => {
         const hashField = `hash.${field.replace(/\./g, '_')}`;
         const [fieldType, fieldName] = field.split('.'); // 'context' or 'data', and the field name
 
-        // Aggregate to get unique hash values with their encrypted context/data AND version
+        // Aggregate to get unique hash values with their encrypted context/data 
         const results = await log.aggregate([
             {
                 $group: {
                     _id: `$${hashField}`,
                     encrypted: { $first: `$${fieldType}` },
-                    version: { $first: '$version' } // Add version to the group
                 }
             },
             { $limit: 999 }
@@ -330,8 +328,7 @@ const getDistinctValue = async (projectId, field) => {
             results.map(async result => {
                 if (result.encrypted) {
                     try {
-                        const version = result.version || 1; // Default to v1 for old records
-                        const decrypted = await parseContent(result.encrypted, version);
+                        const decrypted = await decryptAndDecompress(result.encrypted);
                         return decrypted[fieldName];
                     } catch (err) {
                         console.error('Decryption error:', err);

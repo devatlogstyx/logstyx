@@ -37,11 +37,6 @@ const logSchema = new mongoose.Schema(
             default: 1,
             min: 1
         },
-        version: {
-            type: Number,
-            default: 1,
-            min: 1
-        }
 
     },
     {
