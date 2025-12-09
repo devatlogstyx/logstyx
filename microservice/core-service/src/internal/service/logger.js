@@ -139,7 +139,7 @@ const createLog = async (project, params) => {
  * @param {string|number|Date} params.timestamp
  * @returns 
  */
-const processCreateLog = async (params) => {
+const processCreateSelfLog = async (params) => {
 
     // @ts-ignore
     const projectTitle = decryptSecret(process?.env?.ENC_SELF_PROJECT_TITLE)
@@ -356,7 +356,7 @@ const getDistinctValue = async (projectId, field) => {
 
 module.exports = {
     processWriteLog,
-    processCreateLog,
+    processCreateSelfLog,
     paginateLogs,
     logTimeline,
     getDistinctValue
