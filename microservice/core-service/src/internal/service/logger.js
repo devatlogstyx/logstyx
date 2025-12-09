@@ -7,7 +7,7 @@ const { NOT_FOUND_ERR_CODE, NOT_FOUND_ERR_MESSAGE, BROWSER_CLIENT_TYPE, INVALID_
 const { validateOrigin, validateSignature, getLogModel, generateIndexedHashes, validateCustomIndex, generateRawValues } = require("../utils/helper");
 const projectModel = require("../model/project.model");
 const { mapLog } = require("../utils/mapper");
-const { compressAndEncrypt, decryptAndDecompress } = require("../utils/compression");
+const { compressAndEncrypt, decryptAndDecompress } = require("common/function");
 const { ObjectId } = mongoose.Types
 
 

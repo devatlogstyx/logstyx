@@ -2,7 +2,7 @@
 
 const zlib = require('zlib');
 const { promisify } = require('util');
-const { decryptSecret } = require('common/function');
+const { decryptSecret } = require("./encryptor");
 
 const gzip = promisify(zlib.gzip);
 const gunzip = promisify(zlib.gunzip);

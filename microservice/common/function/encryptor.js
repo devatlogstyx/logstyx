@@ -17,33 +17,26 @@ const encrypt = (text) => {
 
     const encrypted = Buffer.concat([cipher.update(text), cipher.final()]);
 
-    return {
-        iv: iv.toString("hex"),
-        content: encrypted.toString("hex"),
-    };
+    return [iv.toString("hex"), encrypted.toString("hex")].join(":");
 };
 
 /**
  * 
- * @param {object} hash 
- * @param {string} hash.iv
- * @param {string} hash.content
+ * @param {string} hash 
  * @returns 
  */
 const decrypt = (hash) => {
-    if (!hash.iv || !hash.content) {
-        return hash
-    }
+    const [iv, content] = hash.split(":")
 
     const secretKey = decryptSecret(process?.env?.ENC_CRYPTO_SECRET)
     const decipher = crypto.createDecipheriv(
         algorithm,
         secretKey,
-        Buffer.from(hash.iv, "hex")
+        Buffer.from(iv, "hex")
     );
 
     const decrypted = Buffer.concat([
-        decipher.update(Buffer.from(hash.content, "hex")),
+        decipher.update(Buffer.from(content, "hex")),
         decipher.final(),
     ]);
 

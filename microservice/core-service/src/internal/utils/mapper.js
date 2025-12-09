@@ -1,4 +1,4 @@
-const { decryptAndDecompress } = require("./compression");
+const { decryptAndDecompress } = require("common/function");
 
 module.exports = {
     mapProjectUser: (json) => {

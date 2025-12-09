@@ -5,4 +5,5 @@ module.exports={
     ...require("./string"),
     ...require("./response"),
     ...require("./wrapper"),
+    ...require("./compression"),
 }
