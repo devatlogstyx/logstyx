@@ -11,14 +11,8 @@ const useLogout = () => {
     const { refetchUser } = useUser()
 
     const handleuserLogout = React.useCallback(async () => {
-        try {
-            await userLogout(controller.signal)
-            await refetchUser()
-        } catch (e) {
-            console.error(e)
-        } finally {
-            navigate(`/`)
-        }
+        await userLogout(controller.signal).catch(console.error)
+        await refetchUser().catch(console.error)
     }, [navigate, controller])
 
 
