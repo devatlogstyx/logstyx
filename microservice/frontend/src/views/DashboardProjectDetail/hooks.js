@@ -2,6 +2,8 @@ import React from "react"
 import { useParams, useSearchParams } from "react-router-dom"
 import { useErrorMessage } from "../../hooks/useMessage"
 import { findProjectBySlug, getProjectLogStats, listProjectUser } from "../../api/project"
+import UserContext from "../../context/UserContext"
+import { READ_USER_USER_ROLE } from "../../utils/constant"
 
 //@ts-check
 const useDashboardProjectDetail = () => {
@@ -10,6 +12,7 @@ const useDashboardProjectDetail = () => {
     const { slug } = useParams()
     const [searchParams, setSearchParams] = useSearchParams();
 
+    const { user } = React.useContext(UserContext)
 
     const controller = React.useMemo(() => new AbortController(), []);
 
@@ -54,7 +57,8 @@ const useDashboardProjectDetail = () => {
         logStatistic,
         users,
         refetchData: fetchData,
-        changeActiveTab: (tab) => setSearchParams({ tab })
+        changeActiveTab: (tab) => setSearchParams({ tab }),
+        canSeeUserTab: user?.permissions?.includes(READ_USER_USER_ROLE)
     }
 
 }

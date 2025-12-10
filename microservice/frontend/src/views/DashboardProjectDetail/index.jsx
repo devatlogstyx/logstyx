@@ -33,7 +33,8 @@ const DashboardProjectDetail = () => {
     logStatistic,
     users,
     refetchData,
-    changeActiveTab
+    changeActiveTab,
+    canSeeUserTab
   } = useDashboardProjectDetail()
 
   if (isLoading) {
@@ -131,9 +132,12 @@ const DashboardProjectDetail = () => {
           <Tabs.Tab value="logs" leftSection={<FiActivity className="w-3.5 h-3.5" />}>
             Logs
           </Tabs.Tab>
-          <Tabs.Tab value="users" leftSection={<FiUsers className="w-3.5 h-3.5" />}>
-            Users
-          </Tabs.Tab>
+          {
+            canSeeUserTab &&
+            <Tabs.Tab value="users" leftSection={<FiUsers className="w-3.5 h-3.5" />}>
+              Users
+            </Tabs.Tab>
+          }
         </Tabs.List>
 
         {/* Overview Tab */}
@@ -151,14 +155,16 @@ const DashboardProjectDetail = () => {
           />
         </Tabs.Panel>
 
-        {/* Users Tab */}
-        <Tabs.Panel value="users" className="pt-8">
-          <TabUser
-            projectId={project?.id}
-            users={users}
-            onUpdate={refetchData}
-          />
-        </Tabs.Panel>
+        {
+          canSeeUserTab &&
+          <Tabs.Panel value="users" className="pt-8">
+            <TabUser
+              projectId={project?.id}
+              users={users}
+              onUpdate={refetchData}
+            />
+          </Tabs.Panel>
+        }
       </Tabs>
     </Container>
   );
