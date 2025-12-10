@@ -13,7 +13,7 @@ Axios.interceptors.response.use(
       const currentPath = window.location.pathname;
 
       // Don't redirect if already on login or logout pages
-      if (currentPath !== '/login' && currentPath !== '/logout') {
+      if (currentPath?.includes("/dashboard")) {
         window.location.href = '/logout';
       }
     }
