@@ -21,12 +21,13 @@ const validateCustomIndex = (field) => {
 /**
  * 
  * @param {object} project 
- * @param {string[]} project.allowedOrigin
+ * @param {object} project.settings
+ * @param {string[]} project.settings.allowedOrigin
  * @param {string} origin 
  */
 const validateOrigin = (project, origin) => {
 
-    if (!project?.allowedOrigin?.includes(origin)) {
+    if (!project?.settings?.allowedOrigin?.includes(origin)) {
         throw HttpError(NO_ACCESS_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
     }
 
@@ -110,7 +111,7 @@ const initLogger = async (project) => {
         schema.index({ [hashField]: 1 });
     }
 
-      // Add raw indexes (non-hashed, good for numbers)
+    // Add raw indexes (non-hashed, good for numbers)
     if (project.settings.rawIndexes) {
         for (const field of project.settings.rawIndexes) {
             const rawField = `raw.${field.replace(/\./g, '_')}`;
@@ -123,7 +124,7 @@ const initLogger = async (project) => {
     if (retentionDays && retentionDays > 0) {
         schema.index(
             { updatedAt: 1 },  // ← Changed from createdAt
-            { 
+            {
                 expireAfterSeconds: retentionDays * 24 * 60 * 60,
                 name: 'updatedAt_ttl'
             }
@@ -136,9 +137,9 @@ const initLogger = async (project) => {
     // Drop the problematic index specifically
     try {
         const existingIndexes = await logModel.collection.indexes();
-        
+
         for (const idx of existingIndexes) {
-            if ((idx.name.includes('createdAt') || idx.name.includes('updatedAt')) 
+            if ((idx.name.includes('createdAt') || idx.name.includes('updatedAt'))
                 && idx.name !== 'updatedAt_ttl') {
                 await logModel.collection.dropIndex(idx.name);
             }
@@ -146,31 +147,31 @@ const initLogger = async (project) => {
     } catch (e) {
         // Ignore
     }
-    
+
     await logModel.syncIndexes();
 
     // === TIMESERIES COLLECTION ===
     const collectionName = `logstamp_${project.id}`;
-    
+
     try {
         // Check if collection exists
         const collections = await mongoose.connection.db
             .listCollections({ name: collectionName })
             .toArray();
-        
+
         const collectionExists = collections.length > 0;
-        
+
         if (collectionExists) {
             // Collection exists - check if TTL matches
             const collInfo = collections[0];
             const currentTTL = collInfo?.options?.expireAfterSeconds;
             const desiredTTL = retentionDays ? retentionDays * 24 * 60 * 60 : null;
-            
+
             //drop if ttl ttl mismatched
             if (currentTTL !== desiredTTL) {
-                
+
                 await mongoose.connection.db.dropCollection(collectionName);
-                
+
                 // Create with new TTL
                 const createOptions = {
                     timeseries: {
@@ -179,11 +180,11 @@ const initLogger = async (project) => {
                         granularity: 'seconds'
                     }
                 };
-                
+
                 if (retentionDays && retentionDays > 0) {
                     createOptions.expireAfterSeconds = retentionDays * 24 * 60 * 60;
                 }
-            
+
                 await mongoose.connection.db.createCollection(collectionName, createOptions);
             }
         } else {
@@ -195,11 +196,11 @@ const initLogger = async (project) => {
                     granularity: 'seconds'
                 }
             };
-            
+
             if (retentionDays && retentionDays > 0) {
                 createOptions.expireAfterSeconds = retentionDays * 24 * 60 * 60;
             }
-            
+
             await mongoose.connection.db.createCollection(collectionName, createOptions);
         }
     } catch (e) {
@@ -209,9 +210,9 @@ const initLogger = async (project) => {
     // Create Mongoose model
     const stampSchema = logstampSchema.clone();
     delete stampSchema.options.timeseries;
-    
+
     const logStampModel = mongoose.model(logStampModelName, stampSchema, collectionName);
-    
+
     try {
         await logStampModel.syncIndexes();
     } catch (e) {
@@ -309,7 +310,7 @@ const generateRawValues = (data, project) => {
 
     for (const field of project.settings.rawIndexes) {
         const value = getNestedValue(flatData, field);
-        
+
         if (value !== undefined && value !== null) {
             const safeFieldName = field.replace(/\./g, '_');
             rawValues[safeFieldName] = value;  // Store as-is, no hashing
