@@ -33,9 +33,9 @@ module.exports = {
 
         if (req?.device?.client?.type === BROWSER_CLIENT_TYPE) {
             if (req?.headers?.origin) {
-                origin = new URL(req.headers.origin).hostname;
+                origin = req.headers.origin; // Keep the full origin
             } else if (req?.headers?.referer) {
-                origin = new URL(req.headers.referer).hostname;
+                origin = new URL(req.headers.referer).origin; // Extract full origin from referer
             }
         }
 
