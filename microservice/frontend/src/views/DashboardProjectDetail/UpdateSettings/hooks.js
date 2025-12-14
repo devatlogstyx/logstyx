@@ -21,7 +21,8 @@ const useUpdateSettings = ({
             title: project?.title,
             indexes: project?.settings?.indexes,
             rawIndexes: project?.settings?.rawIndexes,
-            allowedOrigin: project?.settings?.allowedOrigin
+            allowedOrigin: project?.settings?.allowedOrigin,
+            deduplicationStrategy: project?.settings?.deduplicationStrategy,
         },
         validate: {
 
@@ -140,7 +141,7 @@ const useUpdateSettings = ({
                         }
                     }
                 }
-                
+
                 return null; // Valid
             }
         },
@@ -161,7 +162,10 @@ const useUpdateSettings = ({
         isSubmitting,
         handleSubmit,
         openModal: () => setIsModalVisible(true),
-        closeModal: () => setIsModalVisible(false),
+        closeModal: () => {
+            setIsModalVisible(false);
+            form.reset()
+        },
     }
 }
 

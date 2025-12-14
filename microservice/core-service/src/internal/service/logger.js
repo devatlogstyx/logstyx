@@ -4,7 +4,7 @@ const { mongoose } = require("./../../shared/mongoose");
 const { getProjectFromCache } = require("../../shared/cache");
 const { HttpError, hashString, decryptSecret, createSlug, encrypt, decrypt } = require("common/function");
 const { NOT_FOUND_ERR_CODE, NOT_FOUND_ERR_MESSAGE, BROWSER_CLIENT_TYPE, INVALID_INPUT_ERR_CODE, INVALID_INPUT_ERR_MESSAGE } = require("common/constant");
-const { validateOrigin, validateSignature, getLogModel, generateIndexedHashes, validateCustomIndex, generateRawValues } = require("../utils/helper");
+const { validateOrigin, validateSignature, getLogModel, generateIndexedHashes, validateCustomIndex, generateRawValues, generateLogKey } = require("../utils/helper");
 const projectModel = require("../model/project.model");
 const { mapLog } = require("../utils/mapper");
 const { compressAndEncrypt, decryptAndDecompress } = require("common/function");
@@ -81,13 +81,8 @@ const createLog = async (project, params) => {
         timestampDate = new Date()
     }
 
-    let stringified = JSON.stringify({
-        ...params?.device,
-        ...params?.context,
-        ...params?.data
-    });
+    const key = generateLogKey(params, project)
 
-    const key = hashString(stringified)
     const { log, logstamp } = await getLogModel(project?.id)
 
     const hashes = generateIndexedHashes({

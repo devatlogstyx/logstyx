@@ -5,6 +5,7 @@ import PrimaryButton from "../../../component/button/PrimaryButton"
 import { Modal, MultiSelect, NumberInput, TagsInput, TextInput } from "@mantine/core"
 import SecondaryButton from "../../../component/button/SecondaryButton"
 import useUpdateSettings from "./hooks"
+import SelectDeduplicationStrategy from "../../../component/select/SelectDeduplicationStrategy"
 
 const UpdateSettings = ({
     project,
@@ -60,12 +61,17 @@ const UpdateSettings = ({
                         }}
                         error={form.errors.rawIndexes}
                     />
+                    
+                    <SelectDeduplicationStrategy
+                        form={form}
+                    />
 
                     <TagsInput
                         label="Allowed Origins"
                         placeholder="Add allowed origins"
                         {...form.getInputProps('allowedOrigin')}
                     />
+
                     <div className="flex justify-end gap-2 mt-4">
                         <SecondaryButton onClick={closeModal} >
                             Cancel

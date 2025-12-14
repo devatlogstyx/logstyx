@@ -5,6 +5,7 @@ import PrimaryButton from "../../../component/button/PrimaryButton"
 import useCreateProject from "./hooks"
 import { Modal, TagsInput, TextInput } from "@mantine/core"
 import SecondaryButton from "../../../component/button/SecondaryButton"
+import SelectDeduplicationStrategy from "../../../component/select/SelectDeduplicationStrategy"
 
 const CreateProject = ({
     onUpdate
@@ -53,11 +54,15 @@ const CreateProject = ({
                             placeholder="Enter fields to index"
                             {...form.getInputProps('rawIndexes')}
                         />
+                        <SelectDeduplicationStrategy
+                            form={form}
+                        />
                         <TagsInput
                             label="Allowed Origins"
                             placeholder="Add allowed origins"
                             {...form.getInputProps('allowedOrigin')}
                         />
+
                         <div className="flex justify-end gap-2 mt-4">
                             <SecondaryButton onClick={closeModal} >
                                 Cancel

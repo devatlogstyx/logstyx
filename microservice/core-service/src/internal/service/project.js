@@ -1,5 +1,5 @@
 //@ts-check
-const { INVALID_INPUT_ERR_CODE, NOT_FOUND_ERR_CODE, USER_NOT_FOUND_ERR_MESSAGE, PROJECT_NOT_FOUND_ERR_MESSAGE, ALREADY_A_MEMBER_ERR_MESSAGE, NOT_A_MEMBER_ERR_MESSAGE, NOT_FOUND_ERR_MESSAGE, ERROR_LOG_LEVEL, CRITICAL_LOG_LEVEL, WRITE_PROJECT_USER_ROLE } = require("common/constant");
+const { INVALID_INPUT_ERR_CODE, NOT_FOUND_ERR_CODE, USER_NOT_FOUND_ERR_MESSAGE, PROJECT_NOT_FOUND_ERR_MESSAGE, ALREADY_A_MEMBER_ERR_MESSAGE, NOT_A_MEMBER_ERR_MESSAGE, NOT_FOUND_ERR_MESSAGE, ERROR_LOG_LEVEL, CRITICAL_LOG_LEVEL, WRITE_PROJECT_USER_ROLE, INDEX_ONLY_DEDUPLICATION_STRATEGY, FULL_PAYLOAD_DEDUPLICATION_STRATEGY } = require("common/constant");
 const { HttpError, num2Ceil, num2Floor, parseSortBy, sanitizeObject, createSlug } = require("common/function");
 const { Validator } = require("node-input-validator");
 const { findUserById } = require("../../shared/provider/auth.service");
@@ -10,8 +10,6 @@ const { striptags } = require("striptags")
 const randomstring = require("randomstring");
 const projectUserModel = require("../model/project.user.model");
 const { updateProjectCache, getProjectFromCache } = require("../../shared/cache");
-const logModel = require("../model/log.model");
-const logstampModel = require("../model/logstamp.model");
 const { mapProjectUser, mapProject } = require("../utils/mapper");
 const { validateCustomIndex, getLogModel, isRecent } = require("../utils/helper");
 const { initLogger } = require("./../utils/helper");
@@ -40,6 +38,7 @@ const generateUniqueSlug = async (baseSlug) => {
  * @param {string[]} [params.settings.indexes] 
  * @param {string[]} [params.settings.rawIndexes]
  * @param {string[]} [params.settings.allowedOrigin]
+ * @param {string} [params.settings.deduplicationStrategy]
  * @param {number | string} [params.settings.retentionDays]
  */
 const createProject = async (params) => {
@@ -52,6 +51,7 @@ const createProject = async (params) => {
         "settings.rawIndexes": "arrayUnique",
         "settings.allowedOrigin": "arrayUnique",
         "settings.retentionDays": "numeric",
+        "settings.deduplicationStrategy": "string",
     });
 
     let match = await v.check();
@@ -62,6 +62,15 @@ const createProject = async (params) => {
     const creator = await findUserById(params?.creator)
     if (!creator) {
         throw HttpError(NOT_FOUND_ERR_CODE, USER_NOT_FOUND_ERR_MESSAGE)
+    }
+
+    if (params?.settings?.deduplicationStrategy === INDEX_ONLY_DEDUPLICATION_STRATEGY) {
+        const hasIndexes = params?.settings?.indexes && params.settings.indexes.length > 0;
+        if (!hasIndexes) {
+            throw HttpError(INVALID_INPUT_ERR_CODE,
+                `Project "${params.title}" uses INDEX_ONLY deduplication but has no indexes defined. `
+            );
+        }
     }
 
     const existingProject = await projectModel.findOne({
@@ -85,11 +94,10 @@ const createProject = async (params) => {
                 indexes: params?.settings?.indexes?.filter((n) => validateCustomIndex(n)),
                 rawIndexes: params?.settings?.rawIndexes?.filter((n) => validateCustomIndex(n)),
                 allowedOrigin: params?.settings?.allowedOrigin?.map((n) => striptags(n)),
+                deduplicationStrategy: params?.settings?.deduplicationStrategy || FULL_PAYLOAD_DEDUPLICATION_STRATEGY,
                 retentionDays: params?.settings?.retentionDays || 1
             }
         })
-
-        console.log("payload", payload)
 
         const projects = await projectModel.create([
             payload
@@ -129,6 +137,7 @@ const createProject = async (params) => {
  * @param {string[]} [params.indexes] 
  * @param {string[]} [params.rawIndexes] 
  * @param {string[]} [params.allowedOrigin]
+ * @param {string} [params.deduplicationStrategy]
  */
 const updateProject = async (id, params) => {
     const project = await getProjectFromCache(id)
@@ -140,7 +149,8 @@ const updateProject = async (id, params) => {
         title: "required|string",
         indexes: "arrayUnique",
         rawIndexes: "arrayUnique",
-        allowedOrigin: "arrayUnique"
+        allowedOrigin: "arrayUnique",
+        deduplicationStrategy: "string",
     });
 
     let match = await v.check();
@@ -148,17 +158,27 @@ const updateProject = async (id, params) => {
         throw HttpError(INVALID_INPUT_ERR_CODE, v.errors);
     }
 
+    if (params?.deduplicationStrategy === INDEX_ONLY_DEDUPLICATION_STRATEGY) {
+        const hasIndexes = params?.indexes && params.indexes.length > 0;
+        if (!hasIndexes) {
+            throw HttpError(INVALID_INPUT_ERR_CODE,
+                `Project "${project.title}" uses INDEX_ONLY deduplication but has no indexes defined. `
+            );
+        }
+    }
+
     const session = await mongoose.startSession();
     session.startTransaction();
 
     await projectModel.findByIdAndUpdate(id,
         {
-            $set: {
+            $set: sanitizeObject({
                 title: striptags(params?.title),
                 "settings.indexes": params?.indexes?.filter((n) => validateCustomIndex(n)),
                 "settings.rawIndexes": params?.rawIndexes?.filter((n) => validateCustomIndex(n)),
-                "settings.allowedOrigin": params?.allowedOrigin?.map((n) => striptags(n))
-            }
+                "settings.allowedOrigin": params?.allowedOrigin?.map((n) => striptags(n)),
+                "settings.deduplicationStrategy": params?.deduplicationStrategy || FULL_PAYLOAD_DEDUPLICATION_STRATEGY
+            })
         }
     )
 

@@ -4,6 +4,7 @@ import { useForm } from "@mantine/form";
 import React from "react";
 import { useErrorMessage } from "../../../hooks/useMessage";
 import { createProject } from "../../../api/project";
+import { FULL_PAYLOAD_DEDUPLICATION_STRATEGY } from "../../../utils/constant";
 
 const useCreateProject = ({
     onUpdate
@@ -22,7 +23,8 @@ const useCreateProject = ({
             title: "",
             indexes: [],
             rawIndexes: [],
-            allowedOrigin: []
+            allowedOrigin: [],
+            deduplicationStrategy: FULL_PAYLOAD_DEDUPLICATION_STRATEGY
         },
         validate: {
 
@@ -135,7 +137,8 @@ const useCreateProject = ({
                 settings: {
                     indexes: values?.indexes,
                     rawIndexes: values?.rawIndexes,
-                    allowedOrigin: values?.allowedOrigin
+                    allowedOrigin: values?.allowedOrigin,
+                    deduplicationStrategy: values?.deduplicationStrategy
                 }
             }
             await createProject(controller.signal, payload)

@@ -2,6 +2,7 @@
 const { fieldEncryption } = require("mongoose-field-encryption");
 const { mongoose } = require("../../shared/mongoose");
 const { decryptSecret } = require("common/function");
+const { FULL_PAYLOAD_DEDUPLICATION_STRATEGY, INDEX_ONLY_DEDUPLICATION_STRATEGY, NONE_DEDUPLICATION_STRATEGY } = require("common/constant");
 
 const SettingSchema = new mongoose.Schema(
     {
@@ -20,6 +21,19 @@ const SettingSchema = new mongoose.Schema(
         retentionDays: {
             type: Number,
             index: true,
+        },
+        deduplicationStrategy: {
+            type: String,
+            index: true,
+            enum: {
+                values: [
+                    FULL_PAYLOAD_DEDUPLICATION_STRATEGY,
+                    INDEX_ONLY_DEDUPLICATION_STRATEGY,
+                    NONE_DEDUPLICATION_STRATEGY
+                ],
+                message: '{VALUE} is not supported'
+            },
+            default: FULL_PAYLOAD_DEDUPLICATION_STRATEGY
         },
     }
 )

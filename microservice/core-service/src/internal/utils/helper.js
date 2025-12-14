@@ -1,6 +1,6 @@
 //@ts-check
 
-const { NO_ACCESS_ERR_CODE, NO_ACCESS_ERR_MESSAGE, NOT_FOUND_ERR_CODE, NOT_FOUND_ERR_MESSAGE } = require("common/constant");
+const { NO_ACCESS_ERR_CODE, NO_ACCESS_ERR_MESSAGE, NOT_FOUND_ERR_CODE, NOT_FOUND_ERR_MESSAGE, FULL_PAYLOAD_DEDUPLICATION_STRATEGY, NONE_DEDUPLICATION_STRATEGY, INDEX_ONLY_DEDUPLICATION_STRATEGY } = require("common/constant");
 const { HttpError, num2Int, getNestedValue, hashString } = require("common/function");
 const { default: striptags } = require("striptags")
 const crypto = require("crypto");
@@ -332,6 +332,62 @@ function isRecent(date, thresholdHours = 24) {
     return hoursSince < thresholdHours;
 }
 
+/**
+ * 
+ * @param {*} params 
+ * @param {*} project 
+ * @returns 
+ */
+const generateLogKey = (params, project) => {
+    const strategy = project?.settings?.deduplicationStrategy || FULL_PAYLOAD_DEDUPLICATION_STRATEGY;
+
+    switch (strategy) {
+        case NONE_DEDUPLICATION_STRATEGY: {
+            // Every log is unique - generate random key
+            // Use timestamp + random to ensure uniqueness
+            return hashString(
+                `${Date.now()}_${Math.random()}_${JSON.stringify(params)}`
+            );
+        }
+
+        case INDEX_ONLY_DEDUPLICATION_STRATEGY: {
+            // Hash only level + indexed fields
+            const keyData = {
+                level: params?.level,
+            };
+
+            // Extract values from indexed fields
+            const indexes = project?.settings?.indexes || [];
+            for (const fieldPath of indexes) {
+                const value = getNestedValue({
+                    context: params?.context,
+                    data: params?.data
+                }, fieldPath);
+
+                if (value !== undefined && value !== null) {
+                    // Use fieldPath as key to maintain structure
+                    keyData[fieldPath] = value;
+                }
+            }
+
+            return hashString(JSON.stringify(keyData));
+        }
+
+        case FULL_PAYLOAD_DEDUPLICATION_STRATEGY:
+        default: {
+            // Hash everything (level, device, context, data)
+            const fullPayload = {
+                level: params?.level,
+                ...params?.device,
+                ...params?.context,
+                ...params?.data
+            };
+
+            return hashString(JSON.stringify(fullPayload));
+        }
+    }
+};
+
 
 module.exports = {
     validateCustomIndex,
@@ -341,5 +397,6 @@ module.exports = {
     getLogModel,
     generateIndexedHashes,
     isRecent,
-    generateRawValues
+    generateRawValues,
+    generateLogKey
 }
