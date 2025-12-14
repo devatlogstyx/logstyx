@@ -14,9 +14,28 @@ const { getProjectFromCache } = require("../../shared/cache");
  * @param {string} field 
  * @returns 
  */
-const validateCustomIndex = (field) => {
-    return /^(context|data)\.[a-zA-Z_$][\w$]*$/.test(striptags(field));
+const validateCustomIndex = (field, maxDepth = 5) => {
+    const cleaned = striptags(field);
+    
+    // Must start with context or data
+    if (!/^(context|data)\./.test(cleaned)) {
+        return false;
+    }
+    
+    // Check valid identifier pattern
+    if (!/^(context|data)(\.[a-zA-Z_$][\w$]*)+$/.test(cleaned)) {
+        return false;
+    }
+    
+    // Limit depth (prevent data.a.b.c.d.e.f.g.h.i.j...)
+    const depth = cleaned.split('.').length - 1; // -1 because first is context/data
+    if (depth > maxDepth) {
+        return false;
+    }
+    
+    return true;
 }
+
 
 /**
  * 
