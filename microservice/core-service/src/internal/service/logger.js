@@ -77,7 +77,6 @@ const processWriteLog = async ({ headers, body }) => {
 const createLog = async (project, params) => {
     let timestampDate = new Date(params?.timestamp)
     if (isNaN(timestampDate.getTime())) {
-        console.error(`Invalid timestamp received: ${params?.timestamp}, using current time as fallback`)
         timestampDate = new Date()
     }
 
@@ -96,8 +95,10 @@ const createLog = async (project, params) => {
         data: params?.data
     }, project);
 
-    const compressedContext = await compressAndEncrypt(params?.context)
-    const compressedData = await compressAndEncrypt(params?.data)
+    const [compressedContext, compressedData] = await Promise.all([
+        compressAndEncrypt(params?.context),
+        compressAndEncrypt(params?.data)
+    ])
 
     await log.findOneAndUpdate(
         { key },
