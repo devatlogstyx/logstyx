@@ -5,9 +5,8 @@ const {
     GET_USER_DASHBOARD_PROJECT_STATS_WSROUTE,
     LIST_USER_PROJECT_WSROUTE
 } = require("common/routes/rpc-websockets");
-const { processCreateLog } = require("../internal/service/logger");
+const { processCreateSelfLog } = require("../internal/service/logger");
 const { getUsersDashboardProjectsStats } = require("../internal/service/project");
-const { EXECUTE_PROBE_WORKER_MQ_QUEUE } = require("common/routes/mq-queue");
 
 /**
  * 
@@ -16,7 +15,7 @@ const { EXECUTE_PROBE_WORKER_MQ_QUEUE } = require("common/routes/mq-queue");
 exports.init = (rpc) => {
 
     rpc.use(CREATE_LOG_WSROUTE, async (/** @type {{ device: object; context: object; data: object; level: string; timestamp: string | number | Date; }} */ params) => {
-        return processCreateLog(params)
+        return processCreateSelfLog(params)
     });
     // @ts-ignore
     rpc.use(GET_USER_DASHBOARD_PROJECT_STATS_WSROUTE, async ({ userId }) => {
@@ -27,7 +26,4 @@ exports.init = (rpc) => {
         return getUsersDashboardProjectsStats(userId)
     });
 
-    rpc.use(EXECUTE_PROBE_WORKER_MQ_QUEUE, async ({ probeId }) => {
-        return getUsersDashboardProjectsStats(probeId)
-    });
 };
