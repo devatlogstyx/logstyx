@@ -6,7 +6,8 @@ const { useMongoose } = require("common/hooks")
 const { logger: Log } = require("../logger");
 const {
     connectToDB,
-    mongoose
+    mongoose,
+    isValidObjectId
 } = useMongoose({
     Mongoose: mongoosePackage,
     DbName: "CoreService",
@@ -22,5 +23,6 @@ mongoose.plugin(aggregatePaginate);
 module.exports = {
     mongoose,
     connectToDB,
+    isValidObjectId
 };
 

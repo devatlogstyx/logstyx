@@ -5,9 +5,11 @@ const { HttpError, num2Int, getNestedValue, hashString } = require("common/funct
 const { default: striptags } = require("striptags")
 const crypto = require("crypto");
 const logSchema = require("../model/log.model");
-const { mongoose } = require("./../../shared/mongoose");
+const { mongoose, isValidObjectId } = require("./../../shared/mongoose");
 const logstampSchema = require("../model/logstamp.model");
 const { getProjectFromCache } = require("../../shared/cache");
+const projectUserModel = require("../model/project.user.model");
+const { ObjectId } = mongoose.Types
 
 /**
  * 
@@ -16,23 +18,23 @@ const { getProjectFromCache } = require("../../shared/cache");
  */
 const validateCustomIndex = (field, maxDepth = 5) => {
     const cleaned = striptags(field);
-    
+
     // Must start with context or data
     if (!/^(context|data)\./.test(cleaned)) {
         return false;
     }
-    
+
     // Check valid identifier pattern
     if (!/^(context|data)(\.[a-zA-Z_$][\w$]*)+$/.test(cleaned)) {
         return false;
     }
-    
+
     // Limit depth (prevent data.a.b.c.d.e.f.g.h.i.j...)
     const depth = cleaned.split('.').length - 1; // -1 because first is context/data
     if (depth > maxDepth) {
         return false;
     }
-    
+
     return true;
 }
 
@@ -407,6 +409,25 @@ const generateLogKey = (params, project) => {
     }
 };
 
+/**
+ * 
+ * @param {string} userId 
+ * @param {string} projectId 
+ * @returns 
+ */
+const canUserAccessProject = async (userId, projectId) => {
+    if (!isValidObjectId(userId) || !isValidObjectId(projectId)) {
+        return false
+    }
+
+    const access = await projectUserModel.findOne({
+        project: ObjectId.createFromHexString(projectId),
+        "user.userId": ObjectId.createFromHexString(userId)
+    });
+
+    return !!access;
+};
+
 
 module.exports = {
     validateCustomIndex,
@@ -417,5 +438,6 @@ module.exports = {
     generateIndexedHashes,
     isRecent,
     generateRawValues,
-    generateLogKey
+    generateLogKey,
+    canUserAccessProject
 }

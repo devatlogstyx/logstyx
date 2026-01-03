@@ -19,14 +19,15 @@ const {
     WRITE_SETTINGS_USER_ROLE,
     READ_SETTINGS_USER_ROLE,
     WRITE_USER_INVITATION_USER_ROLE,
-    READ_USER_INVITATION_USER_ROLE
+    READ_USER_INVITATION_USER_ROLE,
+    INVALID_ID_ERR_MESSAGE
 } = require("common/constant")
 
 const { striptags } = require("striptags")
 const userLoginModel = require("../model/user.login.model")
 const { submitRemoveCache, submitCreateProject, fanoutOnUserRemoved } = require("../../shared/provider/mq-producer")
 
-const { mongoose } = require("../../shared/mongoose")
+const { mongoose, isValidObjectId } = require("../../shared/mongoose")
 const userModel = require("../model/user.model")
 const { verifyUserPassword } = require("../utils/helper")
 
@@ -48,7 +49,9 @@ const USER_PASSWORD = decryptSecret(process.env.ENC_USER_PASSWORD)
  */
 const findUserById = async (id,) => {
 
-    if (!id) return null;
+    if (!isValidObjectId(id)) {
+        throw HttpError(INVALID_INPUT_ERR_CODE, INVALID_ID_ERR_MESSAGE)
+    }
 
     const user = await getUserFromCache(id)
     if (!id) {
@@ -177,8 +180,12 @@ const paginateUser = async (query = {}, sortBy = "createdAt:desc", limit = 10, p
  * @returns 
  */
 const removeUser = async (id) => {
-    id = id?.toString();
-    if (!id) return;
+
+    if (!isValidObjectId(id)) {
+        throw HttpError(INVALID_INPUT_ERR_CODE, INVALID_ID_ERR_MESSAGE)
+    }
+
+    id = id?.toString()
 
     const user = await getUserFromCache(id)
     if (!user) {
@@ -217,11 +224,14 @@ const removeUser = async (id) => {
 /**
  * 
  * @param {string} id 
- * @param {object} params 
- * @param {string[]} params.permissions
+ * @param {string[]} permissions
  * @returns 
  */
 const patchUserPermission = async (id, permissions) => {
+
+    if (!isValidObjectId(id)) {
+        throw HttpError(INVALID_INPUT_ERR_CODE, INVALID_ID_ERR_MESSAGE)
+    }
 
     const user = await getUserFromCache(id)
     if (!user) {
@@ -347,7 +357,7 @@ const seedUser = async () => {
  */
 const ensureSelfProject = async (userId) => {
 
-    if (!userId) {
+    if (!isValidObjectId(userId)) {
         console.error("  No userId set, skipping self-project");
         return null;
     }
@@ -388,6 +398,11 @@ const ensureSelfProject = async (userId) => {
  * @param {string} params.email
  */
 const updateUserProfile = async (id, params) => {
+
+    if (!isValidObjectId(id)) {
+        throw HttpError(INVALID_INPUT_ERR_CODE, INVALID_ID_ERR_MESSAGE)
+    }
+
     const user = await getUserFromCache(id);
     if (!user) {
         throw HttpError(NOT_FOUND_ERR_CODE, NOT_FOUND_ERR_MESSAGE);
@@ -450,7 +465,7 @@ const updateUserProfile = async (id, params) => {
         await session.commitTransaction();
 
         return updateUserCache(user.id)
-        
+
     } catch (e) {
         await session.abortTransaction();
         throw e;
@@ -467,6 +482,11 @@ const updateUserProfile = async (id, params) => {
  * @param {string} params.repassword
  */
 const patchUserPassword = async (id, params) => {
+
+    if (!isValidObjectId(id)) {
+        throw HttpError(INVALID_INPUT_ERR_CODE, INVALID_ID_ERR_MESSAGE)
+    }
+    
     const user = await getUserFromCache(id);
     if (!user) {
         throw HttpError(NOT_FOUND_ERR_CODE, NOT_FOUND_ERR_MESSAGE);

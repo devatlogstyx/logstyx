@@ -9,7 +9,7 @@ const useMongoose = ({ Mongoose, DbName, Log }) => {
       return Mongoose.connection;
     }
 
-    const MONGO_DB_SERVER = (process.env.ENC_MONGODB_HOST && decryptSecret(process.env.ENC_MONGODB_HOST)) 
+    const MONGO_DB_SERVER = (process.env.ENC_MONGODB_HOST && decryptSecret(process.env.ENC_MONGODB_HOST))
       || process.env.MONGODB_HOST
       || 'mongodb://mongodb:27017'
     const uri = `${MONGO_DB_SERVER}/${DbName}`;
@@ -34,9 +34,24 @@ const useMongoose = ({ Mongoose, DbName, Log }) => {
     }
   }
 
+  function isValidObjectId(id) {
+    if (id == null) return false;
+
+    // Convert anything with .toString() into a string (numbers, ObjectId instances, etc.)
+    if (typeof id !== 'string') {
+      id = id.toString();
+    }
+
+    // Mongoose validity + hex length check
+    return (
+      Mongoose.Types.ObjectId.isValid(id) &&
+      /^[0-9a-fA-F]{24}$/.test(id)
+    );
+  }
   return {
     connectToDB,
     mongoose: Mongoose,
+    isValidObjectId
   };
 };
 

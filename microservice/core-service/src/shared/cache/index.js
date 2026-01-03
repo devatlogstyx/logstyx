@@ -1,6 +1,6 @@
 //@ts-check
 
-const { PROJECT_CACHE_KEY } = require("common/constant")
+const { PROJECT_CACHE_KEY, PROBE_CACHE_KEY } = require("common/constant")
 
 const { submitCreateCache } = require("../provider/mq-producer")
 
@@ -9,6 +9,7 @@ const { useCache } = require("common/hooks")
 
 const { logger: Log } = require("../logger")
 const projectModel = require("../../internal/model/project.model")
+const probeModel = require("../../internal/model/probe.model")
 
 const { updateCache, getCache } = useCache({
     ReadCache: readCache,
@@ -18,4 +19,7 @@ const { updateCache, getCache } = useCache({
 
 exports.updateProjectCache = async (id) => updateCache(PROJECT_CACHE_KEY, id, projectModel)
 exports.getProjectFromCache = async (id) => getCache(PROJECT_CACHE_KEY, id, projectModel)
+
+exports.updateProbeCache = async (id) => updateCache(PROBE_CACHE_KEY, id, probeModel)
+exports.getProbeFromCache = async (id) => getCache(PROBE_CACHE_KEY, id, probeModel)
 

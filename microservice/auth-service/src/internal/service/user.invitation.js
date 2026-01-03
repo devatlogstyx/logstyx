@@ -1,6 +1,6 @@
 //@ts-check
 
-const { INVALID_INPUT_ERR_CODE, EMAIL_PASSWORD_LOGIN_TYPE, NOT_FOUND_ERR_CODE, NOT_FOUND_ERR_MESSAGE, WRITE_USER_INVITATION_USER_ROLE, NO_ACCESS_ERR_CODE, FORBIDDEN_ERR_CODE } = require("common/constant");
+const { INVALID_INPUT_ERR_CODE, EMAIL_PASSWORD_LOGIN_TYPE, NOT_FOUND_ERR_CODE, NOT_FOUND_ERR_MESSAGE, WRITE_USER_INVITATION_USER_ROLE, NO_ACCESS_ERR_CODE, FORBIDDEN_ERR_CODE, INVALID_ID_ERR_MESSAGE } = require("common/constant");
 const { HttpError, hashString, num2Ceil, num2Floor, sanitizeObject, encrypt } = require("common/function");
 const { Validator } = require("node-input-validator");
 const { default: striptags } = require("striptags");
@@ -8,7 +8,7 @@ const userInvitationModel = require("../model/user.invitation.model");
 const userModel = require("../model/user.model");
 const userLoginModel = require("../model/user.login.model");
 const { mapUserInvitation, mapUser } = require("../utils/mapper");
-const { mongoose } = require("../../shared/mongoose");
+const { mongoose, isValidObjectId } = require("../../shared/mongoose");
 const bcrypt = require("bcryptjs");
 const { listUsersProject } = require("../../shared/provider/core.service");
 const { getUserFromCache } = require("../../shared/cache");
@@ -91,6 +91,10 @@ const createUserInvitation = async (params) => {
  */
 const findInvitationById = async (id) => {
 
+    if (!isValidObjectId(id)) {
+        return null
+    }
+
     const raw = await userInvitationModel.findById(id)
     if (!raw) {
         return null
@@ -108,6 +112,10 @@ const findInvitationById = async (id) => {
  * @param {string[]} [params.projects]
  */
 const updateUserInvitation = async (id, params) => {
+
+    if (!isValidObjectId(id)) {
+        throw HttpError(INVALID_INPUT_ERR_CODE, INVALID_ID_ERR_MESSAGE)
+    }
 
     const invitation = await userInvitationModel.findById(id)
     if (!invitation) {
@@ -175,6 +183,10 @@ const updateUserInvitation = async (id, params) => {
  */
 const removeUserInvitation = async (id) => {
 
+    if (!isValidObjectId(id)) {
+        throw HttpError(INVALID_INPUT_ERR_CODE, INVALID_ID_ERR_MESSAGE)
+    }
+
     const invitation = await userInvitationModel.findById(id)
     if (!invitation) {
         throw HttpError(NOT_FOUND_ERR_CODE, NOT_FOUND_ERR_MESSAGE)
@@ -240,6 +252,11 @@ const paginateUserInvitation = async (query = {}, sortBy = "createdAt:desc", lim
  * @param {string} params.password
  */
 const validateUserInvitation = async (id, params) => {
+
+    if (!isValidObjectId(id)) {
+        throw HttpError(INVALID_INPUT_ERR_CODE, INVALID_ID_ERR_MESSAGE)
+    }
+    
     const invitation = await userInvitationModel.findById(id)
     if (!invitation) {
         throw HttpError(NOT_FOUND_ERR_CODE, NOT_FOUND_ERR_MESSAGE)
@@ -314,7 +331,6 @@ const validateUserInvitation = async (id, params) => {
     } finally {
         await session.endSession();
     }
-
 
 }
 

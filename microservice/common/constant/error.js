@@ -15,6 +15,7 @@ module.exports={
     NO_ACCESS_ERR_MESSAGE:"Unauthorize Access",
     UNKNOWN_ERR_MESSAGE:"Unknown Error",
     NOT_FOUND_ERR_MESSAGE:"Not Found",
+    INVALID_ID_ERR_MESSAGE:"Invalid Id",
     INVALID_INPUT_ERR_MESSAGE:"Bad Request",
     MQ_NOT_READY_ERR_MESSAGE:"MQ Not Ready",
 
