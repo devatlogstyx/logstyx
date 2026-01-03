@@ -7,6 +7,7 @@ const {
 } = require("common/routes/rpc-websockets");
 const { processCreateLog } = require("../internal/service/logger");
 const { getUsersDashboardProjectsStats } = require("../internal/service/project");
+const { EXECUTE_PROBE_WORKER_MQ_QUEUE } = require("common/routes/mq-queue");
 
 /**
  * 
@@ -26,5 +27,7 @@ exports.init = (rpc) => {
         return getUsersDashboardProjectsStats(userId)
     });
 
-    
+    rpc.use(EXECUTE_PROBE_WORKER_MQ_QUEUE, async ({ probeId }) => {
+        return getUsersDashboardProjectsStats(probeId)
+    });
 };

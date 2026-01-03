@@ -5,10 +5,11 @@ const { connectToDB } = require("../shared/mongoose/index.js");
 const { Server } = require("jsonrpc-ws");
 const { useRPCWebsocket } = require("common/hooks");
 const { logger } = require("../shared/logger/index.js");
+const { startAllProbes } = require("../internal/service/probe.js");
 
 (async () => {
     await connectToDB();
-    
+
     const { num2Floor } = require("common/function")
     const app = require("../shared/express/app.js");
     const http = require('http');
@@ -42,4 +43,7 @@ const { logger } = require("../shared/logger/index.js");
 
     require("./mq.queue.js")
     require("./rpc-websockets.js").init(rpc({ server, path: "/rpc" }));
+
+    await startAllProbes()
+
 })();

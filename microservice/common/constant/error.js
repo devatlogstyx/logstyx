@@ -21,6 +21,7 @@ module.exports={
 
     USER_NOT_FOUND_ERR_MESSAGE:"User Not Found",
     PROJECT_NOT_FOUND_ERR_MESSAGE:"Project Not Found",
+    PROBE_NOT_FOUND_ERR_MESSAGE:"Probe Not Found",
     ALREADY_A_MEMBER_ERR_MESSAGE:"Already a member",
     NOT_A_MEMBER_ERR_MESSAGE:"Not a member",
 

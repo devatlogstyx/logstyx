@@ -9,6 +9,8 @@ const {
     CACHE_REMOVE_MQ_QUEUE,
     WRITE_LOG_MQ_QUEUE,
     CREATE_LOG_MQ_QUEUE,
+    EXECUTE_PROBE_WORKER_MQ_QUEUE,
+    CREATE_AGENDA_JOB_MQ_QUEUE,
 } = require("common/routes/mq-queue");
 const { useLogger } = require("common/hooks");
 
@@ -28,4 +30,6 @@ module.exports = {
     submitCreateCache: produce(CACHE_CREATE_MQ_QUEUE),
     submitWriteLog: produce(WRITE_LOG_MQ_QUEUE),
     submitCreateLog: produce(CREATE_LOG_MQ_QUEUE),
+    submitExecuteProbeWorker: produce(EXECUTE_PROBE_WORKER_MQ_QUEUE),
+    submitCreateAgendaJob: produce(CREATE_AGENDA_JOB_MQ_QUEUE),
 }
