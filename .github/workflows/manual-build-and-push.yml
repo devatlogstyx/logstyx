@@ -3,21 +3,23 @@ name: Build and Release
 on:
   workflow_dispatch:
     inputs:
-      version:
-        description: "Specific version to release (leave empty for auto-bump)"
-        required: false
-        type: string
-      reuse_version:
-        description: "Reuse current version (no bump, republish existing)"
-        required: false
-        type: boolean
-        default: false
+      bump_type:
+        description: "Version bump type"
+        required: true
+        type: choice
+        options:
+          - no_change
+          - patch
+          - minor
+          - major
+        default: patch
 
 jobs:
   determine-version:
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.version.outputs.version }}
+      bump_type: ${{ inputs.bump_type }}
     permissions:
       contents: read
     steps:
@@ -29,33 +31,53 @@ jobs:
       - name: Determine version
         id: version
         run: |
-          if [ -n "${{ inputs.version }}" ]; then
-            # Manual version specified
-            echo "version=${{ inputs.version }}" >> $GITHUB_OUTPUT
-          elif [ "${{ inputs.reuse_version }}" = "true" ]; then
-            # Reuse current version (no bump)
-            LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
-            echo "Reusing version: $LATEST_TAG"
-            echo "version=$LATEST_TAG" >> $GITHUB_OUTPUT
-          else
-            # Auto-bump patch version
-            LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
-            echo "Latest tag: $LATEST_TAG"
-            
-            # Extract version numbers
-            VERSION=${LATEST_TAG#v}
-            IFS='.' read -r -a VERSION_PARTS <<< "$VERSION"
-            MAJOR=${VERSION_PARTS[0]:-0}
-            MINOR=${VERSION_PARTS[1]:-0}
-            PATCH=${VERSION_PARTS[2]:-0}
-            
-            # Bump patch version
-            PATCH=$((PATCH + 1))
-            NEW_VERSION="v${MAJOR}.${MINOR}.${PATCH}"
-            
-            echo "Auto-bumped version: $NEW_VERSION"
-            echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
-          fi
+          LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+          echo "Latest tag: $LATEST_TAG"
+          
+          # Extract version numbers
+          VERSION=${LATEST_TAG#v}
+          IFS='.' read -r -a VERSION_PARTS <<< "$VERSION"
+          MAJOR=${VERSION_PARTS[0]:-0}
+          MINOR=${VERSION_PARTS[1]:-0}
+          PATCH=${VERSION_PARTS[2]:-0}
+          
+          BUMP_TYPE="${{ inputs.bump_type }}"
+          echo "Bump type: $BUMP_TYPE"
+          
+          case "$BUMP_TYPE" in
+            "no_change")
+              # Reuse current version
+              NEW_VERSION="$LATEST_TAG"
+              echo "No change - reusing version: $NEW_VERSION"
+              ;;
+            "patch")
+              # Bump patch version
+              PATCH=$((PATCH + 1))
+              NEW_VERSION="v${MAJOR}.${MINOR}.${PATCH}"
+              echo "Patch bump - new version: $NEW_VERSION"
+              ;;
+            "minor")
+              # Bump minor version, reset patch
+              MINOR=$((MINOR + 1))
+              PATCH=0
+              NEW_VERSION="v${MAJOR}.${MINOR}.${PATCH}"
+              echo "Minor bump - new version: $NEW_VERSION"
+              ;;
+            "major")
+              # Bump major version, reset minor and patch
+              MAJOR=$((MAJOR + 1))
+              MINOR=0
+              PATCH=0
+              NEW_VERSION="v${MAJOR}.${MINOR}.${PATCH}"
+              echo "Major bump - new version: $NEW_VERSION"
+              ;;
+            *)
+              echo "Error: Unknown bump type: $BUMP_TYPE"
+              exit 1
+              ;;
+          esac
+          
+          echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
 
   build-and-push-latest:
     runs-on: ubuntu-latest
@@ -110,8 +132,22 @@ jobs:
           LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || git rev-list --max-parents=0 HEAD)
           COMMITS=$(git log $LAST_TAG..HEAD --pretty=format:"- %s (%h)" --no-merges)
           
+          # Determine bump type label
+          BUMP_TYPE="${{ needs.determine-version.outputs.bump_type }}"
+          case "$BUMP_TYPE" in
+            "no_change") BUMP_LABEL="No Change (reuse version)" ;;
+            "patch") BUMP_LABEL="Patch bump" ;;
+            "minor") BUMP_LABEL="Minor bump" ;;
+            "major") BUMP_LABEL="Major bump" ;;
+            *) BUMP_LABEL="$BUMP_TYPE" ;;
+          esac
+          
           # Save to file
           cat > CHANGELOG.md <<EOF
+          ## Version Bump Type
+          
+          **$BUMP_LABEL**
+          
           ## Changes in this release
           
           $COMMITS
@@ -193,8 +229,22 @@ jobs:
           LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || git rev-list --max-parents=0 HEAD)
           COMMITS=$(git log $LAST_TAG..HEAD --pretty=format:"- %s (%h)" --no-merges)
           
+          # Determine bump type label
+          BUMP_TYPE="${{ needs.determine-version.outputs.bump_type }}"
+          case "$BUMP_TYPE" in
+            "no_change") BUMP_LABEL="No Change (reuse version)" ;;
+            "patch") BUMP_LABEL="Patch bump" ;;
+            "minor") BUMP_LABEL="Minor bump" ;;
+            "major") BUMP_LABEL="Major bump" ;;
+            *) BUMP_LABEL="$BUMP_TYPE" ;;
+          esac
+          
           # Save to file
           cat > CHANGELOG.md <<EOF
+          ## Version Bump Type
+          
+          **$BUMP_LABEL**
+          
           ## Changes in this release
           
           $COMMITS
