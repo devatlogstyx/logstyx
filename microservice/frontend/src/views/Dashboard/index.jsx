@@ -8,8 +8,6 @@ import ProjectViews from "./ProjectViews";
 const DashboardPage = () => {
     const { user, isLoading } = useUser();
 
-
-
     if (isLoading) {
         return (
             <div className="flex justify-center items-center h-screen">

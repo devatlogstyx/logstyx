@@ -1,10 +1,11 @@
 //@ts-check
 
 import { useNavigate, useLocation } from "react-router-dom"
-import { IoPeopleOutline, IoSettingsOutline, IoDocumentTextOutline, IoLogOutOutline, IoBriefcase, IoBriefcaseOutline } from "react-icons/io5"
+import { IoPeopleOutline, IoLogOutOutline,  IoBriefcaseOutline } from "react-icons/io5"
 import { useUser } from "../../../context/useUser"
 import { PROJECT_TITLE, READ_PROJECT_USER_ROLE, READ_SETTINGS_USER_ROLE, READ_USER_USER_ROLE } from "../../../utils/constant"
 import React from "react"
+import { LuRadar } from 'react-icons/lu';
 
 const DashboardSidebar = ({
     isOpen,
@@ -32,6 +33,13 @@ const DashboardSidebar = ({
             label: 'Projects',
             icon: IoBriefcaseOutline,
             path: '/dashboard'
+        });
+
+        menuItems.push({
+            id: 'probes',
+            label: 'Probes',
+            icon: LuRadar,
+            path: '/dashboard/probes'
         });
     }
 

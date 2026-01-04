@@ -2,10 +2,28 @@
 
 const { NO_ACCESS_ERR_CODE, NO_ACCESS_ERR_MESSAGE, SUCCESS_ERR_CODE, SUCCESS_ERR_MESSAGE, FORBIDDEN_ERR_CODE, NOT_FOUND_ERR_CODE, NOT_FOUND_ERR_MESSAGE } = require("common/constant");
 const { HttpError, HttpResponse } = require("common/function");
-const { createProbe, findProbeById, updateProbe, removeProbe, paginateProbe } = require("../service/probe");
+const { createProbe, findProbeById, updateProbe, removeProbe, paginateProbe, testConnection } = require("../service/probe");
 const { canUserAccessProject } = require("../utils/helper");
 
 module.exports = {
+    /**
+     * 
+     * @param {*} req 
+     * @param {*} res 
+     */
+    async ProbeTestConnection(req, res) {
+        if (!req?.user) {
+            throw HttpError(NO_ACCESS_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
+        }
+
+        const data = await testConnection(req?.body)
+
+        HttpResponse(res).json({
+            error: SUCCESS_ERR_CODE,
+            message: SUCCESS_ERR_MESSAGE,
+            data,
+        });
+    },
     /**
      * 
      * @param {*} req 

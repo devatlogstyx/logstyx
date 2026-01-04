@@ -1,6 +1,6 @@
 //@ts-check
 
-const { INVALID_INPUT_ERR_CODE, NOT_FOUND_ERR_CODE, BEARER_PROBE_AUTH_TYPE, PROJECT_NOT_FOUND_ERR_MESSAGE, BASIC_PROBE_AUTH_TYPE, HMAC_PROBE_AUTH_TYPE, NOT_FOUND_ERR_MESSAGE, PROBE_CACHE_KEY, INVALID_ID_ERR_MESSAGE, PROBE_NOT_FOUND_ERR_MESSAGE, NONE_PROBE_AUTH_TYPE, CUSTOM_PROBE_AUTH_TYPE, PROBE_LOG_CONTEXT_SOURCE, ERROR_LOG_LEVEL, INFO_LOG_LEVEL, SUBMIT_MESSAGE_QUEUE_AGENDA_JOB } = require("common/constant");
+const { INVALID_INPUT_ERR_CODE, NOT_FOUND_ERR_CODE, BEARER_PROBE_AUTH_TYPE, PROJECT_NOT_FOUND_ERR_MESSAGE, BASIC_PROBE_AUTH_TYPE, PROBESTYX_PROBE_AUTH_TYPE, NOT_FOUND_ERR_MESSAGE, PROBE_CACHE_KEY, INVALID_ID_ERR_MESSAGE, PROBE_NOT_FOUND_ERR_MESSAGE, NONE_PROBE_AUTH_TYPE, CUSTOM_PROBE_AUTH_TYPE, PROBE_LOG_CONTEXT_SOURCE, ERROR_LOG_LEVEL, INFO_LOG_LEVEL, SUBMIT_MESSAGE_QUEUE_AGENDA_JOB } = require("common/constant");
 const { HttpError, compressAndEncrypt, sanitizeObject, decryptAndDecompress, num2Ceil, num2Floor, parseSortBy } = require("common/function");
 const { Validator } = require("node-input-validator");
 const { getProjectFromCache, updateProbeCache, getProbeFromCache } = require("../../shared/cache");
@@ -48,7 +48,7 @@ const createProbe = async (params) => {
     if (authType === BASIC_PROBE_AUTH_TYPE && (!params?.connection?.auth?.username || !params?.connection?.auth?.password)) {
         throw HttpError(INVALID_INPUT_ERR_CODE, `Username and password is required for basic auth`);
     }
-    if (authType === HMAC_PROBE_AUTH_TYPE && !params?.connection?.auth?.secret) {
+    if (authType === PROBESTYX_PROBE_AUTH_TYPE && !params?.connection?.auth?.secret) {
         throw HttpError(INVALID_INPUT_ERR_CODE, `Secret is required for HMAC auth`);
     }
 
@@ -151,7 +151,7 @@ const updateProbe = async (id, params) => {
         if (authType === BASIC_PROBE_AUTH_TYPE && (!params?.connection?.auth?.username || !params?.connection?.auth?.password)) {
             throw HttpError(INVALID_INPUT_ERR_CODE, "Username and password is required for basic auth");
         }
-        if (authType === HMAC_PROBE_AUTH_TYPE && !params?.connection?.auth?.secret) {
+        if (authType === PROBESTYX_PROBE_AUTH_TYPE && !params?.connection?.auth?.secret) {
             throw HttpError(INVALID_INPUT_ERR_CODE, "Secret is required for HMAC auth");
         }
     }
@@ -347,7 +347,7 @@ const { EXECUTE_PROBE_WORKER_MQ_QUEUE } = require("common/routes/mq-queue");
  * @param {string} secret 
  * @returns 
  */
-const generateHMACAuth = (secret) => {
+const generateProbestyxAuth = (secret) => {
     const timestamp = Math.floor(Date.now() / 1000).toString();
     const hmac = crypto.createHmac('sha256', secret);
     hmac.update(timestamp);
@@ -381,8 +381,8 @@ const buildAuthHeaders = (auth) => {
             headers['Authorization'] = `Basic ${encoded}`;
             break;
 
-        case HMAC_PROBE_AUTH_TYPE:
-            const { timestamp, signature } = generateHMACAuth(auth.secret);
+        case PROBESTYX_PROBE_AUTH_TYPE:
+            const { timestamp, signature } = generateProbestyxAuth(auth.secret);
             headers['X-Timestamp'] = timestamp;
             headers['X-Signature'] = signature;
             break;
@@ -587,6 +587,29 @@ const startAllProbes = async () => {
     }
 };
 
+/**
+ * 
+ * @param {*} connection 
+ */
+const testConnection = async (connection) => {
+    const authHeaders = buildAuthHeaders(connection.auth); const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), connection.timeout || 10000);
+
+    const response = await fetch(connection.url, {
+        method: connection.method || 'GET',
+        headers: {
+            ...authHeaders,
+            'User-Agent': 'Logstyx-Probe/1.0'
+        },
+        signal: controller.signal
+    });
+
+    clearTimeout(timeout);
+
+    // Parse response
+    return response.json();
+
+}
 
 module.exports = {
     startAllProbes,
@@ -595,5 +618,6 @@ module.exports = {
     updateProbe,
     removeProbe,
     paginateProbe,
-    processExecuteProbeWorker
+    processExecuteProbeWorker,
+    testConnection
 }
