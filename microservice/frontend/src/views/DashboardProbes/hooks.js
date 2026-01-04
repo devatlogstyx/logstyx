@@ -3,8 +3,10 @@
 import { useForm } from "@mantine/form";
 import React, { useCallback, useEffect, useState } from "react";
 import { useErrorMessage } from "../../hooks/useMessage";
-import { paginateProbe } from "../../api/probes";
+import { createProbe, paginateProbe, removeProbe, updateProbe } from "../../api/probes";
 import { listAllMyProject } from "../../api/project";
+import { useConfirmDialog } from "../../hooks/useConfirmDialog";
+
 
 const useDashboardProbes = () => {
     const [list, setList] = useState([]);
@@ -18,6 +20,7 @@ const useDashboardProbes = () => {
     const controller = React.useMemo(() => new AbortController(), []);
 
     const ErrorMessage = useErrorMessage()
+    const { openConfirmDialog, ConfirmDialogComponent } = useConfirmDialog();
 
     const form = useForm({
         initialValues: {
@@ -100,8 +103,7 @@ const useDashboardProbes = () => {
         setIsSubmitting(true);
 
         try {
-            const url = editingProbe ? `/api/probes/${editingProbe.id}` : '/api/probes';
-            const method = editingProbe ? 'PUT' : 'POST';
+
 
             // Parse the context JSON string back to object
             const payload = {
@@ -114,37 +116,43 @@ const useDashboardProbes = () => {
                 }
             };
 
-            const res = await fetch(url, {
-                method,
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-
-            if (!res.ok) {
-                const data = await res.json();
-                throw new Error(data.message || 'Failed to save probe');
+            if (editingProbe) {
+                await updateProbe(controller.signal, editingProbe.id, payload)
+            } else {
+                await createProbe(controller.signal, payload)
             }
 
             await fetchProbes();
+            form.reset()
+
             closeModal();
         } catch (err) {
+            console.error(err)
             ErrorMessage(err)
         } finally {
             setIsSubmitting(false);
         }
     };
 
-    const handleDelete = async (id) => {
-        if (!confirm('Are you sure you want to delete this probe?')) return;
+    const handleDelete = React.useCallback(async () => {
+        openConfirmDialog({
+            title: 'Remove Probe',
 
-        try {
-            const res = await fetch(`/api/probes/${id}`, { method: 'DELETE' });
-            if (!res.ok) throw new Error('Failed to delete probe');
-            await fetchProbes();
-        } catch (err) {
-            ErrorMessage(err)
-        }
-    };
+            message: 'Are you sure you want to remove this probe? This action cannot be undone.',
+            confirmLabel: 'Delete',
+            cancelLabel: 'Cancel',
+            onConfirm: async () => {
+                try {
+                    await removeProbe(controller.signal, id)
+                    await fetchProbes();
+                } catch (err) {
+                    ErrorMessage(err)
+                }
+            },
+            onCancel: () => console.log('Delete cancelled'),
+        })
+
+    }, [ErrorMessage, controller, fetchProbes, openConfirmDialog])
 
     const authType = form.values.connection.auth.type;
 
@@ -163,7 +171,8 @@ const useDashboardProbes = () => {
         handleSubmit,
         projectOptions: projects,
         authType,
-        isSubmitting
+        isSubmitting,
+        ConfirmDialogComponent
     }
 }
 

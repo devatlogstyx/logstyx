@@ -470,7 +470,6 @@ const processExecuteProbeWorker = async (probeId) => {
             throw HttpError(NOT_FOUND_ERR_CODE, PROBE_NOT_FOUND_ERR_MESSAGE)
         }
 
-
         // Get probe with decrypted connection
         const { connection } = probe;
         const project = await getProjectFromCache(probe.project);
@@ -485,6 +484,7 @@ const processExecuteProbeWorker = async (probeId) => {
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), connection.timeout || 10000);
 
+        const startTime = Date.now();
         const response = await fetch(connection.url, {
             method: connection.method || 'GET',
             headers: {
@@ -495,9 +495,31 @@ const processExecuteProbeWorker = async (probeId) => {
         });
 
         clearTimeout(timeout);
+        const responseTime = Date.now() - startTime;
 
-        // Parse response
-        const data = await response.json();
+        // Try to parse response body
+        let data = {};
+        const contentType = response.headers.get('content-type');
+
+        try {
+            if (contentType?.includes('application/json')) {
+                data = await response.json();
+            } else {
+                // For non-JSON responses (HTML, plain text, etc.)
+                const text = await response.text();
+                data = {
+                    response_body: text.substring(0, 1000), // Limit to first 1000 chars
+                    content_type: contentType,
+                    body_length: text.length
+                };
+            }
+        } catch (parseError) {
+            // If parsing fails, just log that it failed
+            data = {
+                parse_error: parseError.message,
+                content_type: contentType
+            };
+        }
 
         // Log successful fetch
         await createProbesLog(project, {
@@ -511,12 +533,11 @@ const processExecuteProbeWorker = async (probeId) => {
                 probe_id: probeId,
                 probe_title: probe.title,
                 pull_success: true,
-                status_code: response.status
+                status_code: response.status,
+                response_time_ms: responseTime
             },
-            data: data
+            data
         });
-
-
 
     } catch (e) {
         // Log failed fetch
@@ -550,19 +571,12 @@ const processExecuteProbeWorker = async (probeId) => {
 
         logger.error(e)
     } finally {
-
         if (probe?.id) {
-            submitCreateAgendaJob({
-                scheduledAt: moment(new Date()).add(probe?.delay, "second").toDate(),
-                name: SUBMIT_MESSAGE_QUEUE_AGENDA_JOB,
-                params: {
-                    uniqueId: `probe-worker-${probe?.id}`,
-                    queue: EXECUTE_PROBE_WORKER_MQ_QUEUE,
-                    payload: {
-                        probeId
-                    }
-                }
-            }).catch(logger.error)
+            setTimeout(() => {
+                submitExecuteProbeWorker({
+                    probeId: probe?.id
+                })
+            }, probe?.delay * 1000)
         }
 
     }
@@ -573,17 +587,11 @@ const startAllProbes = async () => {
 
     for await (const probe of probes) {
         // Schedule immediate execution for each probe
-        await submitCreateAgendaJob({
-            scheduledAt: moment().add(probe.delay, 'seconds').toDate(),
-            name: SUBMIT_MESSAGE_QUEUE_AGENDA_JOB,
-            params: {
-                uniqueId: `probe-worker-${probe._id}`,
-                queue: EXECUTE_PROBE_WORKER_MQ_QUEUE,
-                payload: {
-                    probeId: probe._id.toString()
-                }
-            }
-        });
+        setTimeout(() => {
+            submitExecuteProbeWorker({
+                probeId: probe?._id?.toString()
+            })
+        }, probe?.delay * 1000)
     }
 };
 

@@ -18,7 +18,7 @@ const useTabOverview = () => {
 
     const handleDelete = React.useCallback(async () => {
         openConfirmDialog({
-            title: 'Remove User',
+            title: 'Remove Prohect',
 
             message: 'Are you sure you want to remove this project? This action cannot be undone.',
             confirmLabel: 'Delete',

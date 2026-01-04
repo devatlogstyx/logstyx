@@ -3,6 +3,9 @@ import SecondaryButton from "../../../component/button/SecondaryButton";
 import PrimaryButton from "../../../component/button/PrimaryButton";
 import { BASIC_PROBE_AUTH_TYPE, BEARER_PROBE_AUTH_TYPE, CUSTOM_PROBE_AUTH_TYPE, NONE_PROBE_AUTH_TYPE, PROBESTYX_PROBE_AUTH_TYPE } from "../../../utils/constant";
 import useModalForm from "./hooks";
+import { Light as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { docco } from 'react-syntax-highlighter/dist/esm/styles/hljs';
+
 
 /**
  * Modal Form with Step-by-Step Navigation
@@ -27,7 +30,7 @@ const ModalForm = ({
         currentStep,
         goToPreviousStep,
         goToNextStep,
-    } = useModalForm(form)
+    } = useModalForm({ form })
 
     const isStep1 = currentStep === 1;
     const isStep2 = currentStep === 2;
@@ -184,8 +187,10 @@ const ModalForm = ({
                             <p><strong>Title:</strong> {form.values.title}</p>
                             <p><strong>Project:</strong> {form.values.project}</p>
                             <p><strong>Interval:</strong> {form.values.delay}</p>
-                            <p><strong>Context:</strong> {JSON.stringify(form.values.connection.context)}</p>
-                            <p><strong>Auth Type:</strong> {form.values.connection.auth.type}</p>
+                            <p><strong>Connection:</strong></p>
+                            <SyntaxHighlighter language="json" style={docco}>
+                                {JSON.stringify(form.values.connection, null, 2)}
+                            </SyntaxHighlighter>
                         </div>
                     )}
 

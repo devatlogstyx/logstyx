@@ -35,7 +35,6 @@ const useModalForm = ({
     const goToPreviousStep = () => setCurrentStep((prevStep) => Math.max(prevStep - 1, 1));
 
 
-
     return {
         isTesting,
         handleTestConnection,

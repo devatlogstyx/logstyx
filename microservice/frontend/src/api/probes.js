@@ -56,7 +56,26 @@ export const paginateProbe = async (signal, params) => {
     return data?.data;
 }
 
+/**
+ * 
+ * @param {*} signal 
+ * @param {*} payload 
+ * @returns 
+ */
 export const testProbeConnection = async (signal, payload) => {
     let { data } = await Axios.post(`/v1/probes/test-connection`, payload, { signal });
+    return data?.data;
+}
+
+/**
+ * 
+ * @param {*} signal 
+ * @param {*} id 
+ * @returns 
+ */
+export const removeProbe = async (signal, id) => {
+    let { data } = await Axios.delete(`/v1/probes/${id}`, {
+        signal
+    });
     return data?.data;
 }

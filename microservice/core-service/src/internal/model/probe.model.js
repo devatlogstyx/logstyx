@@ -1,6 +1,9 @@
 //@ts-check
 const { ACTIVE_PROBE_STATUS, PAUSED_PROBE_STATUS } = require("common/constant");
 const { mongoose } = require("../../shared/mongoose");
+const {
+    ObjectId
+} = mongoose.Schema.Types
 
 const probeSchema = new mongoose.Schema(
     {
@@ -12,7 +15,7 @@ const probeSchema = new mongoose.Schema(
             maxLength: 128,
         },
         project: {
-            type: String,
+            type: ObjectId,
             required: true,
             trim: true,
             index: true,
