@@ -23,5 +23,6 @@ const publicMiddleware = useCors({
 router.use("/projects", privateMiddleware, require("../../../../internal/express.routes/project"));
 router.use("/probes", privateMiddleware, require("../../../../internal/express.routes/probe"));
 router.use("/logs", publicMiddleware, require("../../../../internal/express.routes/log"));
+router.use("/reports", publicMiddleware, require("../../../../internal/express.routes/report"));
 
 module.exports = router;

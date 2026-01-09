@@ -14,6 +14,9 @@ import DashboardUser from "../views/DashboardUser";
 import InvitationPage from "../views/Invitation";
 import DashboardProjectDetail from "../views/DashboardProjectDetail";
 import DashboardProbes from "../views/DashboardProbes";
+import DashboardReports from "../views/DashboardReports";
+import DashboardReportDetail from "../views/DashboardReportDetail";
+import PublicReportView from "../views/PublicReportView";
 
 export default function Router() {
     return (
@@ -28,9 +31,14 @@ export default function Router() {
                         <Route path="/dashboard/users" element={<DashboardUser />} />
                         <Route path="/dashboard/probes" element={<DashboardProbes />} />
                         <Route path="/dashboard/projects/:slug" element={<DashboardProjectDetail />} />
+                        <Route path="/dashboard/reports" element={<DashboardReports />} />
+                        <Route path="/dashboard/reports/:slug" element={<DashboardReportDetail />} />
                     </Route>
                     <Route path="/invitations/:id" element={<InvitationPage />} />
                     <Route path="/logout" element={<Logout />} />
+
+                    <Route path="*" element={<NotFound />} />
+                    <Route path="/public/reports/:slug" element={<PublicReportView />} />
 
                     <Route path="*" element={<NotFound />} />
                 </Routes>

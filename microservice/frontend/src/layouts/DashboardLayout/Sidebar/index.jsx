@@ -41,6 +41,13 @@ const DashboardSidebar = ({
             icon: LuRadar,
             path: '/dashboard/probes'
         });
+
+        menuItems.push({
+            id: 'reports',
+            label: 'Reports',
+            icon: IoBriefcaseOutline,
+            path: '/dashboard/reports'
+        });
     }
 
     if (user?.permissions?.includes(READ_USER_USER_ROLE)) {
