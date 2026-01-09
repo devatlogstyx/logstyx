@@ -10,7 +10,7 @@ const { default: striptags } = require("striptags");
 const { submitRemoveCache, submitExecuteProbeWorker, submitCreateLog, submitCreateAgendaJob } = require("../../shared/provider/mq-producer");
 const projectUserModel = require("../model/project.user.model");
 const { ObjectId } = mongoose.Types
-const moment = require("moment-timezone")
+const axios = require("axios")
 
 /**
  * 
@@ -463,7 +463,8 @@ const createProbesLog = async (project, params) => {
 const processExecuteProbeWorker = async (probeId) => {
 
     let probe
-
+    const startTime = Date.now();
+    
     try {
         probe = await findProbeById(probeId);
         if (!probe) {
@@ -480,44 +481,31 @@ const processExecuteProbeWorker = async (probeId) => {
         // Build auth headers
         const authHeaders = buildAuthHeaders(connection.auth);
 
-        // Fetch data from target
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), connection.timeout || 10000);
-
-        const startTime = Date.now();
-        const response = await fetch(connection.url, {
+        
+        const response = await axios({
+            url: connection.url,
             method: connection.method || 'GET',
             headers: {
                 ...authHeaders,
                 'User-Agent': 'Logstyx-Probe/1.0'
             },
-            signal: controller.signal
+            timeout: connection.timeout || 10000,
+            validateStatus: (status) => status >= 200 && status < 300 // Only 2xx is success
         });
 
-        clearTimeout(timeout);
         const responseTime = Date.now() - startTime;
 
-        // Try to parse response body
-        let data = {};
-        const contentType = response.headers.get('content-type');
+        // Axios automatically parses JSON
+        let data = response.data;
 
-        try {
-            if (contentType?.includes('application/json')) {
-                data = await response.json();
-            } else {
-                // For non-JSON responses (HTML, plain text, etc.)
-                const text = await response.text();
-                data = {
-                    response_body: text.substring(0, 1000), // Limit to first 1000 chars
-                    content_type: contentType,
-                    body_length: text.length
-                };
-            }
-        } catch (parseError) {
-            // If parsing fails, just log that it failed
+        // For non-JSON responses, format the data
+        const contentType = response.headers['content-type'];
+        if (contentType && !contentType.includes('application/json')) {
+            const text = typeof data === 'string' ? data : JSON.stringify(data);
             data = {
-                parse_error: parseError.message,
-                content_type: contentType
+                response_body: text.substring(0, 1000),
+                content_type: contentType,
+                body_length: text.length
             };
         }
 
@@ -546,6 +534,27 @@ const processExecuteProbeWorker = async (probeId) => {
             if (probe) {
                 const project = await getProjectFromCache(probe.project);
 
+                // Extract error details from axios error
+                const errorData = {
+                    error: e.message,
+                    error_type: e.name,
+                    url: probe.connection.url
+                };
+
+                // If it's an axios error with response (like 403, 404, 500, etc.)
+                if (e.response) {
+                    errorData.status_code = e.response.status;
+                    errorData.status_text = e.response.statusText;
+                    errorData.response_time_ms = Date.now() - startTime;
+
+                    // Optionally include response data
+                    if (e.response.data) {
+                        errorData.response_data = typeof e.response.data === 'string'
+                            ? e.response.data.substring(0, 500)
+                            : e.response.data;
+                    }
+                }
+
                 await createProbesLog(project, {
                     level: ERROR_LOG_LEVEL,
                     timestamp: Date.now(),
@@ -558,11 +567,7 @@ const processExecuteProbeWorker = async (probeId) => {
                         probe_title: probe.title,
                         pull_success: false
                     },
-                    data: {
-                        error: e.message,
-                        error_type: e.name,
-                        url: probe.connection.url
-                    }
+                    data: errorData
                 });
             }
         } catch (logError) {
@@ -578,7 +583,6 @@ const processExecuteProbeWorker = async (probeId) => {
                 })
             }, probe?.delay * 1000)
         }
-
     }
 };
 
