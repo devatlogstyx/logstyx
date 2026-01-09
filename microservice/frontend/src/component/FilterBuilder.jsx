@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { Select, TextInput, Button, Group, Stack, ActionIcon } from '@mantine/core';
+import { IoIosTrash } from "react-icons/io"
 
 const OPS = [
   { value: 'eq', label: '=' },
@@ -18,8 +20,8 @@ export default function FilterBuilder({ value = [], onChange }) {
     onChange && onChange(next);
   }
 
-  const add = () => update([ ...filters, { field: '', operator: 'eq', value: '' } ]);
-  const remove = (idx) => update(filters.filter((_,i)=>i!==idx));
+  const add = () => update([...filters, { field: '', operator: 'eq', value: '' }]);
+  const remove = (idx) => update(filters.filter((_, i) => i !== idx));
 
   const setField = (idx, key, val) => {
     const next = filters.slice();
@@ -28,19 +30,21 @@ export default function FilterBuilder({ value = [], onChange }) {
   }
 
   return (
-    <div className="space-y-2">
+    <Stack spacing="xs">
       <div className="text-sm font-medium">Filters</div>
       {filters.map((f, i) => (
-        <div key={i} className="flex gap-2 items-center">
-          <input className="border p-2 flex-1" placeholder="field (e.g. level or context.userId or data.amount)" value={f.field} onChange={e=>setField(i,'field',e.target.value)} />
-          <select className="border p-2" value={f.operator} onChange={e=>setField(i,'operator',e.target.value)}>
-            {OPS.map(op => <option key={op.value} value={op.value}>{op.label}</option>)}
-          </select>
-          <input className="border p-2 flex-1" placeholder="value" value={f.value} onChange={e=>setField(i,'value',e.target.value)} />
-          <button type="button" className="px-2 py-1 border" onClick={()=>remove(i)}>-</button>
-        </div>
+        <Group key={i} align="center" spacing="sm" noWrap>
+          <TextInput placeholder="field (e.g. level or context.userId or data.amount)" value={f.field} onChange={(e) => setField(i, 'field', e.target.value)} style={{ flex: 1 }} />
+          <Select value={f.operator} onChange={(v) => setField(i, 'operator', v)} data={OPS} style={{ width: 120 }} />
+          <TextInput placeholder="value" value={f.value} onChange={(e) => setField(i, 'value', e.target.value)} style={{ flex: 1 }} />
+          <ActionIcon className='!text-red-500 !bg-transparent' onClick={() => remove(i)}>
+            <IoIosTrash />
+          </ActionIcon>
+        </Group>
       ))}
-      <button type="button" className="px-3 py-1 border" onClick={add}>+ Add Filter</button>
-    </div>
+      <div>
+        <Button variant="light" onClick={add}>+ Add Filter</Button>
+      </div>
+    </Stack>
   );
 }

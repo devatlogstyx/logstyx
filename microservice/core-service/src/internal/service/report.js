@@ -239,14 +239,13 @@ const listWidgets = async (report, includeProjectInfo = false) => {
     const json = w.toJSON();
     if (includeProjectInfo && json.project) {
       json.project = {
-        id: json.project._id?.toString(),
+        id: json.project.id?.toString(),
         title: json.project.title,
         slug: json.project.slug,
         settings: json.project.settings
       };
     }
-    json.id = json._id?.toString();
-    delete json._id;
+    
     return json;
   });
 }

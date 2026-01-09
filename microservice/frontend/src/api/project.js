@@ -202,5 +202,5 @@ export const listAllMyProject = async (signal) => {
         });
     }
 
-    return res
+    return res?.sort((a, b) => a.title.localeCompare(b?.title))
 }
