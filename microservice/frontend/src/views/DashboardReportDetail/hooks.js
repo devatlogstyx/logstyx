@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useForm } from '@mantine/form';
 import { useParams } from 'react-router-dom';
 import { getReportBySlug, createWidget, deleteWidget, updateReport } from '../../api/report';
 import { listAllMyProject } from '../../api/project';
@@ -10,11 +11,15 @@ export function useDashboardReportDetail() {
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const [form, setForm] = useState({
+  const initialValues = {
     template: 'total_value',
     title: '',
     project: '',
     config: { operation: 'count', filters: [] }
+  };
+
+  const form = useForm({
+    initialValues
   });
 
   const [modalOpened, setModalOpened] = useState(false);
@@ -30,20 +35,19 @@ export function useDashboardReportDetail() {
     return () => ctrl.abort();
   }, [slug]);
 
-  const onAddWidget = async (e) => {
-    e && e.preventDefault();
+  const onAddWidget = form.onSubmit(async (values) => {
     const ctrl = new AbortController();
     const created = await createWidget(ctrl.signal, report.id, {
-      project: form.project,
-      template: form.template,
-      title: form.title || `${form.template}`,
+      project: values.project,
+      template: values.template,
+      title: values.title || `${values.template}`,
       position: {},
-      config: form.config
+      config: values.config
     });
     setReport({ ...report, widgets: [...(report.widgets||[]), created] });
-    setForm({ template: 'total_value', title: '', project: '', config: { operation: 'count', filters: [] } });
+    form.setValues(initialValues);
     setModalOpened(false);
-  };
+  });
 
   const onChangeVisibility = async (e) => {
     const vis = e.target.value;
@@ -80,7 +84,6 @@ export function useDashboardReportDetail() {
     projects,
     loading,
     form,
-    setForm,
     modalOpened,
     setModalOpened,
     onAddWidget,

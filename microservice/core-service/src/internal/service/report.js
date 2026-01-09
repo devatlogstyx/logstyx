@@ -245,7 +245,7 @@ const listWidgets = async (report, includeProjectInfo = false) => {
         settings: json.project.settings
       };
     }
-    
+
     return json;
   });
 }
@@ -470,12 +470,80 @@ const executeLineChartQuery = async (widget, project) => {
   const interval = widget.config?.groupByTime || '1h';
   const bucket = bucketForInterval('$createdAt', interval);
 
+  // NEW: Determine what to aggregate
+  const metric = widget.config?.metric; // e.g., "count", "avg:data.cpu_usage_percent", "sum:data.amount"
+
+  let aggregateExpr;
+
+  if (!metric || metric === 'count') {
+    // Count logs per bucket (original behavior)
+    aggregateExpr = { value: { $sum: 1 } };
+  } else {
+    // Parse metric like "avg:data.cpu_usage_percent" or "sum:data.amount"
+    const [operation, fieldPath] = metric.split(':');
+
+    if (!fieldPath) {
+      throw HttpError(INVALID_INPUT_ERR_CODE, 'Metric must be "count" or "operation:field" (e.g., "avg:data.cpu_usage_percent")');
+    }
+
+    // Check if field is in rawIndexes
+    const isRaw = project?.settings?.rawIndexes?.includes(fieldPath);
+    if (!isRaw) {
+      throw HttpError(INVALID_INPUT_ERR_CODE, `Field "${fieldPath}" must be in project rawIndexes for aggregation`);
+    }
+
+    const rawKey = `raw.${fieldPath.replace(/\./g, '_')}`;
+
+    // Need to lookup the actual log document to get raw values
+    // Strategy: For line charts with field aggregation, we need to join logstamp -> log
+
+    // Actually, logstamp doesn't have the raw values, only the key and level
+    // We need to query the log collection instead for field-based metrics
+    const { log } = await getLogModel(project.id);
+
+    let groupExpr;
+    switch (operation) {
+      case 'sum':
+        groupExpr = { value: { $sum: `$${rawKey}` } };
+        break;
+      case 'avg':
+        groupExpr = { value: { $avg: `$${rawKey}` } };
+        break;
+      case 'min':
+        groupExpr = { value: { $min: `$${rawKey}` } };
+        break;
+      case 'max':
+        groupExpr = { value: { $max: `$${rawKey}` } };
+        break;
+      case 'count':
+        groupExpr = { value: { $sum: '$count' } }; // Sum of occurrences
+        break;
+      default:
+        throw HttpError(INVALID_INPUT_ERR_CODE, `Unknown operation: ${operation}. Use sum, avg, min, max, or count`);
+    }
+
+    // Query log collection with time bucketing
+    const pipeline = [
+      { $match: { ...match, updatedAt: buildTimeRangeFilter(timeRange) } }, // Use updatedAt for logs
+      { $group: { _id: bucketForInterval('$updatedAt', interval), ...groupExpr } },
+      { $sort: { _id: 1 } },
+      { $project: { label: '$_id', value: 1, _id: 0 } }
+    ];
+
+    const res = await log.aggregate(pipeline);
+    const labels = res.map(r => r.label);
+    const values = res.map(r => r.value || 0);
+    return { labels, values };
+  }
+
+  // Original count-based logic (using logstamp)
   const pipeline = [
     { $match: match },
-    { $group: { _id: bucket, value: { $sum: 1 } } },
+    { $group: { _id: bucket, ...aggregateExpr } },
     { $sort: { _id: 1 } },
     { $project: { label: '$_id', value: 1, _id: 0 } }
   ];
+
   const res = await logstamp.aggregate(pipeline);
   const labels = res.map(r => r.label);
   const values = res.map(r => r.value);
@@ -516,21 +584,74 @@ const resolveGroupByField = (groupBy) => {
 const executeBarChartQuery = async (widget, project) => {
   const { log } = await getLogModel(project.id);
   const filters = buildMongoQuery(widget.config?.filters || {}, project);
-  const metric = parseMetric(widget.config?.metric || 'count');
+  const timeFilter = widget.config?.timeRange ? { updatedAt: buildTimeRangeFilter(widget.config.timeRange) } : {};
+  const match = { ...filters, ...timeFilter };
+
+  const metric = widget.config?.metric || 'count'; // e.g., "count", "sum:data.amount", "avg:data.cpu_usage_percent"
   const groupField = resolveGroupByField(widget.config?.groupBy);
-  if (!groupField) throw HttpError(INVALID_INPUT_ERR_CODE, 'groupBy is required');
-  const pipeline = [{ $match: filters }, { $group: { _id: groupField } }];
-  if (metric.type === 'count') {
-    pipeline[1].$group.value = { $sum: 1 };
-  } else if (metric.type === 'sum') {
-    const f = `$raw.${metric.field.replace(/\./g, '_')}`;
-    pipeline[1].$group.value = { $sum: f };
+
+  if (!groupField) {
+    throw HttpError(INVALID_INPUT_ERR_CODE, 'groupBy is required');
   }
-  pipeline.push({ $sort: { value: -1 } });
-  if (widget.config?.limit) pipeline.push({ $limit: Number(widget.config.limit) });
+
+  // Build aggregation expression
+  let aggregateExpr;
+
+  if (metric === 'count') {
+    // Count occurrences (sum of count field)
+    aggregateExpr = { value: { $sum: '$count' } };
+  } else {
+    // Parse metric like "sum:data.amount" or "avg:data.cpu_usage_percent"
+    const [operation, fieldPath] = metric.split(':');
+
+    if (!fieldPath) {
+      throw HttpError(INVALID_INPUT_ERR_CODE, 'Metric must be "count" or "operation:field" (e.g., "avg:data.cpu_usage_percent")');
+    }
+
+    // Check if field is in rawIndexes
+    const isRaw = project?.settings?.rawIndexes?.includes(fieldPath);
+    if (!isRaw) {
+      throw HttpError(INVALID_INPUT_ERR_CODE, `Field "${fieldPath}" must be in project rawIndexes for aggregation`);
+    }
+
+    const rawKey = `$raw.${fieldPath.replace(/\./g, '_')}`;
+
+    switch (operation) {
+      case 'sum':
+        aggregateExpr = { value: { $sum: rawKey } };
+        break;
+      case 'avg':
+        aggregateExpr = { value: { $avg: rawKey } };
+        break;
+      case 'min':
+        aggregateExpr = { value: { $min: rawKey } };
+        break;
+      case 'max':
+        aggregateExpr = { value: { $max: rawKey } };
+        break;
+      default:
+        throw HttpError(INVALID_INPUT_ERR_CODE, `Unknown operation: ${operation}. Use sum, avg, min, max, or count`);
+    }
+  }
+
+  const pipeline = [
+    { $match: match },
+    { $group: { _id: groupField, ...aggregateExpr } },
+    { $sort: { value: -1 } }
+  ];
+
+  if (widget.config?.limit) {
+    pipeline.push({ $limit: Number(widget.config.limit) });
+  }
+
   const res = await log.aggregate(pipeline);
-  return { labels: res.map(r => r._id), values: res.map(r => r.value) };
+
+  return {
+    labels: res.map(r => r._id || 'unknown'),
+    values: res.map(r => r.value || 0)
+  };
 }
+
 
 const executeTableQuery = async (widget, project) => {
   const { log } = await getLogModel(project.id);
@@ -571,16 +692,63 @@ const executeTableQuery = async (widget, project) => {
 const executePieChartQuery = async (widget, project) => {
   const { log } = await getLogModel(project.id);
   const filters = buildMongoQuery(widget.config?.filters || {}, project);
+  const timeFilter = widget.config?.timeRange ? { updatedAt: buildTimeRangeFilter(widget.config.timeRange) } : {};
+  const match = { ...filters, ...timeFilter };
+
+  const metric = widget.config?.metric || 'count';
   const groupField = resolveGroupByField(widget.config?.groupBy);
-  if (!groupField) throw HttpError(INVALID_INPUT_ERR_CODE, 'groupBy is required');
+
+  if (!groupField) {
+    throw HttpError(INVALID_INPUT_ERR_CODE, 'groupBy is required');
+  }
+
+  // Build aggregation expression (same as bar chart)
+  let aggregateExpr;
+
+  if (metric === 'count') {
+    aggregateExpr = { value: { $sum: '$count' } };
+  } else {
+    const [operation, fieldPath] = metric.split(':');
+
+    if (!fieldPath) {
+      throw HttpError(INVALID_INPUT_ERR_CODE, 'Metric must be "count" or "operation:field"');
+    }
+
+    const isRaw = project?.settings?.rawIndexes?.includes(fieldPath);
+    if (!isRaw) {
+      throw HttpError(INVALID_INPUT_ERR_CODE, `Field "${fieldPath}" must be in project rawIndexes`);
+    }
+
+    const rawKey = `$raw.${fieldPath.replace(/\./g, '_')}`;
+
+    switch (operation) {
+      case 'sum':
+        aggregateExpr = { value: { $sum: rawKey } };
+        break;
+      case 'avg':
+        aggregateExpr = { value: { $avg: rawKey } };
+        break;
+      default:
+        throw HttpError(INVALID_INPUT_ERR_CODE, `Pie chart only supports sum/avg/count operations`);
+    }
+  }
+
   const pipeline = [
-    { $match: filters },
-    { $group: { _id: groupField, value: { $sum: 1 } } },
-    { $sort: { value: -1 } },
+    { $match: match },
+    { $group: { _id: groupField, ...aggregateExpr } },
+    { $sort: { value: -1 } }
   ];
-  if (widget.config?.limit) pipeline.push({ $limit: Number(widget.config.limit) });
+
+  if (widget.config?.limit) {
+    pipeline.push({ $limit: Number(widget.config.limit) });
+  }
+
   const res = await log.aggregate(pipeline);
-  return { labels: res.map(r => r._id), values: res.map(r => r.value) };
+
+  return {
+    labels: res.map(r => r._id || 'unknown'),
+    values: res.map(r => r.value || 0)
+  };
 }
 
 const executeWidgetQuery = async (widget) => {

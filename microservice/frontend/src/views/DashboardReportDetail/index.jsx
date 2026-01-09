@@ -8,7 +8,6 @@ export default function DashboardReportDetail() {
     projects,
     loading,
     form,
-    setForm,
     modalOpened,
     setModalOpened,
     onAddWidget,
@@ -33,7 +32,6 @@ export default function DashboardReportDetail() {
             setModalOpened={setModalOpened}
             onAddWidget={onAddWidget}
             form={form}
-            setForm={setForm}
             projects={projects}
           />
         </div>

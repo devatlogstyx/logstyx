@@ -33,14 +33,26 @@ module.exports = {
             description: "Show trends over time",
             icon: "FaChartLine",
             requiredConfig: ["metric", "groupByTime"],
-            optionalConfig: ["filters", "timeRange"]
+            optionalConfig: ["filters", "timeRange"],
+            metricExamples: [
+                "count - Number of logs",
+                "sum:data.amount - Sum of amounts",
+                "avg:data.cpu_usage_percent - Average CPU",
+                "max:data.response_time_ms - Max response time"
+            ]
         },
         bar_chart: {
             name: "Bar Chart",
             description: "Compare values across categories",
             icon: "FaChartBar",
             requiredConfig: ["metric", "groupBy"],
-            optionalConfig: ["filters", "limit", "sortBy"]
+            optionalConfig: ["filters", "limit", "timeRange"],
+            metricExamples: [
+                "count - Number of logs per category",
+                "sum:data.amount - Total amount per category",
+                "avg:data.response_time_ms - Average response time per endpoint",
+                "max:data.memory_usage_mb - Peak memory per service"
+            ]
         },
         table: {
             name: "Table",
@@ -54,7 +66,7 @@ module.exports = {
             description: "Show distribution of values",
             icon: "FaChartPie",
             requiredConfig: ["groupBy"],
-            optionalConfig: ["filters", "limit"]
+            optionalConfig: ["filters", "limit", "metric", "timeRange"]
         }
     }
 
