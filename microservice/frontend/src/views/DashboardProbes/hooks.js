@@ -134,7 +134,7 @@ const useDashboardProbes = () => {
         }
     };
 
-    const handleDelete = React.useCallback(async () => {
+    const handleDelete = React.useCallback(async (id) => {
         openConfirmDialog({
             title: 'Remove Probe',
 
