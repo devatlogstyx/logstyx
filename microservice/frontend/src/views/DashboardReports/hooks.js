@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, useCallback } from 'react';
-import { paginateReports, createReport, deleteReport } from '../../api/report';
+import { paginateReports, createReport, deleteReport, updateReport } from '../../api/report';
 import { PRIVATE_REPORT_VISIBILITY } from '../../utils/constant';
 import { useErrorMessage } from '../../hooks/useMessage';
 import { useConfirmDialog } from '../../hooks/useConfirmDialog';
@@ -12,6 +12,13 @@ export function useDashboardReports() {
   const [title, setTitle] = useState('');
   const [visibility, setVisibility] = useState(PRIVATE_REPORT_VISIBILITY);
   const [creating, setCreating] = useState(false);
+
+  // edit modal state
+  const [editModalOpened, setEditModalOpened] = useState(false);
+  const [editId, setEditId] = useState(null);
+  const [editTitle, setEditTitle] = useState('');
+  const [editVisibility, setEditVisibility] = useState(PRIVATE_REPORT_VISIBILITY);
+  const [updating, setUpdating] = useState(false);
 
   const [deletingIds, setDeletingIds] = useState(() => new Set());
 
@@ -41,6 +48,24 @@ export function useDashboardReports() {
 
   const canSubmit = useMemo(() => title.trim().length > 0 && !creating, [title, creating]);
 
+  // edit modal helpers
+  const openEditModal = useCallback((report) => {
+    if (!report) return;
+    setEditId(report.id);
+    setEditTitle(report.title || '');
+    setEditVisibility(report.visibility || PRIVATE_REPORT_VISIBILITY);
+    setEditModalOpened(true);
+  }, []);
+
+  const closeEditModal = useCallback(() => {
+    setEditModalOpened(false);
+    setEditId(null);
+    setEditTitle('');
+    setEditVisibility(PRIVATE_REPORT_VISIBILITY);
+  }, []);
+
+  const canEditSubmit = useMemo(() => editTitle.trim().length > 0 && !updating && !!editId, [editTitle, updating, editId]);
+
   const onCreateSubmit = useCallback(
     async (e) => {
       e?.preventDefault?.();
@@ -61,6 +86,30 @@ export function useDashboardReports() {
       }
     },
     [title, visibility, ErrorMessage, closeCreateModal, resetForm]
+  );
+
+  const onEditSubmit = useCallback(
+    async (e) => {
+      e?.preventDefault?.();
+      if (!editId || !editTitle.trim()) return;
+      try {
+        setUpdating(true);
+        const ctrl = new AbortController();
+        const updated = await updateReport(ctrl.signal, editId, {
+          title: editTitle.trim(),
+          visibility: editVisibility,
+        });
+        if (updated) {
+          setList((prev) => prev.map((r) => (r.id === editId ? { ...r, ...updated } : r)));
+          closeEditModal();
+        }
+      } catch (err) {
+        ErrorMessage(err);
+      } finally {
+        setUpdating(false);
+      }
+    },
+    [editId, editTitle, editVisibility, ErrorMessage, closeEditModal]
   );
 
   const isDeleting = useCallback((id) => deletingIds.has(id), [deletingIds]);
@@ -111,6 +160,18 @@ export function useDashboardReports() {
     creating,
     canSubmit,
     onCreateSubmit,
+
+    // edit modal + form
+    editModalOpened,
+    openEditModal,
+    closeEditModal,
+    editTitle,
+    setEditTitle,
+    editVisibility,
+    setEditVisibility,
+    updating,
+    canEditSubmit,
+    onEditSubmit,
 
     // deletion
     isDeleting,
