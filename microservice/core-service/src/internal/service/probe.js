@@ -421,7 +421,7 @@ const createProbesLog = async (project, params) => {
         context: params?.context,
         data: params?.data
     }, project);
-
+        
     const [compressedContext, compressedData] = await Promise.all([
         compressAndEncrypt(params?.context),
         compressAndEncrypt(params?.data)

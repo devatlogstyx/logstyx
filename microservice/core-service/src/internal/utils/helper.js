@@ -322,19 +322,20 @@ const generateIndexedHashes = (log, project) => {
  * @returns 
  */
 const generateRawValues = (data, project) => {
+    
     if (!project?.settings?.rawIndexes || project.settings.rawIndexes.length === 0) {
         return {};
     }
 
     const rawValues = {};
-    const flatData = { ...data.context, ...data.data };
 
     for (const field of project.settings.rawIndexes) {
-        const value = getNestedValue(flatData, field);
+        // Search in the original data structure, not flattened
+        const value = getNestedValue(data, field);
 
         if (value !== undefined && value !== null) {
             const safeFieldName = field.replace(/\./g, '_');
-            rawValues[safeFieldName] = value;  // Store as-is, no hashing
+            rawValues[safeFieldName] = value;
         }
     }
 
