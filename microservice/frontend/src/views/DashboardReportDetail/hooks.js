@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useForm } from '@mantine/form';
 import { useParams } from 'react-router-dom';
-import { getReportBySlug, createWidget, deleteWidget, updateReport } from '../../api/report';
+import { getReportBySlug, createWidget, deleteWidget, updateReport, updateWidget } from '../../api/report';
 import { listAllMyProject } from '../../api/project';
 import { useConfirmDialog } from '../../hooks/useConfirmDialog';
 
@@ -80,6 +80,56 @@ export function useDashboardReportDetail() {
     });
   };
 
+
+  const [editingWidgetId, setEditingWidgetId] = useState(null);
+
+  const onEditWidget = (w) => {
+    setEditingWidgetId(w.id);
+    form.setValues({
+      template: w.template,
+      title: w.title,
+      project: w.project?.id,
+      description: w.description || '',
+      config: w.config || {}
+    });
+    setModalOpened(true);
+  };
+
+  const handleSubmit = form.onSubmit(async (values) => {
+    if (editingWidgetId) {
+      const ctrl = new AbortController();
+      const updated = await updateWidget(ctrl.signal, editingWidgetId, {
+        project: values.project,
+        template: values.template,
+        title: values.title || `${values.template}`,
+        description: values.description,
+        config: values.config
+      });
+      const updatedWidgets = (report.widgets || []).map(w => (w.id === editingWidgetId ? updated : w));
+      setModalOpened(false);
+      setEditingWidgetId(null);
+      form.reset();
+      if (report) setReport({ ...report, widgets: updatedWidgets });
+    } else {
+      const ctrl = new AbortController();
+      const created = await createWidget(ctrl.signal, report.id, {
+        project: values.project,
+        template: values.template,
+        title: values.title || `${values.template}`,
+        description: values.description,
+        config: values.config
+      });
+      setModalOpened(false);
+      form.reset();
+      if (report) setReport({ ...report, widgets: [...(report.widgets || []), created] });
+    }
+  });
+
+  const onClose = () => {
+    setModalOpened(false);
+    form.reset();
+  }
+
   return {
     report,
     projects,
@@ -92,6 +142,11 @@ export function useDashboardReportDetail() {
     onDeleteWidget,
     deletingId,
     deleteError,
-    ConfirmDialogComponent
+    ConfirmDialogComponent,
+    setReport,
+    handleSubmit,
+    setEditingWidgetId,
+    onClose,
+    onEditWidget
   };
 }

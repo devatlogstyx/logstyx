@@ -8,6 +8,7 @@ import SecondaryButton from "../../../component/button/SecondaryButton";
 const CreateWidget = ({
     modalOpened,
     setModalOpened,
+    onClose,
     onAddWidget,
     form,
     projects,
@@ -17,14 +18,18 @@ const CreateWidget = ({
 
     return (
         <>
-            <PrimaryButton onClick={() => setModalOpened(true)}>Create Widget</PrimaryButton>
+            <PrimaryButton onClick={() => (setModalOpened ? setModalOpened(true) : (onClose && onClose()))}>Create Widget</PrimaryButton>
 
-            <Modal opened={modalOpened} onClose={() => setModalOpened(false)} title="Add Widget" centered size="lg">
+            <Modal opened={modalOpened} onClose={() => (setModalOpened ? setModalOpened(false) : (onClose && onClose()))} title="Add Widget" centered size="lg">
                 <form onSubmit={onAddWidget} className="space-y-4">
                     {/* Template Selection */}
                     <Select
                         label="Widget Template"
-                        {...form.getInputProps('template')}
+                        value={form.values.template}
+                        onChange={(v) => {
+                            form.setFieldValue('template', v);
+                            form.setFieldValue('config', { operation: 'count', filters: [] });
+                        }}
                         data={[
                             { value: 'total_value', label: 'Total Value' },
                             { value: 'line_chart', label: 'Line Chart' },
@@ -165,12 +170,15 @@ const CreateWidget = ({
                                 <div className="flex gap-2 mt-1">
                                     <Select
                                         placeholder="Operation"
-                                        value={form.values.config.metricOp || 'count'}
-                                        onChange={(v) => form.setFieldValue('config', {
-                                            ...form.values.config,
-                                            metricOp: v,
-                                            metric: v === 'count' ? 'count' : `${v}:${form.values.config.metricField || ''}`
-                                        })}
+                                        value={form.values.config?.metricOp || 'count'}
+                                        onChange={(v) => {
+                                            const newConfig = {
+                                                ...form.values.config,
+                                                metricOp: v,
+                                                metric: v === 'count' ? 'count' : `${v}:${form.values.config?.metricField || ''}` // ← Add this line
+                                            };
+                                            form.setFieldValue('config', newConfig);
+                                        }}
                                         data={[
                                             { value: 'count', label: 'Count' },
                                             { value: 'sum', label: 'Sum' },
@@ -178,25 +186,25 @@ const CreateWidget = ({
                                             { value: 'min', label: 'Min' },
                                             { value: 'max', label: 'Max' },
                                         ]}
-                                        className="w-1/3"
-
                                     />
 
-                                    {form.values.config.metricOp !== 'count' && (
+                                    {form.values.config?.metricOp !== 'count' && (
                                         <Select
                                             placeholder="Select field"
-                                            value={form.values.config.metricField || ''}
-                                            onChange={(v) => form.setFieldValue('config', {
-                                                ...form.values.config,
-                                                metricField: v,
-                                                metric: `${form.values.config.metricOp}:${v}`
-                                            })}
+                                            value={form.values.config?.metricField || ''}
+                                            onChange={(v) => {
+                                                const newConfig = {
+                                                    ...form.values.config,
+                                                    metricField: v,
+                                                    metric: `${form.values.config?.metricOp}:${v}` // ← Add this line
+                                                };
+                                                form.setFieldValue('config', newConfig);
+                                            }}
                                             data={selectedProject?.settings?.rawIndexes?.map(idx => ({
                                                 value: idx,
                                                 label: idx
                                             })) || []}
                                             searchable
-                                            className="w-1/3"
                                         />
                                     )}
                                 </div>
@@ -358,7 +366,7 @@ const CreateWidget = ({
 
                     {/* Actions */}
                     <div className="flex justify-end gap-2 pt-4">
-                        <SecondaryButton variant="outline" onClick={() => setModalOpened(false)}>Cancel</SecondaryButton>
+                        <SecondaryButton variant="outline" onClick={onClose}>Cancel</SecondaryButton>
                         <PrimaryButton type="submit">Create Widget</PrimaryButton>
                     </div>
                 </form>

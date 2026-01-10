@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import WidgetCard from '../../component/WidgetCard';
 import { useDashboardReportDetail } from './hooks';
 import CreateWidget from './CreateWidget';
@@ -9,11 +10,12 @@ export default function DashboardReportDetail() {
     loading,
     form,
     modalOpened,
-    setModalOpened,
-    onAddWidget,
     onDeleteWidget,
     deletingId,
-    ConfirmDialogComponent
+    ConfirmDialogComponent,
+    handleSubmit,
+    onEditWidget,
+    onClose
   } = useDashboardReportDetail();
 
   if (loading) return <div className="p-4">Loading...</div>;
@@ -29,8 +31,8 @@ export default function DashboardReportDetail() {
         <div>
           <CreateWidget
             modalOpened={modalOpened}
-            setModalOpened={setModalOpened}
-            onAddWidget={onAddWidget}
+            onClose={onClose}
+            onAddWidget={handleSubmit}
             form={form}
             projects={projects}
           />
@@ -40,7 +42,14 @@ export default function DashboardReportDetail() {
       <div className="grid md:grid-cols-2 gap-3">
         {(report.widgets || []).map(w => (
           <div key={w.id} className="relative">
-            <WidgetCard slug={report.slug} widget={w} readOnly={false} onDeleteWidget={onDeleteWidget} deletingId={deletingId} />
+            <WidgetCard
+              slug={report.slug}
+              widget={w}
+              readOnly={false}
+              onDeleteWidget={onDeleteWidget}
+              deletingId={deletingId}
+              onEditWidget={onEditWidget}
+            />
           </div>
         ))}
       </div>
