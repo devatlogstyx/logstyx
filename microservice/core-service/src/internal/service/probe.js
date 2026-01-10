@@ -315,7 +315,8 @@ const paginateProbe = async (query = {}, sortBy = "createdAt:desc", limit = 10, 
     let res = await projectUserModel.aggregatePaginate(aggregate, options);
 
     let list = {
-        results: res?.docs?.map((n) => {
+        results: await Promise.all(res?.docs?.map(async (n) => {
+            const connection = await decryptAndDecompress(n.connection)
             return {
                 id: n?._id?.toString(),
                 title: n?.title,
@@ -326,9 +327,15 @@ const paginateProbe = async (query = {}, sortBy = "createdAt:desc", limit = 10, 
                 },
                 delay: n?.delay,
                 createdAt: n?.createdAt,
-                updatedAt: n?.updatedAt
+                updatedAt: n?.updatedAt,
+                connection: {
+                    url: connection?.url,
+                    auth: {
+                        type: connection?.auth?.type || NONE_PROBE_AUTH_TYPE
+                    }
+                }
             };
-        }),
+        })),
         page,
         totalResults: res.total,
         totalPages: res.pages,
@@ -421,7 +428,7 @@ const createProbesLog = async (project, params) => {
         context: params?.context,
         data: params?.data
     }, project);
-        
+
     const [compressedContext, compressedData] = await Promise.all([
         compressAndEncrypt(params?.context),
         compressAndEncrypt(params?.data)
@@ -464,7 +471,7 @@ const processExecuteProbeWorker = async (probeId) => {
 
     let probe
     const startTime = Date.now();
-    
+
     try {
         probe = await findProbeById(probeId);
         if (!probe) {
@@ -481,7 +488,7 @@ const processExecuteProbeWorker = async (probeId) => {
         // Build auth headers
         const authHeaders = buildAuthHeaders(connection.auth);
 
-        
+
         const response = await axios({
             url: connection.url,
             method: connection.method || 'GET',
