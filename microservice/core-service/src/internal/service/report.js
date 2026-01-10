@@ -288,7 +288,7 @@ const isReportPublic = (report) => report.visibility && report.visibility !== PR
  * @returns 
  */
 const createWidget = async (reportId, payload) => {
-  const rpt = await reportModel.findById(reportId);
+  const rpt = await getReportFromCache(reportId);
   if (!rpt) throw HttpError(NOT_FOUND_ERR_CODE, NOT_FOUND_ERR_MESSAGE);
 
 
@@ -371,8 +371,10 @@ const listWidgets = async (report, includeProjectInfo = false) => {
  * @returns 
  */
 const updateWidget = async (widgetId, payload) => {
+
   const w = await getWidgetFromCache(widgetId)
   if (!w) throw HttpError(NOT_FOUND_ERR_CODE, NOT_FOUND_ERR_MESSAGE);
+
   const rpt = await getReportFromCache(w.report?.toString());
   if (!rpt) throw HttpError(NOT_FOUND_ERR_CODE, NOT_FOUND_ERR_MESSAGE);
 
@@ -393,7 +395,11 @@ const updateWidget = async (widgetId, payload) => {
 
   await widgetModel.findByIdAndUpdate(widgetId, { $set: update });
 
-  return updateWidgetCache(widgetId)
+  const updatedWidget = await updateWidgetCache(widgetId)
+  const data = await executeWidgetQuery(updatedWidget)
+  await updateWidgetDataCache(widgetId, data)
+
+  return updatedWidget
 }
 
 /**
