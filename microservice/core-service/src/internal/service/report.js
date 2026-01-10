@@ -576,11 +576,54 @@ const executeTotalValueQuery = async (widget, project) => {
 const bucketForInterval = (dateField, interval) => {
   switch (interval) {
     case '5m': return { $dateTrunc: { date: dateField, unit: 'minute', binSize: 5 } };
+    case '10m': return { $dateTrunc: { date: dateField, unit: 'minute', binSize: 10 } };
+    case '15m': return { $dateTrunc: { date: dateField, unit: 'minute', binSize: 15 } };
+    case '30m': return { $dateTrunc: { date: dateField, unit: 'minute', binSize: 30 } };
     case '1h': return { $dateTrunc: { date: dateField, unit: 'hour' } };
     case '1d': return { $dateTrunc: { date: dateField, unit: 'day' } };
     default: return { $dateTrunc: { date: dateField, unit: 'hour' } };
   }
 }
+
+/**
+ * 
+ * @param {*} isoString 
+ * @param {*} interval 
+ * @returns 
+ */
+const formatTimeLabel = (isoString, interval) => {
+  const date = new Date(isoString);
+
+  switch (interval) {
+    case '5m':
+    case '10m':
+    case '15m':
+    case '30m':
+    case '1h':
+      // Show time only: "14:30"
+      return date.toLocaleTimeString('en-US', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false
+      });
+
+    case '1d':
+      // Show date: "Jan 10"
+      return date.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric'
+      });
+
+    default:
+      // Default to date + time: "Jan 10, 14:30"
+      return date.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+  }
+};
 
 /**
  * 
@@ -597,85 +640,72 @@ const executeLineChartQuery = async (widget, project) => {
   const interval = widget.config?.groupByTime || '1h';
   const bucket = bucketForInterval('$createdAt', interval);
 
-  // NEW: Determine what to aggregate
-  const metric = widget.config?.metric; // e.g., "count", "avg:data.cpu_usage_percent", "sum:data.amount"
-
-  let aggregateExpr;
+  const metric = widget.config?.metric;
 
   if (!metric || metric === 'count') {
-    // Count logs per bucket (original behavior)
-    aggregateExpr = { value: { $sum: 1 } };
-  } else {
-    // Parse metric like "avg:data.cpu_usage_percent" or "sum:data.amount"
-    const [operation, fieldPath] = metric.split(':');
-
-    if (!fieldPath) {
-      throw HttpError(INVALID_INPUT_ERR_CODE, 'Metric must be "count" or "operation:field" (e.g., "avg:data.cpu_usage_percent")');
-    }
-
-    // Check if field is in rawIndexes
-    const isRaw = project?.settings?.rawIndexes?.includes(fieldPath);
-    if (!isRaw) {
-      throw HttpError(INVALID_INPUT_ERR_CODE, `Field "${fieldPath}" must be in project rawIndexes for aggregation`);
-    }
-
-    const rawKey = `raw.${fieldPath.replace(/\./g, '_')}`;
-
-    // Need to lookup the actual log document to get raw values
-    // Strategy: For line charts with field aggregation, we need to join logstamp -> log
-
-    // Actually, logstamp doesn't have the raw values, only the key and level
-    // We need to query the log collection instead for field-based metrics
-    const { log } = await getLogModel(project.id);
-
-    let groupExpr;
-    switch (operation) {
-      case 'sum':
-        groupExpr = { value: { $sum: `$${rawKey}` } };
-        break;
-      case 'avg':
-        groupExpr = { value: { $avg: `$${rawKey}` } };
-        break;
-      case 'min':
-        groupExpr = { value: { $min: `$${rawKey}` } };
-        break;
-      case 'max':
-        groupExpr = { value: { $max: `$${rawKey}` } };
-        break;
-      case 'count':
-        groupExpr = { value: { $sum: '$count' } }; // Sum of occurrences
-        break;
-      default:
-        throw HttpError(INVALID_INPUT_ERR_CODE, `Unknown operation: ${operation}. Use sum, avg, min, max, or count`);
-    }
-
-    // Query log collection with time bucketing
+    // Count logs per bucket (using logstamp)
     const pipeline = [
-      { $match: { ...match, updatedAt: buildTimeRangeFilter(timeRange) } }, // Use updatedAt for logs
-      { $group: { _id: bucketForInterval('$updatedAt', interval), ...groupExpr } },
+      { $match: match },
+      { $group: { _id: bucket, value: { $sum: 1 } } },
       { $sort: { _id: 1 } },
       { $project: { label: '$_id', value: 1, _id: 0 } }
     ];
 
-    const res = await log.aggregate(pipeline);
-    const labels = res.map(r => r.label);
-    const values = res.map(r => r.value || 0);
-    return updateWidgetDataCache(widget.id, { labels, values });
+    const res = await logstamp.aggregate(pipeline);
+    const labels = res.map(r => formatTimeLabel(r.label, interval));
+    const values = res.map(r => r.value);
+    return { labels, values };
   }
 
-  // Original count-based logic (using logstamp)
+  // Field-based metrics (sum/avg/min/max)
+  const [operation, fieldPath] = metric.split(':');
+
+  if (!fieldPath) {
+    throw HttpError(INVALID_INPUT_ERR_CODE, 'Metric must be "count" or "operation:field"');
+  }
+
+  const isRaw = project?.settings?.rawIndexes?.includes(fieldPath);
+  if (!isRaw) {
+    throw HttpError(INVALID_INPUT_ERR_CODE, `Field "${fieldPath}" must be in project rawIndexes`);
+  }
+
+  const { log } = await getLogModel(project.id);
+  const rawKey = `raw.${fieldPath.replace(/\./g, '_')}`;
+
+  let groupExpr;
+  switch (operation) {
+    case 'sum':
+      groupExpr = { value: { $sum: `$${rawKey}` } };
+      break;
+    case 'avg':
+      groupExpr = { value: { $avg: `$${rawKey}` } };
+      break;
+    case 'min':
+      groupExpr = { value: { $min: `$${rawKey}` } };
+      break;
+    case 'max':
+      groupExpr = { value: { $max: `$${rawKey}` } };
+      break;
+    case 'count':
+      groupExpr = { value: { $sum: '$count' } };
+      break;
+    default:
+      throw HttpError(INVALID_INPUT_ERR_CODE, `Unknown operation: ${operation}`);
+  }
+
   const pipeline = [
-    { $match: match },
-    { $group: { _id: bucket, ...aggregateExpr } },
+    { $match: { ...match, updatedAt: buildTimeRangeFilter(timeRange) } },
+    { $group: { _id: bucketForInterval('$updatedAt', interval), ...groupExpr } },
     { $sort: { _id: 1 } },
     { $project: { label: '$_id', value: 1, _id: 0 } }
   ];
 
-  const res = await logstamp.aggregate(pipeline);
-  const labels = res.map(r => r.label);
-  const values = res.map(r => r.value);
+  const res = await log.aggregate(pipeline);
+  const labels = res.map(r => formatTimeLabel(r.label, interval));
+  const values = res.map(r => r.value || 0);
   return { labels, values };
 }
+
 
 /**
  * 
