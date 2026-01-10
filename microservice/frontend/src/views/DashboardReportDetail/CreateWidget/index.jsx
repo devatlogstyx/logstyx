@@ -146,6 +146,9 @@ const CreateWidget = ({
                                 onChange={(v) => form.setFieldValue('config', { ...form.values.config, groupByTime: v })}
                                 data={[
                                     { value: '5m', label: '5 Minutes' },
+                                    { value: '10m', label: '10 Minutes' },
+                                    { value: '15m', label: '15 Minutes' },
+                                    { value: '30m', label: '30 Minutes' },
                                     { value: '1h', label: '1 Hour' },
                                     { value: '1d', label: '1 Day' },
                                 ]}
@@ -338,7 +341,10 @@ const CreateWidget = ({
                         onChange={(v) => form.setFieldValue('config', { ...form.values.config, timeRange: v })}
                         data={[
                             { value: 'last_1h', label: 'Last Hour' },
+                            { value: 'last_6h', label: 'Last 6 Hours' },
+                            { value: 'last_12h', label: 'Last 12 Hours' },
                             { value: 'last_24h', label: 'Last 24 Hours' },
+                            { value: 'last_3d', label: 'Last 3 Days' },
                             { value: 'last_7d', label: 'Last 7 Days' },
                             { value: 'last_30d', label: 'Last 30 Days' },
                         ]}

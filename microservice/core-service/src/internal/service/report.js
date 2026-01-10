@@ -485,8 +485,14 @@ const buildTimeRangeFilter = (timeRange) => {
   switch (timeRange) {
     case 'last_1h':
       ms = 60 * 60 * 1000; break;
+    case 'last_6h':
+      ms = 6 * 60 * 60 * 1000; break;
+    case 'last_12h':
+      ms = 12 * 60 * 60 * 1000; break;
     case 'last_24h':
       ms = 24 * 60 * 60 * 1000; break;
+    case 'last_3d':
+      ms = 3 * 24 * 60 * 60 * 1000; break;
     case 'last_7d':
       ms = 7 * 24 * 60 * 60 * 1000; break;
     case 'last_30d':

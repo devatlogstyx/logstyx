@@ -13,7 +13,9 @@ const { updateProjectCache, getProjectFromCache } = require("../../shared/cache"
 const { mapProjectUser, mapProject } = require("../utils/mapper");
 const { validateCustomIndex, getLogModel, isRecent } = require("../utils/helper");
 const { initLogger } = require("./../utils/helper");
-const moment = require("moment-timezone")
+const moment = require("moment-timezone");
+const probeModel = require("../model/probe.model");
+const widgetModel = require("../model/widget.model");
 
 const generateUniqueSlug = async (baseSlug) => {
     let slug = baseSlug
@@ -244,7 +246,10 @@ const removeProject = async (id) => {
         projectModel.findByIdAndDelete(id),
         projectUserModel.deleteMany({ project: projectObjId, }),
         log.collection.drop(),
-        logstamp.collection.drop()
+        logstamp.collection.drop(),
+        probeModel.deleteMany({ project: projectObjId }),
+        widgetModel.deleteMany({ project: projectObjId })
+
     ])
 
     return null
