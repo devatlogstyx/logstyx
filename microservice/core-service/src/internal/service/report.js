@@ -2,13 +2,15 @@
 const mongoose = require("mongoose");
 const { Validator } = require("node-input-validator");
 const { HttpError, createSlug, parseSortBy, num2Ceil, num2Floor, hashString } = require("common/function");
-const { getProjectFromCache } = require("../../shared/cache");
+const { getProjectFromCache, getWidgetFromCache, getReportFromCache, updateWidgetDataCache, updateWidgetCache, updateReportCache } = require("../../shared/cache");
 const reportModel = require("../model/report.model");
 const widgetModel = require("../model/widget.model");
 const projectModel = require("../model/project.model");
 const { getLogModel } = require("../utils/helper");
 const { decryptAndDecompress } = require("common/function");
-const { NOT_FOUND_ERR_CODE, NOT_FOUND_ERR_MESSAGE, INVALID_INPUT_ERR_CODE, FORBIDDEN_ERR_CODE, WIDGET_TEMPLATES, PRIVATE_REPORT_VISIBILITY } = require("common/constant");
+const { NOT_FOUND_ERR_CODE, NOT_FOUND_ERR_MESSAGE, INVALID_INPUT_ERR_CODE, FORBIDDEN_ERR_CODE, WIDGET_TEMPLATES, PRIVATE_REPORT_VISIBILITY, WIDGET_CACHE_KEY } = require("common/constant");
+const { isValidObjectId } = require("../../shared/mongoose");
+const { submitRemoveCache } = require("../../shared/provider/mq-producer");
 
 const { ObjectId } = mongoose.Types;
 
@@ -23,14 +25,86 @@ const validateWidgetConfig = (template, config) => {
   const def = WIDGET_TEMPLATES[template];
   if (!def) return false;
   if (!config || typeof config !== 'object') return false;
+
+  // Check required config fields
   for (const key of def.requiredConfig) {
-    if (config[key] === undefined || config[key] === null || (typeof config[key] === 'string' && !config[key])) return false;
+    if (config[key] === undefined || config[key] === null || (typeof config[key] === 'string' && !config[key])) {
+      return false;
+    }
   }
+
+  // Template-specific validation
   if (template === 'total_value') {
     const op = String(config.operation || '');
     if (!def.operations.includes(op)) return false;
-    if (["sum", "avg", "min", "max"].includes(op) && !config.field) return false;
+    // Requires field for aggregation operations
+    if (["sum", "avg", "min", "max", "latest", "first"].includes(op) && !config.field) {
+      return false;
+    }
   }
+
+  if (template === 'line_chart') {
+    const metric = config.metric;
+    if (!metric) return false;
+
+    // If metric is not "count", it must be "operation:field"
+    if (metric !== 'count') {
+      const parts = metric.split(':');
+      if (parts.length !== 2 || !parts[1]) {
+        return false;
+      }
+      const [op, field] = parts;
+      if (!['sum', 'avg', 'min', 'max'].includes(op)) {
+        return false;
+      }
+    }
+  }
+
+  if (template === 'bar_chart') {
+    const metric = config.metric;
+    if (!metric) return false;
+
+    // If metric is not "count", validate format
+    if (metric !== 'count') {
+      const parts = metric.split(':');
+      if (parts.length !== 2 || !parts[1]) {
+        return false;
+      }
+      const [op, field] = parts;
+      if (!['sum', 'avg', 'min', 'max'].includes(op)) {
+        return false;
+      }
+    }
+
+    // groupBy is required
+    if (!config.groupBy) return false;
+  }
+
+  if (template === 'pie_chart') {
+    // groupBy is required
+    if (!config.groupBy) return false;
+
+    // metric validation (optional, defaults to count)
+    const metric = config.metric;
+    if (metric && metric !== 'count') {
+      const parts = metric.split(':');
+      if (parts.length !== 2 || !parts[1]) {
+        return false;
+      }
+      const [op, field] = parts;
+      if (!['sum', 'avg'].includes(op)) {
+        return false;
+      }
+    }
+  }
+
+  if (template === 'table') {
+    // columns must be an array with at least one column
+    if (!Array.isArray(config.columns) || config.columns.length === 0) {
+      return false;
+    }
+  }
+
   return true;
 }
 
@@ -64,7 +138,7 @@ const createReport = async (userId, params) => {
     slug,
     createdBy: ObjectId.createFromHexString(userId)
   });
-  return report.toJSON();
+  return updateReportCache(report?._id?.toString());
 }
 
 /**
@@ -122,7 +196,22 @@ const getReportBySlug = async (slug) => {
 
 /**
  * 
- * @param {string} userId 
+ * @param {string} id 
+ * @returns 
+ */
+const findReportById = async (id) => {
+  if (!isValidObjectId(id)) {
+    return null
+  }
+
+  const rpt = await getReportFromCache(id)
+  if (!rpt) return null;
+
+  return rpt;
+}
+
+/**
+ * 
  * @param {*} id 
  * @param {*} params 
  * @returns 
@@ -149,8 +238,8 @@ const updateReport = async (id, params) => {
   if (params.title) payload.slug = createSlug(params.title);
 
   await reportModel.findByIdAndUpdate(id, { $set: payload });
-  const updated = await reportModel.findById(id);
-  return updated?.toJSON();
+
+  return updateReportCache(id)
 }
 
 /**
@@ -159,15 +248,23 @@ const updateReport = async (id, params) => {
  * @returns 
  */
 const deleteReport = async (id) => {
-  const rpt = await reportModel.findById(id);
+  if (!isValidObjectId(id)) {
+    throw HttpError(INVALID_INPUT_ERR_CODE, `Invalid id`)
+  }
+
+  const rpt = await getReportFromCache(id);
   if (!rpt) throw HttpError(NOT_FOUND_ERR_CODE, NOT_FOUND_ERR_MESSAGE);
 
   const session = await mongoose.startSession();
   session.startTransaction();
   try {
-    await widgetModel.deleteMany({ report: rpt._id }).session(session);
+    await widgetModel.deleteMany({ report: new ObjectId(rpt?.id) }).session(session);
     await reportModel.findByIdAndDelete(id).session(session);
     await session.commitTransaction();
+    submitRemoveCache({
+      key: WIDGET_CACHE_KEY,
+      id: rpt?.id,
+    })
   } catch (e) {
     await session.abortTransaction();
     throw e;
@@ -220,7 +317,24 @@ const createWidget = async (reportId, payload) => {
     description: payload?.description,
     config: payload.config
   });
-  return created.toJSON();
+  return updateWidgetCache(created?._id?.toString());
+}
+
+/**
+ * 
+ * @param {*} id 
+ */
+const findWidgetById = async (id) => {
+  if (!isValidObjectId(id)) {
+    return null
+  }
+
+  const widget = await getWidgetFromCache(id)
+  if (!widget) {
+    return null
+  }
+
+  return widget
 }
 
 /**
@@ -257,9 +371,9 @@ const listWidgets = async (report, includeProjectInfo = false) => {
  * @returns 
  */
 const updateWidget = async (widgetId, payload) => {
-  const w = await widgetModel.findById(widgetId);
+  const w = await getWidgetFromCache(widgetId)
   if (!w) throw HttpError(NOT_FOUND_ERR_CODE, NOT_FOUND_ERR_MESSAGE);
-  const rpt = await reportModel.findById(w.report);
+  const rpt = await getReportFromCache(w.report?.toString());
   if (!rpt) throw HttpError(NOT_FOUND_ERR_CODE, NOT_FOUND_ERR_MESSAGE);
 
   // @ts-ignore
@@ -278,8 +392,8 @@ const updateWidget = async (widgetId, payload) => {
   if (payload.project) update.project = ObjectId.createFromHexString(payload.project);
 
   await widgetModel.findByIdAndUpdate(widgetId, { $set: update });
-  const updated = await widgetModel.findById(widgetId);
-  return updated?.toJSON();
+
+  return updateWidgetCache(widgetId)
 }
 
 /**
@@ -288,11 +402,23 @@ const updateWidget = async (widgetId, payload) => {
  * @returns 
  */
 const deleteWidget = async (widgetId) => {
-  const w = await widgetModel.findById(widgetId);
+  if (!isValidObjectId(widgetId)) {
+    throw HttpError(INVALID_INPUT_ERR_CODE, `Invalid id`)
+  }
+
+  const w = await getWidgetFromCache(widgetId)
   if (!w) throw HttpError(NOT_FOUND_ERR_CODE, NOT_FOUND_ERR_MESSAGE);
-  const rpt = await reportModel.findById(w.report);
+
+  const rpt = await getReportFromCache(w?.report?.toString());
   if (!rpt) throw HttpError(NOT_FOUND_ERR_CODE, NOT_FOUND_ERR_MESSAGE);
+
   await widgetModel.findByIdAndDelete(widgetId);
+
+  submitRemoveCache({
+    key: WIDGET_CACHE_KEY,
+    id: widgetId,
+  })
+
   return true;
 }
 
@@ -437,7 +563,8 @@ const executeTotalValueQuery = async (widget, project) => {
     { $project: { _id: 0, value: 1 } }
   ]);
 
-  return { value: res?.[0]?.value || 0 };
+  return updateWidgetDataCache(widget.id, { value: res?.[0]?.value || 0 });
+  ;
 }
 
 /**
@@ -533,7 +660,7 @@ const executeLineChartQuery = async (widget, project) => {
     const res = await log.aggregate(pipeline);
     const labels = res.map(r => r.label);
     const values = res.map(r => r.value || 0);
-    return { labels, values };
+    return updateWidgetDataCache(widget.id, { labels, values });
   }
 
   // Original count-based logic (using logstamp)
@@ -646,13 +773,18 @@ const executeBarChartQuery = async (widget, project) => {
 
   const res = await log.aggregate(pipeline);
 
-  return {
+  return updateWidgetDataCache(widget.id, {
     labels: res.map(r => r._id || 'unknown'),
     values: res.map(r => r.value || 0)
-  };
+  });
 }
 
-
+/**
+ * 
+ * @param {*} widget 
+ * @param {*} project 
+ * @returns 
+ */
 const executeTableQuery = async (widget, project) => {
   const { log } = await getLogModel(project.id);
   const filters = buildMongoQuery(widget.config?.filters || {}, project);
@@ -680,7 +812,7 @@ const executeTableQuery = async (widget, project) => {
     }
     rows.push(row);
   }
-  return { rows };
+  return updateWidgetDataCache(widget.id, { rows });
 }
 
 /**
@@ -745,12 +877,17 @@ const executePieChartQuery = async (widget, project) => {
 
   const res = await log.aggregate(pipeline);
 
-  return {
+  return updateWidgetDataCache(widget.id, {
     labels: res.map(r => r._id || 'unknown'),
     values: res.map(r => r.value || 0)
-  };
+  })
 }
 
+/**
+ * 
+ * @param {*} widget 
+ * @returns 
+ */
 const executeWidgetQuery = async (widget) => {
   const project = await getProjectFromCache(widget.project?.toString?.() || widget.project);
   if (!project) throw HttpError(NOT_FOUND_ERR_CODE, NOT_FOUND_ERR_MESSAGE);
@@ -770,26 +907,6 @@ const executeWidgetQuery = async (widget) => {
   }
 }
 
-const WidgetDataCache = new Map();
-const getCachedWidgetData = (widgetId) => {
-  const cached = WidgetDataCache.get(String(widgetId));
-  if (!cached) return null;
-  const { ts, data } = cached;
-  if (Date.now() - ts > 60 * 1000) {
-    WidgetDataCache.delete(String(widgetId));
-    return null;
-  }
-  return data;
-}
-
-/**
- * 
- * @param {string} widgetId 
- * @param {*} data 
- */
-const setCachedWidgetData = (widgetId, data) => {
-  WidgetDataCache.set(String(widgetId), { ts: Date.now(), data });
-}
 
 module.exports = {
   WIDGET_TEMPLATES,
@@ -804,6 +921,6 @@ module.exports = {
   updateWidget,
   deleteWidget,
   executeWidgetQuery,
-  getCachedWidgetData,
-  setCachedWidgetData,
+  findWidgetById,
+  findReportById
 };

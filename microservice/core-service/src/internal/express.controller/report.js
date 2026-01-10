@@ -14,23 +14,22 @@ const {
   PRIVATE_REPORT_VISIBILITY,
 } = require("common/constant");
 
-const reportModel = require("../model/report.model");
-const widgetModel = require("../model/widget.model");
 const {
   createReport,
   paginateReports,
   getReportBySlug,
   updateReport,
   deleteReport,
-  isReportPublic,
   createWidget,
   listWidgets,
   updateWidget,
   deleteWidget,
   executeWidgetQuery,
-  getCachedWidgetData,
-  setCachedWidgetData,
+  findWidgetById,
+  findReportById,
+
 } = require("../service/report");
+const { getWidgetDataCache, updateWidgetDataCache } = require("../../shared/cache");
 
 module.exports = {
   /**
@@ -115,7 +114,7 @@ module.exports = {
    * @param {*} res 
    */
   async WidgetList(req, res) {
-    const report = await reportModel.findById(req.params.reportId);
+    const report = await findReportById(req.params.reportId);
     if (!report) throw HttpError(NOT_FOUND_ERR_CODE, NOT_FOUND_ERR_MESSAGE);
     if (report.visibility === PRIVATE_REPORT_VISIBILITY) {
       if (!req?.user) {
@@ -162,17 +161,19 @@ module.exports = {
         throw HttpError(FORBIDDEN_ERR_CODE, NO_ACCESS_ERR_MESSAGE);
       }
     }
-    const widget = await widgetModel.findById(req.params.widgetId);
-    if (!widget || widget.report?.toString() !== (report.id || report._id?.toString())) {
+
+    const widget = await findWidgetById(req.params.widgetId);
+    if (!widget || widget.report?.toString() !== report.id) {
       throw HttpError(NOT_FOUND_ERR_CODE, NOT_FOUND_ERR_MESSAGE);
     }
-    const cached = getCachedWidgetData(widget._id?.toString());
-    if (cached) {
-      HttpResponse(res).json({ error: SUCCESS_ERR_CODE, message: SUCCESS_ERR_MESSAGE, data: cached });
+
+    const cachedData = await getWidgetDataCache(widget?.id);
+    if (cachedData) {
+      HttpResponse(res).json({ error: SUCCESS_ERR_CODE, message: SUCCESS_ERR_MESSAGE, data: cachedData });
       return;
     }
-    const data = await executeWidgetQuery(widget.toJSON());
-    setCachedWidgetData(widget._id?.toString(), data);
+
+    const data = await executeWidgetQuery(widget);
     HttpResponse(res).json({ error: SUCCESS_ERR_CODE, message: SUCCESS_ERR_MESSAGE, data });
   },
 }
