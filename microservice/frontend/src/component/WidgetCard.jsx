@@ -105,7 +105,7 @@ export default function WidgetCard({ widget, slug, onDeleteWidget, onEditWidget,
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={data.labels.map((label, i) => ({
                       name: label,
-                      value: data.values[i]
+                      value: data.values[i]?.toFixed(2)
                     }))}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                       <XAxis dataKey="name" tick={{ fontSize: 12 }} />
