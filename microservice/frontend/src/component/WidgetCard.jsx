@@ -33,7 +33,7 @@ export default function WidgetCard({ widget, slug, onDeleteWidget, onEditWidget,
         <div>
           <div className="font-semibold text-gray-900">{widget.title}</div>
           <div className="text-xs text-gray-500 mt-0.5">
-            {widget.project?.title || 'Unknown Project'}
+            {widget.description}
           </div>
         </div>
         <div className="flex gap-1">

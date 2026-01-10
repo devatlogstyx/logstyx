@@ -15,6 +15,7 @@ export function useDashboardReportDetail() {
     template: 'total_value',
     title: '',
     project: '',
+    description: "",
     config: { operation: 'count', filters: [] }
   };
 
@@ -41,10 +42,10 @@ export function useDashboardReportDetail() {
       project: values.project,
       template: values.template,
       title: values.title || `${values.template}`,
-      position: {},
+      description: values.description,
       config: values.config
     });
-    setReport({ ...report, widgets: [...(report.widgets||[]), created] });
+    setReport({ ...report, widgets: [...(report.widgets || []), created] });
     form.setValues(initialValues);
     setModalOpened(false);
   });
@@ -68,14 +69,14 @@ export function useDashboardReportDetail() {
         try {
           const ctrl = new AbortController();
           await deleteWidget(ctrl.signal, widgetId);
-          setReport({ ...report, widgets: (report.widgets||[]).filter(w => w.id !== widgetId) });
+          setReport({ ...report, widgets: (report.widgets || []).filter(w => w.id !== widgetId) });
         } catch (err) {
           setDeleteError(err?.message || 'Failed to delete');
         } finally {
           setDeletingId(null);
         }
       },
-      onCancel: () => {}
+      onCancel: () => { }
     });
   };
 

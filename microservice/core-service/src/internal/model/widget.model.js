@@ -23,11 +23,8 @@ const widgetSchema = new mongoose.Schema({
     required: true,
     maxLength: 128
   },
-  position: {
-    x: { type: Number, default: 0 },
-    y: { type: Number, default: 0 },
-    w: { type: Number, default: 4 },
-    h: { type: Number, default: 2 }
+  description: {
+    type: String,
   },
   config: {
     type: mongoose.Schema.Types.Mixed,

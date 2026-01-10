@@ -199,7 +199,7 @@ const createWidget = async (reportId, payload) => {
     project: "required|string",
     template: "required|string|in:total_value,line_chart,bar_chart,table,pie_chart",
     title: "required|string|minLength:1|maxLength:128",
-    position: "object",
+    description: "string",
     config: "required|object"
   });
   const ok = await v.check();
@@ -217,7 +217,7 @@ const createWidget = async (reportId, payload) => {
     project: ObjectId.createFromHexString(payload.project),
     template: payload.template,
     title: payload.title,
-    position: payload.position || {},
+    description: payload?.description,
     config: payload.config
   });
   return created.toJSON();
@@ -272,7 +272,7 @@ const updateWidget = async (widgetId, payload) => {
 
   const update = {};
   if (payload.title !== undefined) update.title = payload.title;
-  if (payload.position !== undefined) update.position = payload.position;
+  if (payload.description !== undefined) update.description = payload.description;
   if (payload.template !== undefined) update.template = payload.template;
   if (payload.config !== undefined) update.config = payload.config;
   if (payload.project) update.project = ObjectId.createFromHexString(payload.project);

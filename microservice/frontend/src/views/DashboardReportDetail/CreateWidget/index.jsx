@@ -1,6 +1,6 @@
 //@ts-check
 
-import { Modal, Select, TextInput, Button, NumberInput, MultiSelect } from "@mantine/core"
+import { Modal, Select, TextInput, Button, NumberInput, MultiSelect, Textarea } from "@mantine/core"
 import FilterBuilder from "../../../component/FilterBuilder"
 import PrimaryButton from "../../../component/button/PrimaryButton"
 import SecondaryButton from "../../../component/button/SecondaryButton";
@@ -41,6 +41,11 @@ const CreateWidget = ({
                         {...form.getInputProps('title')}
                         placeholder="e.g., Total Errors (24h)"
                         required
+                    />
+                    <Textarea
+                        label="Description"
+                        {...form.getInputProps('description')}
+                        placeholder="Description"
                     />
 
                     {/* Project Selection */}
@@ -112,7 +117,7 @@ const CreateWidget = ({
                                             { value: 'min', label: 'Min' },
                                             { value: 'max', label: 'Max' },
                                         ]}
-                                        className="w-1/3" 
+                                        className="w-1/3"
                                     />
 
                                     {form.values.config.metricOp !== 'count' && (
@@ -129,7 +134,7 @@ const CreateWidget = ({
                                                 label: idx
                                             })) || []}
                                             searchable
-                                            className="w-1/3" 
+                                            className="w-1/3"
                                         />
                                     )}
                                 </div>
@@ -170,7 +175,7 @@ const CreateWidget = ({
                                             { value: 'min', label: 'Min' },
                                             { value: 'max', label: 'Max' },
                                         ]}
-                                        className="w-1/3" 
+                                        className="w-1/3"
 
                                     />
 
@@ -188,7 +193,7 @@ const CreateWidget = ({
                                                 label: idx
                                             })) || []}
                                             searchable
-                                            className="w-1/3" 
+                                            className="w-1/3"
                                         />
                                     )}
                                 </div>
@@ -241,7 +246,7 @@ const CreateWidget = ({
                                             { value: 'sum', label: 'Sum' },
                                             { value: 'avg', label: 'Average' },
                                         ]}
-                                        className="w-1/3" 
+                                        className="w-1/3"
                                     />
 
                                     {form.values.config.metricOp && form.values.config.metricOp !== 'count' && (
@@ -258,7 +263,7 @@ const CreateWidget = ({
                                                 label: idx
                                             })) || []}
                                             searchable
-                                            className="w-1/3" 
+                                            className="w-1/3"
                                         />
                                     )}
                                 </div>
