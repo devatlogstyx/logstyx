@@ -20,7 +20,7 @@ const CreateWidget = ({
         <>
             <PrimaryButton onClick={() => (setModalOpened ? setModalOpened(true) : (onClose && onClose()))}>Create Widget</PrimaryButton>
 
-            <Modal opened={modalOpened} onClose={() => (setModalOpened ? setModalOpened(false) : (onClose && onClose()))} title="Add Widget" centered size="lg">
+            <Modal opened={modalOpened} onClose={() => (setModalOpened ? setModalOpened(false) : (onClose && onClose()))} title="Manage Widget" centered size="lg">
                 <form onSubmit={onAddWidget} className="space-y-4">
                     {/* Template Selection */}
                     <Select
