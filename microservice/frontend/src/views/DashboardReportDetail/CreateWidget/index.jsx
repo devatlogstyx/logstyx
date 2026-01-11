@@ -150,6 +150,7 @@ const CreateWidget = ({
                                 value={form.values.config.groupByTime || '1h'}
                                 onChange={(v) => form.setFieldValue('config', { ...form.values.config, groupByTime: v })}
                                 data={[
+                                    { value: 'none', label: 'No Grouping (Raw Data)' },
                                     { value: '5m', label: '5 Minutes' },
                                     { value: '10m', label: '10 Minutes' },
                                     { value: '15m', label: '15 Minutes' },

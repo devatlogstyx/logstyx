@@ -650,12 +650,30 @@ const executeLineChartQuery = async (widget, project) => {
   const filters = buildMongoQuery(widget.config?.filters || {}, project);
   const match = { ...timeMatch, ...filters };
   const interval = widget.config?.groupByTime || '1h';
-  const bucket = bucketForInterval('$createdAt', interval);
+
+  // Check if grouping is disabled
+  const noGrouping = widget.config?.groupByTime === 'none';
+
+  const bucket = noGrouping ? '$createdAt' : bucketForInterval('$createdAt', interval);
 
   const metric = widget.config?.metric;
 
   if (!metric || metric === 'count') {
-    // Count logs per bucket (using logstamp)
+    if (noGrouping) {
+      // Return individual log counts without grouping
+      const pipeline = [
+        { $match: match },
+        { $sort: { createdAt: 1 } },
+        { $project: { label: '$createdAt', value: { $literal: 1 }, _id: 0 } }
+      ];
+
+      const res = await logstamp.aggregate(pipeline);
+      const labels = res.map(r => formatTimeLabel(r.label, 'raw')); // or just r.label for raw timestamps
+      const values = res.map(r => r.value);
+      return { labels, values };
+    }
+
+    // Original grouped count logic
     const pipeline = [
       { $match: match },
       { $group: { _id: bucket, value: { $sum: 1 } } },
@@ -684,6 +702,21 @@ const executeLineChartQuery = async (widget, project) => {
   const { log } = await getLogModel(project.id);
   const rawKey = `raw.${fieldPath.replace(/\./g, '_')}`;
 
+  if (noGrouping) {
+    // Return individual field values without grouping
+    const pipeline = [
+      { $match: { ...match, updatedAt: buildTimeRangeFilter(timeRange) } },
+      { $sort: { updatedAt: 1 } },
+      { $project: { label: '$updatedAt', value: `$${rawKey}`, _id: 0 } }
+    ];
+
+    const res = await log.aggregate(pipeline);
+    const labels = res.map(r => formatTimeLabel(r.label, 'raw'));
+    const values = res.map(r => r.value || 0);
+    return { labels, values };
+  }
+
+  // Original grouped field metrics logic
   let groupExpr;
   switch (operation) {
     case 'sum':
