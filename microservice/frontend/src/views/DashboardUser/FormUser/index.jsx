@@ -69,7 +69,7 @@ const FormUser = ({
                     disabled={isSubmitting}
                     loading={isSubmitting}
                 >
-                    Send Invite
+                    Submit
                 </PrimaryButton>
             </div>
         </form>

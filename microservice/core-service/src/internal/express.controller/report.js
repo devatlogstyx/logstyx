@@ -12,6 +12,8 @@ const {
   NOT_FOUND_ERR_MESSAGE,
   FORBIDDEN_ERR_CODE,
   PRIVATE_REPORT_VISIBILITY,
+  WRITE_REPORT_USER_ROLE,
+  READ_REPORT_USER_ROLE,
 } = require("common/constant");
 
 const {
@@ -30,6 +32,7 @@ const {
 
 } = require("../service/report");
 const { getWidgetDataCache, updateWidgetDataCache } = require("../../shared/cache");
+const { canUserDo } = require("../../shared/provider/auth.service");
 
 module.exports = {
   /**
@@ -41,6 +44,12 @@ module.exports = {
     if (!req?.user) {
       throw HttpError(NO_ACCESS_ERR_CODE, NO_ACCESS_ERR_MESSAGE);
     }
+
+    const haveWriteAccess = await canUserDo(req?.user?.id, WRITE_REPORT_USER_ROLE)
+    if (!haveWriteAccess) {
+      throw HttpError(FORBIDDEN_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
+    }
+
     const data = await createReport(req.user.id, req.body || {});
     HttpResponse(res).json({ error: SUCCESS_ERR_CODE, message: SUCCESS_ERR_MESSAGE, data });
   },
@@ -53,6 +62,12 @@ module.exports = {
     if (!req?.user) {
       throw HttpError(NO_ACCESS_ERR_CODE, NO_ACCESS_ERR_MESSAGE);
     }
+
+    const haveWriteAccess = await canUserDo(req?.user?.id, READ_REPORT_USER_ROLE)
+    if (!haveWriteAccess) {
+      throw HttpError(FORBIDDEN_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
+    }
+
     const { search, visibility, sortBy, page, limit } = req.query || {};
     const data = await paginateReports({ search, visibility }, sortBy, limit, page);
     HttpResponse(res).json({ error: SUCCESS_ERR_CODE, message: SUCCESS_ERR_MESSAGE, data });
@@ -82,6 +97,12 @@ module.exports = {
 
   async ReportUpdate(req, res) {
     if (!req?.user) throw HttpError(NO_ACCESS_ERR_CODE, NO_ACCESS_ERR_MESSAGE);
+
+    const haveWriteAccess = await canUserDo(req?.user?.id, WRITE_REPORT_USER_ROLE)
+    if (!haveWriteAccess) {
+      throw HttpError(FORBIDDEN_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
+    }
+
     const data = await updateReport(req.params.id, req.body || {});
     HttpResponse(res).json({ error: SUCCESS_ERR_CODE, message: SUCCESS_ERR_MESSAGE, data });
   },
@@ -93,6 +114,12 @@ module.exports = {
    */
   async ReportRemove(req, res) {
     if (!req?.user) throw HttpError(NO_ACCESS_ERR_CODE, NO_ACCESS_ERR_MESSAGE);
+
+    const haveWriteAccess = await canUserDo(req?.user?.id, WRITE_REPORT_USER_ROLE)
+    if (!haveWriteAccess) {
+      throw HttpError(FORBIDDEN_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
+    }
+
     await deleteReport(req.params.id);
     HttpResponse(res).json({ error: SUCCESS_ERR_CODE, message: SUCCESS_ERR_MESSAGE });
   },
@@ -104,6 +131,12 @@ module.exports = {
    */
   async WidgetCreate(req, res) {
     if (!req?.user) throw HttpError(NO_ACCESS_ERR_CODE, NO_ACCESS_ERR_MESSAGE);
+
+    const haveWriteAccess = await canUserDo(req?.user?.id, WRITE_REPORT_USER_ROLE)
+    if (!haveWriteAccess) {
+      throw HttpError(FORBIDDEN_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
+    }
+
     const data = await createWidget(req.params.reportId, req.body || {});
     HttpResponse(res).json({ error: SUCCESS_ERR_CODE, message: SUCCESS_ERR_MESSAGE, data });
   },
@@ -132,6 +165,12 @@ module.exports = {
    */
   async WidgetUpdate(req, res) {
     if (!req?.user) throw HttpError(NO_ACCESS_ERR_CODE, NO_ACCESS_ERR_MESSAGE);
+
+    const haveWriteAccess = await canUserDo(req?.user?.id, WRITE_REPORT_USER_ROLE)
+    if (!haveWriteAccess) {
+      throw HttpError(FORBIDDEN_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
+    }
+
     const data = await updateWidget(req.params.id, req.body || {});
     HttpResponse(res).json({ error: SUCCESS_ERR_CODE, message: SUCCESS_ERR_MESSAGE, data });
   },
@@ -143,6 +182,12 @@ module.exports = {
    */
   async WidgetRemove(req, res) {
     if (!req?.user) throw HttpError(NO_ACCESS_ERR_CODE, NO_ACCESS_ERR_MESSAGE);
+
+    const haveWriteAccess = await canUserDo(req?.user?.id, WRITE_REPORT_USER_ROLE)
+    if (!haveWriteAccess) {
+      throw HttpError(FORBIDDEN_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
+    }
+
     await deleteWidget(req.params.id);
     HttpResponse(res).json({ error: SUCCESS_ERR_CODE, message: SUCCESS_ERR_MESSAGE });
   },

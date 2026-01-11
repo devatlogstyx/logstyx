@@ -5,7 +5,7 @@ import { FiEdit, FiPlus, FiTrash2 } from "react-icons/fi"
 import AddUser from "../AddUser"
 import useTabUser from "./hook"
 import { useUser } from "../../../context/useUser"
-import { WRITE_PROJECT_USER_ROLE } from "../../../utils/constant"
+import { WRITE_PROJECT_ROLE } from "../../../utils/constant"
 import moment from "moment-timezone"
 
 const {
@@ -73,7 +73,7 @@ const TabUser = ({
                                     <div className="flex gap-2">
                                         {
                                             user?.id !== currentUser?.id &&
-                                            currentUser?.permissions?.includes(WRITE_PROJECT_USER_ROLE) &&
+                                            currentUser?.permissions?.includes(WRITE_PROJECT_ROLE) &&
                                             <ActionIcon color="red"
                                                 onClick={() => handleRemoveUser(user?.id)}
                                             >

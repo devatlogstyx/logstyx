@@ -20,7 +20,9 @@ const {
     READ_SETTINGS_USER_ROLE,
     WRITE_USER_INVITATION_USER_ROLE,
     READ_USER_INVITATION_USER_ROLE,
-    INVALID_ID_ERR_MESSAGE
+    INVALID_ID_ERR_MESSAGE,
+    READ_REPORT_USER_ROLE,
+    WRITE_REPORT_USER_ROLE
 } = require("common/constant")
 
 const { striptags } = require("striptags")
@@ -307,7 +309,9 @@ const seedUser = async () => {
                     WRITE_SETTINGS_USER_ROLE,
                     READ_SETTINGS_USER_ROLE,
                     WRITE_USER_INVITATION_USER_ROLE,
-                    READ_USER_INVITATION_USER_ROLE
+                    READ_USER_INVITATION_USER_ROLE,
+                    READ_REPORT_USER_ROLE,
+                    WRITE_REPORT_USER_ROLE
                 ],
                 hash: { email: hashedEmail }
             })], { session });

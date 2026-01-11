@@ -11,7 +11,9 @@ const {
     WRITE_SETTINGS_USER_ROLE,
     READ_SETTINGS_USER_ROLE,
     WRITE_USER_INVITATION_USER_ROLE,
-    READ_USER_INVITATION_USER_ROLE
+    READ_USER_INVITATION_USER_ROLE,
+    READ_REPORT_USER_ROLE,
+    WRITE_REPORT_USER_ROLE
 } = require("common/constant");
 
 const userSchema = new mongoose.Schema(
@@ -41,7 +43,9 @@ const userSchema = new mongoose.Schema(
                     WRITE_SETTINGS_USER_ROLE,
                     READ_SETTINGS_USER_ROLE,
                     WRITE_USER_INVITATION_USER_ROLE,
-                    READ_USER_INVITATION_USER_ROLE
+                    READ_USER_INVITATION_USER_ROLE,
+                    READ_REPORT_USER_ROLE,
+                    WRITE_REPORT_USER_ROLE
                 ],
                 message: '{VALUE} is not supported'
             }

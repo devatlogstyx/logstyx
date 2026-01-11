@@ -1,9 +1,11 @@
 //@ts-check
 
-const { NO_ACCESS_ERR_CODE, NO_ACCESS_ERR_MESSAGE, SUCCESS_ERR_CODE, SUCCESS_ERR_MESSAGE, FORBIDDEN_ERR_CODE, NOT_FOUND_ERR_CODE, NOT_FOUND_ERR_MESSAGE } = require("common/constant");
+const { NO_ACCESS_ERR_CODE, NO_ACCESS_ERR_MESSAGE, SUCCESS_ERR_CODE, SUCCESS_ERR_MESSAGE, FORBIDDEN_ERR_CODE, NOT_FOUND_ERR_CODE, NOT_FOUND_ERR_MESSAGE, WRITE_PROJECT_USER_ROLE } = require("common/constant");
 const { HttpError, HttpResponse } = require("common/function");
 const { createProbe, findProbeById, updateProbe, removeProbe, paginateProbe, testConnection } = require("../service/probe");
 const { canUserAccessProject } = require("../utils/helper");
+const { canUserDo } = require("../../shared/provider/auth.service");
+const { canUserModifyProject } = require("../service/project");
 
 module.exports = {
     /**
@@ -34,8 +36,8 @@ module.exports = {
             throw HttpError(NO_ACCESS_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
         }
 
-        const canAccessProject = await canUserAccessProject(req?.user?.id, req?.body?.project)
-        if (!canAccessProject) {
+        const canModify = await canUserModifyProject(req?.user?.id, req?.body?.project)
+        if (!canModify) {
             throw HttpError(FORBIDDEN_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
         }
 
@@ -86,11 +88,11 @@ module.exports = {
             throw HttpError(NOT_FOUND_ERR_CODE, NOT_FOUND_ERR_MESSAGE)
         }
 
-        const canAccessProject = await canUserAccessProject(req?.user?.id, probe?.project?.toString())
-        if (!canAccessProject) {
+
+        const canModify = await canUserModifyProject(req?.user?.id, probe?.project?.toString())
+        if (!canModify) {
             throw HttpError(FORBIDDEN_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
         }
-
 
         const data = await updateProbe(req?.params?.id, req?.body)
 
@@ -115,10 +117,11 @@ module.exports = {
             throw HttpError(NOT_FOUND_ERR_CODE, NOT_FOUND_ERR_MESSAGE)
         }
 
-        const canAccessProject = await canUserAccessProject(req?.user?.id, probe?.project?.toString())
-        if (!canAccessProject) {
+        const canModify = await canUserModifyProject(req?.user?.id, probe?.project?.toString())
+        if (!canModify) {
             throw HttpError(FORBIDDEN_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
         }
+        
 
         await removeProbe(req?.params?.id)
 

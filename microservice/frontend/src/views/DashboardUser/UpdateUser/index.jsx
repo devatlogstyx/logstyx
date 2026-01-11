@@ -40,7 +40,7 @@ const UpdateUser = ({
                 < Modal
                     opened={true}
                     onClose={closeEditModal}
-                    title={< Text className="font-bold text-lg" > Edit Use Permission </Text >}
+                    title={< Text className="font-bold text-lg" > Edit User Permission </Text >}
                     centered
                     classNames={{
                         content: 'rounded-lg',

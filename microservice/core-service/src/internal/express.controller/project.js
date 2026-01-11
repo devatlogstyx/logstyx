@@ -13,10 +13,12 @@ const {
     NOT_FOUND_ERR_CODE,
     NOT_FOUND_ERR_MESSAGE,
     FORBIDDEN_ERR_CODE,
+    WRITE_PROJECT_USER_ROLE,
 
 } = require("common/constant");
 const { createProject, canUserModifyProject, removeProject, paginateProject, addUserToProject, removeUserFromProject, listUserFromProject, updateProject, findProjectBySlug, findProjectById, canUserReadProject, getProjectLogStats } = require("../service/project");
 const { paginateLogs, getDistinctValue } = require("../service/logger");
+const { canUserDo } = require("../../shared/provider/auth.service");
 
 module.exports = {
 
@@ -28,6 +30,11 @@ module.exports = {
     async ProjectCreate(req, res) {
         if (!req?.user) {
             throw HttpError(NO_ACCESS_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
+        }
+
+        const haveWriteAccess = await canUserDo(req?.user?.id, WRITE_PROJECT_USER_ROLE)
+        if (!haveWriteAccess) {
+            throw HttpError(FORBIDDEN_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
         }
 
         const data = await createProject({
@@ -52,8 +59,8 @@ module.exports = {
             throw HttpError(NO_ACCESS_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
         }
 
-        const canAccess = await canUserModifyProject(req?.user?.id, req?.params?.id)
-        if (!canAccess) {
+        const canModify = await canUserModifyProject(req?.user?.id, req?.params?.id)
+        if (!canModify) {
             throw HttpError(FORBIDDEN_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
         }
 
@@ -85,8 +92,8 @@ module.exports = {
             throw HttpError(NOT_FOUND_ERR_CODE, NOT_FOUND_ERR_MESSAGE)
         }
 
-        const canAccess = await canUserModifyProject(req?.user?.id, project?.id)
-        if (!canAccess) {
+        const canModify = await canUserModifyProject(req?.user?.id, req?.params?.id)
+        if (!canModify) {
             throw HttpError(FORBIDDEN_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
         }
 
