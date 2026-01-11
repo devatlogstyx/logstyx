@@ -17,7 +17,7 @@ module.exports = {
                 indexes: json?.settings?.indexes,
                 rawIndexes: json?.settings?.rawIndexes,
                 allowedOrigin: json?.settings?.allowedOrigin,
-                retentionDays: json?.settings?.retentionDays,
+                retentionHours: json?.settings?.retentionHours,
             },
             createdAt: json?.createdAt
         }

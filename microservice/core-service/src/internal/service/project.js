@@ -41,7 +41,7 @@ const generateUniqueSlug = async (baseSlug) => {
  * @param {string[]} [params.settings.rawIndexes]
  * @param {string[]} [params.settings.allowedOrigin]
  * @param {string} [params.settings.deduplicationStrategy]
- * @param {number | string} [params.settings.retentionDays]
+ * @param {number | string} [params.settings.retentionHours]
  */
 const createProject = async (params) => {
 
@@ -52,8 +52,9 @@ const createProject = async (params) => {
         "settings.indexes": "arrayUnique",
         "settings.rawIndexes": "arrayUnique",
         "settings.allowedOrigin": "arrayUnique",
-        "settings.retentionDays": "numeric",
+        "settings.retentionHours": "numeric",
         "settings.deduplicationStrategy": "string",
+        
     });
 
     let match = await v.check();
@@ -97,7 +98,7 @@ const createProject = async (params) => {
                 rawIndexes: params?.settings?.rawIndexes?.filter((n) => validateCustomIndex(n)),
                 allowedOrigin: params?.settings?.allowedOrigin?.map((n) => striptags(n)),
                 deduplicationStrategy: params?.settings?.deduplicationStrategy || FULL_PAYLOAD_DEDUPLICATION_STRATEGY,
-                retentionDays: params?.settings?.retentionDays || 1
+                retentionHours: params?.settings?.retentionHours || 1
             }
         })
 
@@ -140,6 +141,7 @@ const createProject = async (params) => {
  * @param {string[]} [params.rawIndexes] 
  * @param {string[]} [params.allowedOrigin]
  * @param {string} [params.deduplicationStrategy]
+ * @param {string} [params.retentionHours]
  */
 const updateProject = async (id, params) => {
     const project = await getProjectFromCache(id)
@@ -153,6 +155,7 @@ const updateProject = async (id, params) => {
         rawIndexes: "arrayUnique",
         allowedOrigin: "arrayUnique",
         deduplicationStrategy: "string",
+        retentionHours: "numeric"
     });
 
     let match = await v.check();
@@ -179,7 +182,8 @@ const updateProject = async (id, params) => {
                 "settings.indexes": params?.indexes?.filter((n) => validateCustomIndex(n)),
                 "settings.rawIndexes": params?.rawIndexes?.filter((n) => validateCustomIndex(n)),
                 "settings.allowedOrigin": params?.allowedOrigin?.map((n) => striptags(n)),
-                "settings.deduplicationStrategy": params?.deduplicationStrategy || FULL_PAYLOAD_DEDUPLICATION_STRATEGY
+                "settings.deduplicationStrategy": params?.deduplicationStrategy || FULL_PAYLOAD_DEDUPLICATION_STRATEGY,
+                "settings.retentionHours": params?.retentionHours || 1
             })
         }
     )

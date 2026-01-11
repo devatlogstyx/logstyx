@@ -14,6 +14,9 @@ const useUpdateSettings = ({
     const controller = React.useMemo(() => new AbortController(), []);
 
     const ErrorMessage = useErrorMessage()
+    const initialHours = project?.settings?.retentionHours
+
+    const isDays = initialHours > 0 && initialHours % 24 === 0;
 
     const form = useForm({
         mode: 'uncontrolled',
@@ -23,6 +26,11 @@ const useUpdateSettings = ({
             rawIndexes: project?.settings?.rawIndexes,
             allowedOrigin: project?.settings?.allowedOrigin,
             deduplicationStrategy: project?.settings?.deduplicationStrategy,
+            retentionHours: initialHours,
+            // The display value (e.g., 168 becomes 7)
+            retentionValue: isDays ? initialHours / 24 : initialHours,
+            // The unit toggle state
+            retentionUnit: isDays ? 'days' : 'hours',
         },
         validate: {
 

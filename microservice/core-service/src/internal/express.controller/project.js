@@ -92,7 +92,7 @@ module.exports = {
             throw HttpError(NOT_FOUND_ERR_CODE, NOT_FOUND_ERR_MESSAGE)
         }
 
-        const canModify = await canUserModifyProject(req?.user?.id, req?.params?.id)
+        const canModify = await canUserModifyProject(req?.user?.id, project?.id)
         if (!canModify) {
             throw HttpError(FORBIDDEN_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
         }

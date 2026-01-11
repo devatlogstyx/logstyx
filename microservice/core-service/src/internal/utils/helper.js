@@ -101,7 +101,7 @@ const Registry = {};
  * @param {object} project.settings
  * @param {string[]} project.settings.indexes
  * @param {string[]} project.settings.rawIndexes
- * @param {number} project.settings.retentionDays 
+ * @param {number} project.settings.retentionHours 
  */
 const initLogger = async (project) => {
     const logModelName = `Log_${project.id}`;
@@ -141,12 +141,12 @@ const initLogger = async (project) => {
     }
 
     // Add TTL index
-    const retentionDays = project.settings.retentionDays;
-    if (retentionDays && retentionDays > 0) {
+    const retentionHours = project.settings.retentionHours;
+    if (retentionHours && retentionHours > 0) {
         schema.index(
             { updatedAt: 1 },  // ← Changed from createdAt
             {
-                expireAfterSeconds: retentionDays * 24 * 60 * 60,
+                expireAfterSeconds: retentionHours * 60 * 60,
                 name: 'updatedAt_ttl'
             }
         );
@@ -186,7 +186,7 @@ const initLogger = async (project) => {
             // Collection exists - check if TTL matches
             const collInfo = collections[0];
             const currentTTL = collInfo?.options?.expireAfterSeconds;
-            const desiredTTL = retentionDays ? retentionDays * 24 * 60 * 60 : null;
+            const desiredTTL = retentionHours ? retentionHours * 60 * 60 : null;
 
             //drop if ttl ttl mismatched
             if (currentTTL !== desiredTTL) {
@@ -202,8 +202,8 @@ const initLogger = async (project) => {
                     }
                 };
 
-                if (retentionDays && retentionDays > 0) {
-                    createOptions.expireAfterSeconds = retentionDays * 24 * 60 * 60;
+                if (retentionHours && retentionHours > 0) {
+                    createOptions.expireAfterSeconds = retentionHours * 60 * 60;
                 }
 
                 await mongoose.connection.db.createCollection(collectionName, createOptions);
@@ -218,8 +218,8 @@ const initLogger = async (project) => {
                 }
             };
 
-            if (retentionDays && retentionDays > 0) {
-                createOptions.expireAfterSeconds = retentionDays * 24 * 60 * 60;
+            if (retentionHours && retentionHours > 0) {
+                createOptions.expireAfterSeconds = retentionHours * 60 * 60;
             }
 
             await mongoose.connection.db.createCollection(collectionName, createOptions);

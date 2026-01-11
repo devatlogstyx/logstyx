@@ -18,7 +18,7 @@ const SettingSchema = new mongoose.Schema(
             type: [String],
             index: true,
         },
-        retentionDays: {
+        retentionHours: {
             type: Number,
             index: true,
         },

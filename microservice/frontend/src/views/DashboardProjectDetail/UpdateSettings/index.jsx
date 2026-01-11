@@ -2,7 +2,7 @@
 
 import { FiSettings } from "react-icons/fi"
 import PrimaryButton from "../../../component/button/PrimaryButton"
-import { Modal, MultiSelect, NumberInput, TagsInput, TextInput } from "@mantine/core"
+import { Modal, MultiSelect, NumberInput, SegmentedControl, TagsInput, TextInput } from "@mantine/core"
 import SecondaryButton from "../../../component/button/SecondaryButton"
 import useUpdateSettings from "./hooks"
 import SelectDeduplicationStrategy from "../../../component/select/SelectDeduplicationStrategy"
@@ -61,10 +61,53 @@ const UpdateSettings = ({
                         }}
                         error={form.errors.rawIndexes}
                     />
-                    
+
                     <SelectDeduplicationStrategy
                         form={form}
                     />
+
+                    <div className="space-y-1">
+                        <label className="text-sm font-medium">Retention Period</label>
+                        <p className="text-xs text-gray-500">
+                            How long should records stay in the system?
+                        </p>
+                        <div className="flex gap-2">
+                            <NumberInput
+
+                                className="flex-1"
+                                placeholder="0"
+                                min={0}
+                                value={form.values.retentionValue}
+                                onChange={(val) => {
+                                    const numVal = Number(val) || 0;
+                                    form.setFieldValue('retentionValue', numVal);
+                                    // Calculate the hidden total hours
+                                    form.setFieldValue(
+                                        'retentionHours',
+                                        form.values.retentionUnit === 'days' ? numVal * 24 : numVal
+                                    );
+                                }}
+                            />
+                            <SegmentedControl
+                                data={[
+                                    { label: 'Hours', value: 'hours' },
+                                    { label: 'Days', value: 'days' },
+                                ]}
+                                value={form.values.retentionUnit}
+                                onChange={(unit) => {
+                                    form.setFieldValue('retentionUnit', unit);
+                                    // Recalculate retentionHours based on the existing display value
+                                    form.setFieldValue(
+                                        'retentionHours',
+                                        unit === 'days' ? form.values.retentionValue * 24 : form.values.retentionValue
+                                    );
+                                }}
+                            />
+                        </div>
+                        <p className="text-xs text-gray-500">
+                            Total: {form.values.retentionHours} hours
+                        </p>
+                    </div>
 
                     <TagsInput
                         label="Allowed Origins"
