@@ -4,10 +4,7 @@ import {
     IoWarning,
     IoTimeOutline,
     IoEyeOutline,
-    IoSettingsOutline,
-    IoKeyOutline,
     IoTrendingUpOutline,
-    IoAdd
 } from "react-icons/io5";
 import { Link } from 'react-router-dom';
 import useProjectViews from "./hooks";
