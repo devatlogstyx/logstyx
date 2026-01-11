@@ -1,7 +1,7 @@
 //@ts-check
 
 import { useNavigate, useLocation } from "react-router-dom"
-import { IoPeopleOutline, IoLogOutOutline, IoBriefcaseOutline } from "react-icons/io5"
+import { IoPeopleOutline, IoLogOutOutline, IoBriefcaseOutline, IoFileTraySharp, IoStatsChart } from "react-icons/io5"
 import { useUser } from "../../../context/useUser"
 import { PROJECT_TITLE, READ_PROJECT_ROLE, READ_REPORT_USER_ROLE, READ_SETTINGS_USER_ROLE, READ_USER_USER_ROLE } from "../../../utils/constant"
 import React from "react"
@@ -49,7 +49,7 @@ const DashboardSidebar = ({
         menuItems.push({
             id: 'reports',
             label: 'Reports',
-            icon: IoBriefcaseOutline,
+            icon: IoStatsChart,
             path: '/dashboard/reports'
         });
     }
