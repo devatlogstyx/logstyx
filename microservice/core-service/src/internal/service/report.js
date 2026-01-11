@@ -315,7 +315,8 @@ const createWidget = async (reportId, payload) => {
     template: payload.template,
     title: payload.title,
     description: payload?.description,
-    config: payload.config
+    config: payload.config,
+    position: payload?.position
   });
   return updateWidgetCache(created?._id?.toString());
 }
@@ -392,7 +393,8 @@ const updateWidget = async (widgetId, payload) => {
   if (payload.template !== undefined) update.template = payload.template;
   if (payload.config !== undefined) update.config = payload.config;
   if (payload.project) update.project = ObjectId.createFromHexString(payload.project);
-
+  if (payload?.position) update.position = payload?.position
+  
   await widgetModel.findByIdAndUpdate(widgetId, { $set: update });
 
   const updatedWidget = await updateWidgetCache(widgetId)

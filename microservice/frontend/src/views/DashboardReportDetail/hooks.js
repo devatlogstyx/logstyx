@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useForm } from '@mantine/form';
 import { useParams } from 'react-router-dom';
 import { getReportBySlug, createWidget, deleteWidget, updateReport, updateWidget } from '../../api/report';
@@ -130,6 +130,64 @@ export function useDashboardReportDetail() {
     form.reset();
   }
 
+  const updateWidgetPosition = async (widgetId, position) => {
+    try {
+      const ctrl = new AbortController();
+      await updateWidget(ctrl.signal, widgetId, { position });
+    } catch (err) {
+      console.error('Failed to update widget position:', err);
+    }
+  };
+
+  const containerRef = useRef(null);
+  const [width, setWidth] = useState(1200);
+
+  // Convert widgets to grid layout format
+  const layout = (report?.widgets || []).map(w => ({
+    i: w.id,
+    x: w.position?.x || 0,
+    y: w.position?.y || 0,
+    w: w.position?.w || 6,
+    h: w.position?.h || 2, // ← Reduced from 4 to 2
+    minW: 3,
+    maxW: 12,
+    minH: 2, // ← Reduced from 3 to 2
+    maxH: 8, // ← Add max height
+  }));
+
+  const handleLayoutChange = (newLayout) => {
+    newLayout.forEach(item => {
+      // Snap width to allowed sizes
+      let w = item.w;
+      if (w <= 3) w = 3;       // 1/4
+      else if (w <= 4) w = 4;  // 1/3
+      else if (w <= 6) w = 6;  // 1/2
+      else w = 12;             // full
+
+      const widget = report?.widgets.find(w => w.id === item.i);
+      if (widget) {
+        updateWidgetPosition(widget.id, {
+          x: item.x,
+          y: item.y,
+          w: w,
+          h: item.h
+        });
+      }
+    });
+  };
+
+  useEffect(() => {
+    const updateWidth = () => {
+      if (containerRef.current) {
+        setWidth(containerRef.current.offsetWidth);
+      }
+    };
+
+    updateWidth();
+    window.addEventListener('resize', updateWidth);
+    return () => window.removeEventListener('resize', updateWidth);
+  }, []);
+
   return {
     report,
     projects,
@@ -147,6 +205,11 @@ export function useDashboardReportDetail() {
     handleSubmit,
     setEditingWidgetId,
     onClose,
-    onEditWidget
+    onEditWidget,
+    updateWidgetPosition,
+    containerRef,
+    layout,
+    width,
+    handleLayoutChange
   };
 }

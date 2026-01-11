@@ -1,6 +1,7 @@
 //@ts-check
 const { PUBLIC_REPORT_VISIBILITY, PRIVATE_REPORT_VISIBILITY, UNLISTED_REPORT_VISIBILITY } = require("common/constant");
 const { mongoose } = require("../../shared/mongoose");
+const { ObjectId } = mongoose.Schema.Types
 
 const reportSchema = new mongoose.Schema({
   title: {
@@ -21,7 +22,7 @@ const reportSchema = new mongoose.Schema({
     maxLength: 500
   },
   createdBy: {
-    type: mongoose.Schema.Types.ObjectId,
+    type: ObjectId,
     ref: 'User',
     required: true
   },

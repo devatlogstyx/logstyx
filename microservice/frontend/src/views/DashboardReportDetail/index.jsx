@@ -1,7 +1,12 @@
-import { useState } from 'react';
 import WidgetCard from '../../component/WidgetCard';
 import { useDashboardReportDetail } from './hooks';
 import CreateWidget from './CreateWidget';
+
+import GridLayout from 'react-grid-layout';
+import 'react-grid-layout/css/styles.css';
+import 'react-resizable/css/styles.css';
+import { useEffect, useRef, useState } from 'react';
+import "./style.css"
 
 export default function DashboardReportDetail() {
   const {
@@ -15,18 +20,26 @@ export default function DashboardReportDetail() {
     ConfirmDialogComponent,
     handleSubmit,
     onEditWidget,
-    onClose
+    onClose,
+    containerRef,
+    layout,
+    width,
+    handleLayoutChange,
   } = useDashboardReportDetail();
+
+ 
 
   if (loading) return <div className="p-4">Loading...</div>;
   if (!report) return <div className="p-4">Not found</div>;
 
+
   return (
-    <div className="p-4">
+    <div className="p-4" ref={containerRef}>
       <ConfirmDialogComponent />
       <div className="flex items-center justify-between mb-4">
         <div>
           <h1 className="text-xl font-semibold">{report.title}</h1>
+          <p className="text-sm text-gray-500">Drag and resize widgets to customize layout</p>
         </div>
         <div>
           <CreateWidget
@@ -39,9 +52,21 @@ export default function DashboardReportDetail() {
         </div>
       </div>
 
-      <div className="grid md:grid-cols-2 gap-3">
+      <GridLayout
+        className="layout"
+        layout={layout}
+        cols={12}
+        rowHeight={100} // ← Adjust this (was 80)
+        width={width}
+        onLayoutChange={handleLayoutChange}
+        isDraggable={true}
+        isResizable={true}
+        compactType="vertical"
+        preventCollision={false}
+        margin={[12, 12]}
+      >
         {(report.widgets || []).map(w => (
-          <div key={w.id} className="relative">
+          <div key={w.id}>
             <WidgetCard
               slug={report.slug}
               widget={w}
@@ -52,7 +77,7 @@ export default function DashboardReportDetail() {
             />
           </div>
         ))}
-      </div>
+      </GridLayout>
     </div>
   );
 }
