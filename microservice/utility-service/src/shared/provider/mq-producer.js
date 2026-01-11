@@ -14,7 +14,7 @@ const log = useLogger({
     Sender: createLog
 })
 
-const { CREATE_LOG_MQ_QUEUE } = require('common/routes/mq-queue');
+const { CREATE_LOG_MQ_QUEUE, CACHE_REMOVE_MQ_QUEUE, CACHE_CREATE_MQ_QUEUE } = require('common/routes/mq-queue');
 
 const produce = useMQProducer({
     amqp,
@@ -25,4 +25,6 @@ module.exports = {
     submitIntoQueue: (queue) => produce(queue),
     submitIntoFanout: (queue) => produce(queue, true),
     submitCreateLog: produce(CREATE_LOG_MQ_QUEUE),
+    submitRemoveCache: produce(CACHE_REMOVE_MQ_QUEUE),
+    submitCreateCache: produce(CACHE_CREATE_MQ_QUEUE),
 }

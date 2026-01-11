@@ -383,6 +383,9 @@ importers:
       socket.io:
         specifier: ^4.8.1
         version: 4.8.1
+      striptags:
+        specifier: gitlab:angga2oioi/striptags
+        version: https://gitlab.com/api/v4/projects/angga2oioi%2Fstriptags/repository/archive.tar.gz?sha=c69057115c7931b17729dd91b35e082935c7f73f
     devDependencies:
       esbuild:
         specifier: ^0.25.3

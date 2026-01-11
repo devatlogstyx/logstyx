@@ -16,13 +16,13 @@ const {
     READ_USER_USER_ROLE,
     WRITE_PROJECT_USER_ROLE,
     READ_PROJECT_USER_ROLE,
-    WRITE_SETTINGS_USER_ROLE,
-    READ_SETTINGS_USER_ROLE,
     WRITE_USER_INVITATION_USER_ROLE,
     READ_USER_INVITATION_USER_ROLE,
     INVALID_ID_ERR_MESSAGE,
     READ_REPORT_USER_ROLE,
-    WRITE_REPORT_USER_ROLE
+    WRITE_REPORT_USER_ROLE,
+    WRITE_WEBHOOK_USER_ROLE,
+    READ_WEBHOOK_USER_ROLE
 } = require("common/constant")
 
 const { striptags } = require("striptags")
@@ -306,12 +306,12 @@ const seedUser = async () => {
                     READ_USER_USER_ROLE,
                     WRITE_PROJECT_USER_ROLE,
                     READ_PROJECT_USER_ROLE,
-                    WRITE_SETTINGS_USER_ROLE,
-                    READ_SETTINGS_USER_ROLE,
                     WRITE_USER_INVITATION_USER_ROLE,
                     READ_USER_INVITATION_USER_ROLE,
                     READ_REPORT_USER_ROLE,
-                    WRITE_REPORT_USER_ROLE
+                    WRITE_REPORT_USER_ROLE,
+                    WRITE_WEBHOOK_USER_ROLE,
+                    READ_WEBHOOK_USER_ROLE
                 ],
                 hash: { email: hashedEmail }
             })], { session });
@@ -490,7 +490,7 @@ const patchUserPassword = async (id, params) => {
     if (!isValidObjectId(id)) {
         throw HttpError(INVALID_INPUT_ERR_CODE, INVALID_ID_ERR_MESSAGE)
     }
-    
+
     const user = await getUserFromCache(id);
     if (!user) {
         throw HttpError(NOT_FOUND_ERR_CODE, NOT_FOUND_ERR_MESSAGE);

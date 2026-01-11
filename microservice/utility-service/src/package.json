@@ -44,7 +44,8 @@
     "node-cron": "^4.2.1",
     "node-input-validator": "^4.5.1",
     "pm2": "^6.0.5",
-    "socket.io": "^4.8.1"
+    "socket.io": "^4.8.1",
+    "striptags": "gitlab:angga2oioi/striptags"
   },
   "devDependencies": {
     "esbuild": "^0.25.3",
