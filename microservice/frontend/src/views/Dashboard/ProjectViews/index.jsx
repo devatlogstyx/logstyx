@@ -9,6 +9,7 @@ import {
     IoTrendingUpOutline,
     IoAdd
 } from "react-icons/io5";
+import { Link } from 'react-router-dom';
 import useProjectViews from "./hooks";
 import { numify } from "numify";
 import { sumInt } from "../../../utils/function";
@@ -160,21 +161,21 @@ const ProjectViews = () => {
 
                             {/* Action Buttons */}
                             <div className="flex gap-2 justify-end items-center">
-                                <a
-                                    href={`/dashboard/projects/${project.slug}?tab=logs`}
+                                <Link
+                                    to={`/dashboard/projects/${project.slug}?tab=logs`}
                                     className="flex w-full"
                                 >
                                     <PrimaryButton leftSection={<IoEyeOutline size={16} />} className="w-full px-3 py-2 text-sm">
                                         View Logs
                                     </PrimaryButton>
-                                </a>
-                                <a
-                                    href={`/dashboard/projects/${project.slug}?tab=overview`}
+                                </Link>
+                                <Link
+                                    to={`/dashboard/projects/${project.slug}?tab=overview`}
                                 >
                                     <SecondaryButton className="px-3 py-2 text-sm">
                                         <GoGear size={16} />
                                     </SecondaryButton>
-                                </a>
+                                </Link>
                             </div>
                         </div>
 
