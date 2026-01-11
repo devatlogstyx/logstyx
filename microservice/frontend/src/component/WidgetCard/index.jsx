@@ -5,7 +5,7 @@ import { MdDelete, MdRefresh, MdEdit } from 'react-icons/md';
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import useWidgetCard from './hooks';
 
-export default function WidgetCard({ widget, slug, onDeleteWidget, onEditWidget, deletingId }) {
+export default function WidgetCard({ widget, slug, onDeleteWidget, onEditWidget, deletingId, readOnly }) {
 
   const {
     fetchData,
@@ -19,7 +19,7 @@ export default function WidgetCard({ widget, slug, onDeleteWidget, onEditWidget,
     widget
   })
   return (
-    <div className="h-full flex flex-col border rounded-lg bg-white shadow-sm hover:shadow-md transition-shadow">
+    <div className="h-full flex flex-col border rounded-lg bg-white shadow-sm hover:shadow-md transition-shadow" >
       {/* Header - Fixed height */}
       <div className="flex items-center justify-between p-3 border-b bg-gray-50 flex-shrink-0">
         <div className="min-w-0 flex-1">
@@ -30,33 +30,36 @@ export default function WidgetCard({ widget, slug, onDeleteWidget, onEditWidget,
             </div>
           )}
         </div>
-        <div className="flex gap-1 ml-2 flex-shrink-0">
-          <ActionIcon
-            className="!bg-transparent !text-gray-600 hover:!text-blue-600"
-            onClick={fetchData}
-            disabled={loading}
-            title="Refresh"
-          >
-            <MdRefresh size={16} className={loading ? 'animate-spin' : ''} />
-          </ActionIcon>
-          {onEditWidget && (
+        {
+          !readOnly &&
+          <div className="flex gap-1 ml-2 flex-shrink-0">
             <ActionIcon
               className="!bg-transparent !text-gray-600 hover:!text-blue-600"
-              onClick={() => onEditWidget(widget)}
-              title="Edit"
+              onClick={fetchData}
+              disabled={loading}
+              title="Refresh"
             >
-              <MdEdit size={16} />
+              <MdRefresh size={16} className={loading ? 'animate-spin' : ''} />
             </ActionIcon>
-          )}
-          <ActionIcon
-            className="!bg-transparent !text-gray-600 hover:!text-red-600"
-            onClick={() => onDeleteWidget(widget.id)}
-            disabled={deletingId === widget.id}
-            title="Delete"
-          >
-            <MdDelete size={16} />
-          </ActionIcon>
-        </div>
+            {onEditWidget && (
+              <ActionIcon
+                className="!bg-transparent !text-gray-600 hover:!text-blue-600"
+                onClick={() => onEditWidget(widget)}
+                title="Edit"
+              >
+                <MdEdit size={16} />
+              </ActionIcon>
+            )}
+            <ActionIcon
+              className="!bg-transparent !text-gray-600 hover:!text-red-600"
+              onClick={() => onDeleteWidget(widget.id)}
+              disabled={deletingId === widget.id}
+              title="Delete"
+            >
+              <MdDelete size={16} />
+            </ActionIcon>
+          </div>
+        }
       </div>
 
       {/* Content - Flexible height */}

@@ -38,7 +38,7 @@ export default function Router() {
                     <Route path="/logout" element={<Logout />} />
 
                     <Route path="*" element={<NotFound />} />
-                    <Route path="/public/reports/:slug" element={<PublicReportView />} />
+                    <Route path="/reports/:slug" element={<PublicReportView />} />
 
                     <Route path="*" element={<NotFound />} />
                 </Routes>

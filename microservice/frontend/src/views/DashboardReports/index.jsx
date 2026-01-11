@@ -5,7 +5,7 @@ import SecondaryButton from "./../../component/button/SecondaryButton";
 import { PRIVATE_REPORT_VISIBILITY, PUBLIC_REPORT_VISIBILITY } from '../../utils/constant';
 import { useDashboardReports } from './hooks';
 import CreateReport from './CreateReport';
-import { MdDelete, MdEdit } from 'react-icons/md';
+import { MdDelete, MdEdit, MdLink } from 'react-icons/md';
 
 export default function DashboardReports() {
   const {
@@ -19,7 +19,6 @@ export default function DashboardReports() {
     visibility,
     setVisibility,
     creating,
-    canSubmit,
     onCreateSubmit,
     // edit
     editModalOpened,
@@ -64,6 +63,16 @@ export default function DashboardReports() {
                 <Badge>{r.visibility}</Badge>
               </Link>
               <div className="flex items-center gap-3">
+                {
+                  r?.visibility === PUBLIC_REPORT_VISIBILITY &&
+                  <a href={`/reports/${r?.slug}`} target='_blank'>
+                    <ActionIcon
+                      className='!bg-transparent !text-black'
+                    >
+                      <MdLink size={16} />
+                    </ActionIcon>
+                  </a>
+                }
                 <ActionIcon
                   className='!bg-transparent !text-black'
                   onClick={() => openEditModal(r)}

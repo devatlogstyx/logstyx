@@ -5,7 +5,6 @@ import CreateWidget from './CreateWidget';
 import GridLayout from 'react-grid-layout';
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
-import { useEffect, useRef, useState } from 'react';
 import "./style.css"
 
 export default function DashboardReportDetail() {

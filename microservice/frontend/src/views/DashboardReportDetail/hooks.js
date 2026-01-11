@@ -162,6 +162,7 @@ export function useDashboardReportDetail() {
       if (w <= 3) w = 3;       // 1/4
       else if (w <= 4) w = 4;  // 1/3
       else if (w <= 6) w = 6;  // 1/2
+      else if (w <= 9) w = 9;  // 1/2
       else w = 12;             // full
 
       const widget = report?.widgets.find(w => w.id === item.i);
