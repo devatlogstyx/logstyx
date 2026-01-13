@@ -40,11 +40,10 @@ module.exports = {
             throw HttpError(NO_ACCESS_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
         }
 
-
         const data = await findWebhookById(req?.params?.id)
 
-        const canWrite = await canUserDo(req?.user?.id, READ_WEBHOOK_USER_ROLE)
-        if (!canWrite) {
+        const canRead = await canUserDo(req?.user?.id, READ_WEBHOOK_USER_ROLE)
+        if (!canRead) {
             throw HttpError(FORBIDDEN_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
         }
 

@@ -2,7 +2,7 @@
 
 import { useForm } from "@mantine/form";
 import React, { useEffect, useState } from "react";
-import { createWebhook, deleteWebhook, paginateWebhooks, testWebhook, updateWebhook } from "../../api/webhooks";
+import { createWebhook, deleteWebhook, findWebhookById, paginateWebhooks, testWebhook, updateWebhook } from "../../api/webhooks";
 import { useErrorMessage, useSuccessMessage } from "../../hooks/useMessage";
 import { useConfirmDialog } from "../../hooks/useConfirmDialog";
 
@@ -167,6 +167,14 @@ export default function useDashboardWebhook() {
 
     }, [ErrorMessage, fetchWebhooks, openConfirmDialog])
 
+    const handleEdit = async (id) => {
+        try {
+            const data = await findWebhookById(id)
+            openModal(data)
+        } catch (e) {
+            ErrorMessage(e)
+        }
+    }
 
     return {
         form,
@@ -179,6 +187,7 @@ export default function useDashboardWebhook() {
         editingWebhook,
         handleSubmit,
         isSubmitting,
+        handleEdit,
         ConfirmDialogComponent
     }
 }

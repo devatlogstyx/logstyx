@@ -20,6 +20,7 @@ const DashboardWebhook = () => {
         editingWebhook,
         handleSubmit,
         isSubmitting,
+        handleEdit,
         ConfirmDialogComponent
     } = useDashboardWebhook()
     const authType = form.values.connection?.auth?.type;
@@ -67,7 +68,7 @@ const DashboardWebhook = () => {
                                     <div className="flex gap-2 ml-4">
                                         <ActionIcon
                                             className="!bg-gray-50 !text-gray-600 hover:!bg-gray-100"
-                                            onClick={() => openModal(webhook)}
+                                            onClick={()=>handleEdit(webhook?.id)}
                                             title="Edit"
                                         >
                                             <MdEdit size={18} />

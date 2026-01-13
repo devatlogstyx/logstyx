@@ -20,6 +20,11 @@ export const deleteWebhook = async (id) => {
     return data?.data;
 };
 
+export const findWebhookById = async (id) => {
+    const { data } = await Axios.get(`/v1/webhooks/${id}`);
+    return data?.data;
+};
+
 export const testWebhook = async (id, payload) => {
     const { data } = await Axios.post(`/v1/webhooks/${id}/test-connection`, payload);
     return data?.data;
