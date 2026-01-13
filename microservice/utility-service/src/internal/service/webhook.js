@@ -1,5 +1,5 @@
 //@ts-check
-const { INVALID_INPUT_ERR_CODE, NOT_FOUND_ERR_CODE, NOT_FOUND_ERR_MESSAGE, WEBHOOK_CACHE_KEY } = require("common/constant");
+const { INVALID_INPUT_ERR_CODE, NOT_FOUND_ERR_CODE, NOT_FOUND_ERR_MESSAGE, WEBHOOK_CACHE_KEY, BEARER_WEBHOOK_AUTH_TYPE, BASIC_WEBHOOK_AUTH_TYPE, API_KEY_WEBHOOK_AUTH_TYPE } = require("common/constant");
 const { HttpError, compressAndEncrypt, sanitizeObject, decryptAndDecompress, num2Ceil, num2Floor, parseSortBy } = require("common/function");
 const { Validator } = require("node-input-validator");
 const { mongoose, isValidObjectId } = require("../../shared/mongoose");
@@ -7,7 +7,6 @@ const { striptags } = require("striptags");
 const webhookModel = require("../model/webhook.model");
 const { updateWebhookCache, getWebhookFromCache } = require("../../shared/cache");
 const { submitRemoveCache } = require("../../shared/provider/mq-producer");
-const { ObjectId } = mongoose.Types
 
 /**
  * 
@@ -17,12 +16,12 @@ const { ObjectId } = mongoose.Types
 const createWebhook = async (params) => {
     const v = new Validator(params, {
         title: "required|string",
-        "config.url": "required|url",
-        "config.method": "required|string|in:GET,POST,PUT,PATCH,DELETE",
-        "config.headers": "object",
-        "config.body_template": "required",
-        "config.timeout": "numeric",
-        "config.auth.type": "required|string|in:none,bearer,basic,api_key,oauth2"
+        "connection.url": "required|url",
+        "connection.method": "required|string|in:GET,POST,PUT,PATCH,DELETE",
+        "connection.headers": "object",
+        "connection.body_template": "required",
+        "connection.timeout": "numeric",
+        "connection.auth.type": "required|string|in:NONE,BEARER,BASIC,API_KEY"
     });
 
     let match = await v.check();
@@ -31,20 +30,20 @@ const createWebhook = async (params) => {
     }
 
 
-    // Validate auth config based on type
-    const authType = params?.config?.auth?.type;
-    if (authType === 'bearer' && !params?.config?.auth?.token) {
+    // Validate auth connection based on type
+    const authType = params?.connection?.auth?.type;
+    if (authType === BEARER_WEBHOOK_AUTH_TYPE && !params?.connection?.auth?.token) {
         throw HttpError(INVALID_INPUT_ERR_CODE, "Token is required for bearer auth");
     }
-    if (authType === 'basic' && (!params?.config?.auth?.username || !params?.config?.auth?.password)) {
+    if (authType === BASIC_WEBHOOK_AUTH_TYPE && (!params?.connection?.auth?.username || !params?.connection?.auth?.password)) {
         throw HttpError(INVALID_INPUT_ERR_CODE, "Username and password are required for basic auth");
     }
-    if (authType === 'api_key' && (!params?.config?.auth?.key_name || !params?.config?.auth?.key_value)) {
+    if (authType === API_KEY_WEBHOOK_AUTH_TYPE && (!params?.connection?.auth?.key_name || !params?.connection?.auth?.key_value)) {
         throw HttpError(INVALID_INPUT_ERR_CODE, "Key name and value are required for API key auth");
     }
 
     // Validate body_template contains valid JSON or string
-    let bodyTemplate = params?.config?.body_template;
+    let bodyTemplate = params?.connection?.body_template;
     if (typeof bodyTemplate === 'string') {
         try {
             // Try to parse if it's a JSON string
@@ -58,32 +57,31 @@ const createWebhook = async (params) => {
     session.startTransaction();
 
     try {
-        // Encrypt the config
-        const configEncrypted = await compressAndEncrypt({
-            url: params.config.url,
-            method: params.config.method || 'POST',
-            headers: params.config.headers || {},
+        // Encrypt the connection
+        const connectionEncrypted = await compressAndEncrypt({
+            url: params.connection.url,
+            method: params.connection.method || 'POST',
+            headers: params.connection.headers || {},
             body_template: bodyTemplate,
-            timeout: params.config.timeout || 10000,
+            timeout: params.connection.timeout || 10000,
             auth: {
-                type: params.config.auth.type,
-                ...(params.config.auth.token && { token: params.config.auth.token }),
-                ...(params.config.auth.username && { username: params.config.auth.username }),
-                ...(params.config.auth.password && { password: params.config.auth.password }),
-                ...(params.config.auth.key_name && { key_name: params.config.auth.key_name }),
-                ...(params.config.auth.key_value && { key_value: params.config.auth.key_value }),
-                ...(params.config.auth.key_location && { key_location: params.config.auth.key_location }),
-                ...(params.config.auth.client_id && { client_id: params.config.auth.client_id }),
-                ...(params.config.auth.client_secret && { client_secret: params.config.auth.client_secret }),
-                ...(params.config.auth.token_url && { token_url: params.config.auth.token_url }),
-                ...(params.config.auth.scope && { scope: params.config.auth.scope })
+                type: params.connection.auth.type,
+                ...(params.connection.auth.token && { token: params.connection.auth.token }),
+                ...(params.connection.auth.username && { username: params.connection.auth.username }),
+                ...(params.connection.auth.password && { password: params.connection.auth.password }),
+                ...(params.connection.auth.key_name && { key_name: params.connection.auth.key_name }),
+                ...(params.connection.auth.key_value && { key_value: params.connection.auth.key_value }),
+                ...(params.connection.auth.key_location && { key_location: params.connection.auth.key_location }),
+                ...(params.connection.auth.client_id && { client_id: params.connection.auth.client_id }),
+                ...(params.connection.auth.client_secret && { client_secret: params.connection.auth.client_secret }),
+                ...(params.connection.auth.token_url && { token_url: params.connection.auth.token_url }),
+                ...(params.connection.auth.scope && { scope: params.connection.auth.scope })
             }
         });
 
         const payload = sanitizeObject({
             title: striptags(params.title),
-            createdBy: ObjectId.createFromHexString(params.creator),
-            config: configEncrypted,
+            connection: connectionEncrypted,
         });
 
         const [webhook] = await webhookModel.create([payload], { session });
@@ -119,11 +117,11 @@ const updateWebhook = async (id, params) => {
 
     const v = new Validator(params, {
         title: "string",
-        "config.url": "url",
-        "config.method": "string|in:GET,POST,PUT,PATCH,DELETE",
-        "config.headers": "object",
-        "config.timeout": "numeric",
-        "config.auth.type": "string|in:none,bearer,basic,api_key,oauth2"
+        "connection.url": "url",
+        "connection.method": "string|in:GET,POST,PUT,PATCH,DELETE",
+        "connection.headers": "object",
+        "connection.timeout": "numeric",
+        "connection.auth.type": "required|string|in:NONE,BEARER,BASIC,API_KEY"
     });
 
     let match = await v.check();
@@ -145,9 +143,9 @@ const updateWebhook = async (id, params) => {
             updateData.enabled = params.enabled;
         }
 
-        // If config is being updated, re-encrypt
-        if (params.config) {
-            let bodyTemplate = params.config.body_template;
+        // If connection is being updated, re-encrypt
+        if (params.connection) {
+            let bodyTemplate = params.connection.body_template;
             if (typeof bodyTemplate === 'string') {
                 try {
                     bodyTemplate = JSON.parse(bodyTemplate);
@@ -156,13 +154,13 @@ const updateWebhook = async (id, params) => {
                 }
             }
 
-            updateData.config = await compressAndEncrypt({
-                url: params.config.url,
-                method: params.config.method || 'POST',
-                headers: params.config.headers || {},
+            updateData.connection = await compressAndEncrypt({
+                url: params.connection.url,
+                method: params.connection.method || 'POST',
+                headers: params.connection.headers || {},
                 body_template: bodyTemplate,
-                timeout: params.config.timeout || 10000,
-                auth: params.config.auth
+                timeout: params.connection.timeout || 10000,
+                auth: params.connection.auth
             });
         }
 
@@ -237,7 +235,7 @@ const findWebhookById = async (id) => {
         return null;
     }
 
-    webhook.config = await decryptAndDecompress(webhook.config);
+    webhook.connection = await decryptAndDecompress(webhook.connection);
 
     return webhook;
 };
@@ -273,37 +271,25 @@ const paginateWebhook = async (query = {}, sortBy = "createdAt:desc", limit = 10
 
     limit = num2Ceil(num2Floor(limit, 1), 50);
     page = num2Floor(page, 1);
-    const sort = parseSortBy(sortBy);
+
     const queryParam = buildWebhookSearchQuery(query)
 
-
-    const aggregate = webhookModel.aggregate([
-        { $match: queryParam },
-        { $sort: sort }
-    ]);
-
-    let options = { page, limit };
-
-    let res = await webhookModel.aggregatePaginate(aggregate, options);
+    let res = await webhookModel.paginate(queryParam, { sortBy, limit, page });
 
     let list = {
-        results: res?.docs?.map((n) => ({
+        results: res?.results?.map((n) => ({
             id: n?._id?.toString(),
             title: n?.title,
             createdAt: n?.createdAt,
             updatedAt: n?.updatedAt,
         })),
         page,
-        totalResults: res.total,
-        totalPages: res.pages,
+        totalResults: res.totalResults,
+        totalPages: res.totalPages,
     };
 
     return list;
 };
-
-const testConnection = async(connection)=>{
-
-}
 
 module.exports = {
     createWebhook,
@@ -311,5 +297,4 @@ module.exports = {
     removeWebhook,
     findWebhookById,
     paginateWebhook,
-    testConnection
 };

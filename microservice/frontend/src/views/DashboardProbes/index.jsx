@@ -10,7 +10,9 @@ import {
     Loader,
     JsonInput,
     PasswordInput,
-    Pagination
+    Pagination,
+    Title,
+    Text
 } from '@mantine/core';
 import { IoMdAdd } from 'react-icons/io';
 import { MdEdit, MdDelete } from 'react-icons/md';
@@ -54,10 +56,8 @@ const DashboardProbes = () => {
             <div className="max-w-7xl mx-auto py-8 px-4">
                 <div className="flex justify-between items-start mb-8">
                     <div>
-                        <h2 className="text-2xl font-bold mb-1">Probes</h2>
-                        <p className="text-sm text-gray-500">
-                            Configure automated data collection from external sources
-                        </p>
+                        <Title className="text-3xl font-bold">Probes</Title>
+                        <Text className="text-gray-600">Configure automated data collection from external sources</Text>
                     </div>
                     <PrimaryButton
                         onClick={() => openModal()}

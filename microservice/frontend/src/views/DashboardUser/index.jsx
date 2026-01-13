@@ -29,18 +29,16 @@ const DashboardUser = () => {
     return (
         <Container className="py-8">
             <div className="space-y-8">
-                {/* Header */}
-                <div>
-                    <Title order={1} className="mb-2">User Management</Title>
-                    <Text className="text-gray-600">Manage users and pending invitations</Text>
-                </div>
+                <div className="p-4 flex justify-between ">
+                    <div>
+                        <Title className="text-3xl font-bold">User Management</Title>
+                        <Text className="text-gray-600">Manage users and pending invitations</Text>
+                    </div>
 
-                {/* Search and Actions Bar */}
-                <Paper className="p-4 border border-gray-200 rounded-lg shadow-sm">
                     <CreateUserInvitation
                         onCreate={refetchData}
                     />
-                </Paper>
+                </div>
 
                 {/* Tabs */}
                 <Tabs value={activeTab} onChange={changeTab}>

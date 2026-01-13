@@ -3,9 +3,10 @@
 import { useNavigate, useLocation } from "react-router-dom"
 import { IoPeopleOutline, IoLogOutOutline, IoBriefcaseOutline, IoFileTraySharp, IoStatsChart } from "react-icons/io5"
 import { useUser } from "../../../context/useUser"
-import { PROJECT_TITLE, READ_PROJECT_ROLE, READ_REPORT_USER_ROLE, READ_SETTINGS_USER_ROLE, READ_USER_USER_ROLE } from "../../../utils/constant"
+import { PROJECT_TITLE, READ_PROJECT_ROLE, READ_REPORT_USER_ROLE, READ_USER_USER_ROLE, READ_WEBHOOK_USER_ROLE } from "../../../utils/constant"
 import React from "react"
 import { LuRadar } from 'react-icons/lu';
+import { TbWebhook } from "react-icons/tb"
 
 const DashboardSidebar = ({
     isOpen,
@@ -51,6 +52,15 @@ const DashboardSidebar = ({
             label: 'Reports',
             icon: IoStatsChart,
             path: '/dashboard/reports'
+        });
+    }
+
+    if (user?.permissions?.includes(READ_WEBHOOK_USER_ROLE)) {
+        menuItems.push({
+            id: 'webhooks',
+            label: 'Webhooks',
+            icon: TbWebhook,
+            path: '/dashboard/webhooks'
         });
     }
 

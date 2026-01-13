@@ -29,7 +29,7 @@ const useModalForm = ({
         }
     }, [ErrorMessage, controller, form, SuccessMessage])
 
-    const [currentStep, setCurrentStep] = useState(1);
+    const [currentStep, setCurrentStep] = useState(0);
 
     const goToNextStep = () => setCurrentStep((prevStep) => Math.min(prevStep + 1, 3));
     const goToPreviousStep = () => setCurrentStep((prevStep) => Math.max(prevStep - 1, 1));
@@ -39,6 +39,7 @@ const useModalForm = ({
         isTesting,
         handleTestConnection,
         currentStep,
+        setCurrentStep,
         goToPreviousStep,
         goToNextStep,
     }

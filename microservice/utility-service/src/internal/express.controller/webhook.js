@@ -2,28 +2,11 @@
 
 const { NO_ACCESS_ERR_CODE, NO_ACCESS_ERR_MESSAGE, SUCCESS_ERR_CODE, SUCCESS_ERR_MESSAGE, WRITE_WEBHOOK_USER_ROLE, FORBIDDEN_ERR_CODE, READ_WEBHOOK_USER_ROLE, NOT_FOUND_ERR_CODE, NOT_FOUND_ERR_MESSAGE } = require("common/constant");
 const { HttpError, HttpResponse } = require("common/function");
-const { testConnection, createWebhook, findWebhookById, updateWebhook, removeWebhook, paginateWebhook } = require("../service/webhook");
+const { createWebhook, findWebhookById, updateWebhook, removeWebhook, paginateWebhook } = require("../service/webhook");
 const { canUserDo } = require("../../shared/provider/auth.service");
 
 module.exports = {
-    /**
-     * 
-     * @param {*} req 
-     * @param {*} res 
-     */
-    async WebhookTestConnection(req, res) {
-        if (!req?.user) {
-            throw HttpError(NO_ACCESS_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
-        }
-
-        const data = await testConnection(req?.body)
-
-        HttpResponse(res).json({
-            error: SUCCESS_ERR_CODE,
-            message: SUCCESS_ERR_MESSAGE,
-            data,
-        });
-    },
+    
     /**
      * 
      * @param {*} req 

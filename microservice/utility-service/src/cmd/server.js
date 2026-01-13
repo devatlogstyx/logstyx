@@ -9,8 +9,12 @@ const { Server } = require("jsonrpc-ws");
 const http = require('http');
 const { logger } = require("../shared/logger");
 const { num2Floor } = require("common/function");
+const app = require("../shared/express/app.js");
+const { connectToDB } = require("../shared/mongoose/index.js");
 
 (async () => {
+
+    await connectToDB();
 
     //@ts-ignore
     const { server: rpc } = useRPCWebsocket({
@@ -20,15 +24,7 @@ const { num2Floor } = require("common/function");
 
     const port = num2Floor(process.env.PORT, 1023);
     // Create the server
-    const server = http.createServer((req, res) => {
-        if (req.url === '/health') {
-            res.writeHead(200, { 'Content-Type': 'text/plain' });
-            res.end('OK');
-        } else {
-            res.writeHead(200, { 'Content-Type': 'text/plain' });
-            res.end('Hello, World!\n');
-        }
-    });
+    const server = http.createServer(app);
 
     /**
      * Listen on provided port, on all network interfaces.

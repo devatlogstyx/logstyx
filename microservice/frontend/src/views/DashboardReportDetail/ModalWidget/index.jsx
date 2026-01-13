@@ -5,7 +5,12 @@ import FilterBuilder from "../../../component/FilterBuilder"
 import PrimaryButton from "../../../component/button/PrimaryButton"
 import SecondaryButton from "../../../component/button/SecondaryButton";
 
-const CreateWidget = ({
+/**
+ * 
+ * @param {*} param0 
+ * @returns 
+ */
+const ModalWidget = ({
     modalOpened,
     setModalOpened,
     onClose,
@@ -18,7 +23,6 @@ const CreateWidget = ({
 
     return (
         <>
-            <PrimaryButton onClick={() => (setModalOpened ? setModalOpened(true) : (onClose && onClose()))}>Create Widget</PrimaryButton>
 
             <Modal opened={modalOpened} onClose={() => (setModalOpened ? setModalOpened(false) : (onClose && onClose()))} title="Manage Widget" centered size="lg">
                 <form onSubmit={onAddWidget} className="space-y-4">
@@ -376,4 +380,4 @@ const CreateWidget = ({
     )
 }
 
-export default CreateWidget
+export default ModalWidget

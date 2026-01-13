@@ -1,11 +1,12 @@
 import { Link } from 'react-router-dom';
-import { ActionIcon, Badge, Modal, Select, TextInput } from '@mantine/core';
+import { ActionIcon, Badge, Modal, Select, Text, TextInput, Title } from '@mantine/core';
 import PrimaryButton from "./../../component/button/PrimaryButton";
 import SecondaryButton from "./../../component/button/SecondaryButton";
 import { PRIVATE_REPORT_VISIBILITY, PUBLIC_REPORT_VISIBILITY } from '../../utils/constant';
 import { useDashboardReports } from './hooks';
 import CreateReport from './CreateReport';
 import { MdDelete, MdEdit, MdLink } from 'react-icons/md';
+import EditModal from './EditModal';
 
 export default function DashboardReports() {
   const {
@@ -38,8 +39,11 @@ export default function DashboardReports() {
 
   return (
     <div className="p-4">
-      <h1 className="text-xl font-bold mb-3">Reports</h1>
-      <div className="flex justify-end mb-4">
+      <div className="flex justify-between items-start mb-8">
+        <div>
+          <Title className="text-3xl font-bold">Reports</Title>
+          <Text className="text-gray-600">Generate custom insights by transforming your logs into interactive charts and detailed reports</Text>
+        </div>
         <CreateReport
           openCreateModal={openCreateModal}
           createModalOpened={createModalOpened}
@@ -53,7 +57,6 @@ export default function DashboardReports() {
           canSubmit
         />
       </div>
-
       {loading ? <div>Loading...</div> : (
         <ul className="space-y-2">
           {list.map(r => (
@@ -91,36 +94,17 @@ export default function DashboardReports() {
           ))}
         </ul>
       )}
-      <Modal opened={editModalOpened} onClose={closeEditModal} title="Edit report" centered>
-        <form onSubmit={onEditSubmit} className="flex flex-col gap-3">
-          <TextInput
-            value={editTitle}
-            onChange={(e) => setEditTitle(e.target.value)}
-            placeholder="Report title"
-            required
-          />
-          <Select
-            value={editVisibility}
-            onChange={(e) => setEditVisibility(e)}
-            data={[
-              {
-                value: PRIVATE_REPORT_VISIBILITY,
-                label: "Private"
-              },
-              {
-                value: PUBLIC_REPORT_VISIBILITY,
-                label: "Public"
-              }
-            ]}
-          />
-          <div className="flex justify-end gap-2 mt-2">
-            <SecondaryButton onClick={closeEditModal} disabled={updating}>Cancel</SecondaryButton>
-            <PrimaryButton type="submit" disabled={!canEditSubmit}>
-              {updating ? 'Saving...' : 'Save'}
-            </PrimaryButton>
-          </div>
-        </form>
-      </Modal>
+      <EditModal
+        editModalOpened={editModalOpened}
+        closeEditModal={closeEditModal}
+        onEditSubmit={onEditSubmit}
+        editTitle={editTitle}
+        setEditTitle={setEditTitle}
+        editVisibility={editVisibility}
+        setEditVisibility={setEditVisibility}
+        updating={updating}
+        canEditSubmit={canEditSubmit}
+      />
       <ConfirmDialogComponent />
     </div>
   );

@@ -23,9 +23,10 @@ const DashboardPage = () => {
     }
 
     return (
-        <Container className="py-8" >
+        <Container className="py-8 flex flex-col gap-2" >
             <div>
-                <Title order={1} className="mb-2">Projects</Title>
+                <Title className="text-3xl font-bold">Projects</Title>
+                <Text className="text-gray-600">Manage logs and credentials</Text>
             </div>
             <ProjectViews />
         </Container>

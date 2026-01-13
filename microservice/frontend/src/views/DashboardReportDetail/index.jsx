@@ -1,11 +1,12 @@
 import WidgetCard from '../../component/WidgetCard';
 import { useDashboardReportDetail } from './hooks';
-import CreateWidget from './CreateWidget';
+import ModalWidget from './ModalWidget';
 
 import GridLayout from 'react-grid-layout';
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
 import "./style.css"
+import PrimaryButton from '../../component/button/PrimaryButton';
 
 export default function DashboardReportDetail() {
   const {
@@ -24,9 +25,10 @@ export default function DashboardReportDetail() {
     layout,
     width,
     handleLayoutChange,
+    setModalOpened
   } = useDashboardReportDetail();
 
- 
+
 
   if (loading) return <div className="p-4">Loading...</div>;
   if (!report) return <div className="p-4">Not found</div>;
@@ -41,13 +43,7 @@ export default function DashboardReportDetail() {
           <p className="text-sm text-gray-500">Drag and resize widgets to customize layout</p>
         </div>
         <div>
-          <CreateWidget
-            modalOpened={modalOpened}
-            onClose={onClose}
-            onAddWidget={handleSubmit}
-            form={form}
-            projects={projects}
-          />
+          <PrimaryButton onClick={() => (setModalOpened ? setModalOpened(true) : (onClose && onClose()))}>Create Widget</PrimaryButton>
         </div>
       </div>
 
@@ -77,6 +73,13 @@ export default function DashboardReportDetail() {
           </div>
         ))}
       </GridLayout>
+      <ModalWidget
+        modalOpened={modalOpened}
+        onClose={onClose}
+        onAddWidget={handleSubmit}
+        form={form}
+        projects={projects}
+      />
     </div>
   );
 }
