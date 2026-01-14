@@ -31,8 +31,9 @@ const {
   findReportById,
 
 } = require("../service/report");
-const { getWidgetDataCache, updateWidgetDataCache } = require("../../shared/cache");
+const { getWidgetDataCache } = require("../../shared/cache");
 const { canUserDo } = require("../../shared/provider/auth.service");
+const { getLogModel } = require("../service/logger");
 
 module.exports = {
   /**
@@ -171,7 +172,7 @@ module.exports = {
       throw HttpError(FORBIDDEN_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
     }
 
-    const data = await updateWidget(req.params.id, req.body || {});
+    const data = await updateWidget(req.params.id, req.body || {}, getLogModel);
     HttpResponse(res).json({ error: SUCCESS_ERR_CODE, message: SUCCESS_ERR_MESSAGE, data });
   },
 
@@ -218,7 +219,7 @@ module.exports = {
       return;
     }
 
-    const data = await executeWidgetQuery(widget);
+    const data = await executeWidgetQuery(widget, getLogModel);
     HttpResponse(res).json({ error: SUCCESS_ERR_CODE, message: SUCCESS_ERR_MESSAGE, data });
   },
 }

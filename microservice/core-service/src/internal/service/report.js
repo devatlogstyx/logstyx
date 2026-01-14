@@ -6,7 +6,7 @@ const { getProjectFromCache, getWidgetFromCache, getReportFromCache, updateWidge
 const reportModel = require("../model/report.model");
 const widgetModel = require("../model/widget.model");
 const projectModel = require("../model/project.model");
-const { getLogModel } = require("../utils/helper");
+const { buildMongoFilterQuery } = require("../utils/helper");
 const { decryptAndDecompress } = require("common/function");
 const { NOT_FOUND_ERR_CODE, NOT_FOUND_ERR_MESSAGE, INVALID_INPUT_ERR_CODE, FORBIDDEN_ERR_CODE, WIDGET_TEMPLATES, PRIVATE_REPORT_VISIBILITY, WIDGET_CACHE_KEY } = require("common/constant");
 const { isValidObjectId } = require("../../shared/mongoose");
@@ -369,9 +369,10 @@ const listWidgets = async (report, includeProjectInfo = false) => {
  * 
  * @param {*} widgetId 
  * @param {*} payload 
+ * @param {*} getLogModelFunc 
  * @returns 
  */
-const updateWidget = async (widgetId, payload) => {
+const updateWidget = async (widgetId, payload, getLogModelFunc) => {
 
   const w = await getWidgetFromCache(widgetId)
   if (!w) throw HttpError(NOT_FOUND_ERR_CODE, NOT_FOUND_ERR_MESSAGE);
@@ -394,11 +395,11 @@ const updateWidget = async (widgetId, payload) => {
   if (payload.config !== undefined) update.config = payload.config;
   if (payload.project) update.project = ObjectId.createFromHexString(payload.project);
   if (payload?.position) update.position = payload?.position
-  
+
   await widgetModel.findByIdAndUpdate(widgetId, { $set: update });
 
   const updatedWidget = await updateWidgetCache(widgetId)
-  const data = await executeWidgetQuery(updatedWidget)
+  const data = await executeWidgetQuery(updatedWidget, getLogModelFunc)
   await updateWidgetDataCache(widgetId, data)
 
   return updatedWidget
@@ -430,57 +431,6 @@ const deleteWidget = async (widgetId) => {
   return true;
 }
 
-const buildMongoQuery = (filters = {}, project = null) => {
-  /**
-   * 
-   * @param {*} field 
-   * @param {*} operator 
-   * @param {*} val 
-   * @returns 
-   */
-  const makeCond = (field, operator, val) => {
-    if (field === 'level') {
-      if (operator === 'ne') return { level: { $ne: val } };
-      if (operator === 'contains' && typeof val === 'string') return { level: { $regex: String(val), $options: 'i' } };
-      return { level: val };
-    }
-    const path = field.replace(/\./g, '_');
-    const hashKey = `hash.${path}`;
-    const rawKey = `raw.${path}`;
-    const isRaw = project?.settings?.rawIndexes?.includes(field);
-
-    if (isRaw) {
-      if (['gt', 'gte', 'lt', 'lte'].includes(operator)) {
-        const num = isNaN(Number(val)) ? val : Number(val);
-        return { [rawKey]: { [`$${operator}`]: num } };
-      }
-      if (operator === 'ne') return { [rawKey]: { $ne: val } };
-      if (operator === 'contains' && typeof val === 'string') return { [rawKey]: { $regex: String(val), $options: 'i' } };
-      return { [rawKey]: val };
-    } else {
-      const hashed = hashString(String(val), field);
-      if (operator === 'ne') return { [hashKey]: { $ne: hashed } };
-      return { [hashKey]: hashed };
-    }
-  };
-
-  if (Array.isArray(filters)) {
-    const andConds = [];
-    for (const f of filters) {
-      if (!f || !f.field) continue;
-      const operator = f.operator || 'eq';
-      andConds.push(makeCond(f.field, operator, f.value));
-    }
-    return andConds.length ? { $and: andConds } : {};
-  }
-
-  const query = {};
-  if (!filters || typeof filters !== 'object') return query;
-  for (const [key, value] of Object.entries(filters)) {
-    Object.assign(query, makeCond(key, 'eq', value));
-  }
-  return query;
-}
 
 /**
  * 
@@ -515,11 +465,12 @@ const buildTimeRangeFilter = (timeRange) => {
  * 
  * @param {*} widget 
  * @param {*} project 
+ * @param {*} getLogModelFunc 
  * @returns 
  */
-const executeTotalValueQuery = async (widget, project) => {
-  const { log } = await getLogModel(project.id);
-  const filters = buildMongoQuery(widget.config?.filters || {}, project);
+const executeTotalValueQuery = async (widget, project, getLogModelFunc) => {
+  const { log } = await getLogModelFunc(project.id);
+  const filters = buildMongoFilterQuery(widget.config?.filters || {}, project);
   const timeFilter = widget.config?.timeRange ? { updatedAt: buildTimeRangeFilter(widget.config.timeRange) } : {};
   const query = { ...filters, ...timeFilter };
   const op = widget.config.operation;
@@ -643,13 +594,14 @@ const formatTimeLabel = (isoString, interval) => {
  * 
  * @param {*} widget 
  * @param {*} project 
+ * @param {*} getLogModelFunc 
  * @returns 
  */
-const executeLineChartQuery = async (widget, project) => {
-  const { logstamp } = await getLogModel(project.id);
+const executeLineChartQuery = async (widget, project, getLogModelFunc) => {
+  const { logstamp } = await getLogModelFunc(project.id);
   const timeRange = widget.config?.timeRange || 'last_24h';
   const timeMatch = { createdAt: buildTimeRangeFilter(timeRange) };
-  const filters = buildMongoQuery(widget.config?.filters || {}, project);
+  const filters = buildMongoFilterQuery(widget.config?.filters || {}, project);
   const match = { ...timeMatch, ...filters };
   const interval = widget.config?.groupByTime || '1h';
 
@@ -701,7 +653,7 @@ const executeLineChartQuery = async (widget, project) => {
     throw HttpError(INVALID_INPUT_ERR_CODE, `Field "${fieldPath}" must be in project rawIndexes`);
   }
 
-  const { log } = await getLogModel(project.id);
+  const { log } = await getLogModelFunc(project.id);
   const rawKey = `raw.${fieldPath.replace(/\./g, '_')}`;
 
   if (noGrouping) {
@@ -753,18 +705,6 @@ const executeLineChartQuery = async (widget, project) => {
   return { labels, values };
 }
 
-
-/**
- * 
- * @param {*} metric 
- * @returns 
- */
-const parseMetric = (metric) => {
-  if (!metric || metric === 'count') return { type: 'count' };
-  if (metric.startsWith('sum:')) return { type: 'sum', field: metric.slice(4) };
-  return { type: 'field', field: metric };
-}
-
 /**
  * 
  * @param {*} groupBy 
@@ -783,11 +723,12 @@ const resolveGroupByField = (groupBy) => {
  * 
  * @param {*} widget 
  * @param {*} project 
+ * @param {*} getLogModelFunc 
  * @returns 
  */
-const executeBarChartQuery = async (widget, project) => {
-  const { log } = await getLogModel(project.id);
-  const filters = buildMongoQuery(widget.config?.filters || {}, project);
+const executeBarChartQuery = async (widget, project, getLogModelFunc) => {
+  const { log } = await getLogModelFunc(project.id);
+  const filters = buildMongoFilterQuery(widget.config?.filters || {}, project);
   const timeFilter = widget.config?.timeRange ? { updatedAt: buildTimeRangeFilter(widget.config.timeRange) } : {};
   const match = { ...filters, ...timeFilter };
 
@@ -860,11 +801,12 @@ const executeBarChartQuery = async (widget, project) => {
  * 
  * @param {*} widget 
  * @param {*} project 
+ * @param {*} getLogModelFunc 
  * @returns 
  */
-const executeTableQuery = async (widget, project) => {
-  const { log } = await getLogModel(project.id);
-  const filters = buildMongoQuery(widget.config?.filters || {}, project);
+const executeTableQuery = async (widget, project, getLogModelFunc) => {
+  const { log } = await getLogModelFunc(project.id);
+  const filters = buildMongoFilterQuery(widget.config?.filters || {}, project);
   const sortBy = widget.config?.sortBy || 'updatedAt:desc';
   const limit = Math.min(Number(widget.config?.limit || 50), 200);
   const [field, order] = (sortBy || 'updatedAt:desc').split(':');
@@ -896,11 +838,12 @@ const executeTableQuery = async (widget, project) => {
  * 
  * @param {*} widget 
  * @param {*} project 
+ * @param {*} getLogModelFunc 
  * @returns 
  */
-const executePieChartQuery = async (widget, project) => {
-  const { log } = await getLogModel(project.id);
-  const filters = buildMongoQuery(widget.config?.filters || {}, project);
+const executePieChartQuery = async (widget, project, getLogModelFunc) => {
+  const { log } = await getLogModelFunc(project.id);
+  const filters = buildMongoFilterQuery(widget.config?.filters || {}, project);
   const timeFilter = widget.config?.timeRange ? { updatedAt: buildTimeRangeFilter(widget.config.timeRange) } : {};
   const match = { ...filters, ...timeFilter };
 
@@ -963,22 +906,23 @@ const executePieChartQuery = async (widget, project) => {
 /**
  * 
  * @param {*} widget 
+ * @param {*} getLogModelFunc 
  * @returns 
  */
-const executeWidgetQuery = async (widget) => {
+const executeWidgetQuery = async (widget, getLogModelFunc) => {
   const project = await getProjectFromCache(widget.project?.toString?.() || widget.project);
   if (!project) throw HttpError(NOT_FOUND_ERR_CODE, NOT_FOUND_ERR_MESSAGE);
   switch (widget.template) {
     case 'total_value':
-      return await executeTotalValueQuery(widget, project);
+      return await executeTotalValueQuery(widget, project, getLogModelFunc);
     case 'line_chart':
-      return await executeLineChartQuery(widget, project);
+      return await executeLineChartQuery(widget, project, getLogModelFunc);
     case 'bar_chart':
-      return await executeBarChartQuery(widget, project);
+      return await executeBarChartQuery(widget, project, getLogModelFunc);
     case 'table':
-      return await executeTableQuery(widget, project);
+      return await executeTableQuery(widget, project, getLogModelFunc);
     case 'pie_chart':
-      return await executePieChartQuery(widget, project);
+      return await executePieChartQuery(widget, project, getLogModelFunc);
     default:
       throw HttpError(INVALID_INPUT_ERR_CODE, `Unknown template: ${widget.template}`);
   }

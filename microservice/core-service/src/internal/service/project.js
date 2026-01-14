@@ -11,11 +11,11 @@ const randomstring = require("randomstring");
 const projectUserModel = require("../model/project.user.model");
 const { updateProjectCache, getProjectFromCache } = require("../../shared/cache");
 const { mapProjectUser, mapProject } = require("../utils/mapper");
-const { validateCustomIndex, getLogModel, isRecent } = require("../utils/helper");
-const { initLogger } = require("./../utils/helper");
+const { validateCustomIndex, isRecent } = require("../utils/helper");
 const moment = require("moment-timezone");
 const probeModel = require("../model/probe.model");
 const widgetModel = require("../model/widget.model");
+const { isValidObjectId } = require("../../shared/mongoose");
 
 const generateUniqueSlug = async (baseSlug) => {
     let slug = baseSlug
@@ -42,8 +42,9 @@ const generateUniqueSlug = async (baseSlug) => {
  * @param {string[]} [params.settings.allowedOrigin]
  * @param {string} [params.settings.deduplicationStrategy]
  * @param {number | string} [params.settings.retentionHours]
+ * @param {Function} initLoggerFunc
  */
-const createProject = async (params) => {
+const createProject = async (params, initLoggerFunc) => {
 
     const v = new Validator(params, {
         title: "required|string",
@@ -54,7 +55,7 @@ const createProject = async (params) => {
         "settings.allowedOrigin": "arrayUnique",
         "settings.retentionHours": "numeric",
         "settings.deduplicationStrategy": "string",
-        
+
     });
 
     let match = await v.check();
@@ -119,7 +120,9 @@ const createProject = async (params) => {
         await session.commitTransaction()
 
         const project = await updateProjectCache(projects?.[0]?._id?.toString())
-        initLogger(project)
+
+        initLoggerFunc(project)?.catch(console.error)
+
         return project
 
     } catch (e) {
@@ -142,8 +145,9 @@ const createProject = async (params) => {
  * @param {string[]} [params.allowedOrigin]
  * @param {string} [params.deduplicationStrategy]
  * @param {string} [params.retentionHours]
+ * @param {Function} initLoggerFunc
  */
-const updateProject = async (id, params) => {
+const updateProject = async (id, params, initLoggerFunc) => {
     const project = await getProjectFromCache(id)
     if (!project) {
         throw HttpError(NOT_FOUND_ERR_CODE, NOT_FOUND_ERR_MESSAGE)
@@ -189,7 +193,7 @@ const updateProject = async (id, params) => {
     )
 
     const updated = await updateProjectCache(id)
-    initLogger(updated)
+    initLoggerFunc(updated)
 
     return updated
 
@@ -201,6 +205,9 @@ const updateProject = async (id, params) => {
  * @param {string} projectId 
  */
 const canUserModifyProject = async (userId, projectId) => {
+    if (!isValidObjectId(userId) || !isValidObjectId(projectId)) {
+        return false
+    }
 
     const user = await findUserById(userId)
     if (!user) {
@@ -225,6 +232,9 @@ const canUserModifyProject = async (userId, projectId) => {
  * @returns 
  */
 const canUserReadProject = async (userId, projectId) => {
+    if (!isValidObjectId(userId) || !isValidObjectId(projectId)) {
+        return false
+    }
 
     return projectUserModel.exists({
         project: ObjectId.createFromHexString(projectId?.toString()),
@@ -236,15 +246,16 @@ const canUserReadProject = async (userId, projectId) => {
 /**
  * 
  * @param {string} id 
+ * @param {Function}  getLogModelFunc
  */
-const removeProject = async (id) => {
+const removeProject = async (id, getLogModelFunc) => {
     const project = await getProjectFromCache(id)
     if (!project) {
         throw HttpError(NOT_FOUND_ERR_CODE, PROJECT_NOT_FOUND_ERR_MESSAGE)
     }
 
     const projectObjId = ObjectId.createFromHexString(id.toString());
-    const { log, logstamp } = await getLogModel(id)
+    const { log, logstamp } = await getLogModelFunc(id)
 
     await Promise.all([
         projectModel.findByIdAndDelete(id),
@@ -430,16 +441,17 @@ const listUserFromProject = async (projectId) => {
 /**
  * 
  * @param {string} userId 
+ * @param {Function} getLogModelFunc 
  * @returns 
  */
-const getUsersDashboardProjectsStats = async (userId) => {
+const getUsersDashboardProjectsStats = async (userId, getLogModelFunc) => {
     const projectUsers = await projectUserModel.find({ 'user.userId': ObjectId.createFromHexString(userId) })
 
     const projectsWithStats = await Promise.all(
         projectUsers.map(async (pu) => {
             const project = await getProjectFromCache(pu.project?.toString());
 
-            const { log } = await getLogModel(project?.id?.toString())
+            const { log } = await getLogModelFunc(project?.id?.toString())
 
             const [result] = await log.aggregate([
                 {
@@ -599,9 +611,15 @@ const processRemoveUserFromAllProject = async (userId) => {
 /**
  * 
  * @param {string} projectId 
+ * @param {Function} getLogModelFunc 
  */
-const getProjectLogStats = async (projectId) => {
-    const { log: logModel } = await getLogModel(projectId)
+const getProjectLogStats = async (projectId, getLogModelFunc) => {
+
+    if(!isValidObjectId(projectId)){
+        throw HttpError(INVALID_INPUT_ERR_CODE,`invalid id`)
+    }
+
+    const { log: logModel } = await getLogModelFunc(projectId)
 
     const logsStats = await logModel.aggregate([
         {

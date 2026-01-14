@@ -1,14 +1,210 @@
 //@ts-check
 
-const { mongoose } = require("./../../shared/mongoose");
+const { mongoose, isValidObjectId } = require("./../../shared/mongoose");
 const { getProjectFromCache } = require("../../shared/cache");
 const { HttpError, hashString, decryptSecret, createSlug, encrypt, decrypt } = require("common/function");
 const { NOT_FOUND_ERR_CODE, NOT_FOUND_ERR_MESSAGE, BROWSER_CLIENT_TYPE, INVALID_INPUT_ERR_CODE, INVALID_INPUT_ERR_MESSAGE } = require("common/constant");
-const { validateOrigin, validateSignature, getLogModel, generateIndexedHashes, validateCustomIndex, generateRawValues, generateLogKey } = require("../utils/helper");
+const { validateOrigin, validateSignature, generateIndexedHashes, validateCustomIndex, generateRawValues, generateLogKey } = require("../utils/helper");
 const projectModel = require("../model/project.model");
 const { mapLog } = require("../utils/mapper");
 const { compressAndEncrypt, decryptAndDecompress } = require("common/function");
-const { ObjectId } = mongoose.Types
+const logSchema = require("../model/log.model");
+const logstampSchema = require("../model/logstamp.model");
+
+const Registry = {};
+
+/**
+ * 
+ * @param {object} project 
+ * @param {string} project.id 
+ * @param {object} project.settings
+ * @param {string[]} project.settings.indexes
+ * @param {string[]} project.settings.rawIndexes
+ * @param {number} project.settings.retentionHours 
+ */
+const initLogger = async (project) => {
+    const logModelName = `Log_${project.id}`;
+    const logStampModelName = `Logstamp_${project.id}`;
+
+    // Delete existing models
+    if (mongoose.models[logModelName]) {
+        delete mongoose.models[logModelName];
+        delete mongoose.connection.models[logModelName];
+    }
+    if (mongoose.models[logStampModelName]) {
+        delete mongoose.models[logStampModelName];
+        delete mongoose.connection.models[logStampModelName];
+    }
+
+    // === LOG COLLECTION ===
+    const schema = logSchema.clone();
+
+    // Clear any existing createdAt indexes from schema
+    schema._indexes = schema._indexes.filter(idx => {
+        const fields = Object.keys(idx[0]);
+        return !fields.includes('createdAt') && !fields.includes('updatedAt');
+    });
+
+    // Add custom indexes
+    for (const field of project.settings.indexes) {
+        const hashField = `hash.${field.replace(/\./g, '_')}`;
+        schema.index({ [hashField]: 1 });
+    }
+
+    // Add raw indexes (non-hashed, good for numbers)
+    if (project.settings.rawIndexes) {
+        for (const field of project.settings.rawIndexes) {
+            const rawField = `raw.${field.replace(/\./g, '_')}`;
+            schema.index({ [rawField]: 1 });
+        }
+    }
+
+    // Add TTL index
+    const retentionHours = project.settings.retentionHours;
+    if (retentionHours && retentionHours > 0) {
+        schema.index(
+            { updatedAt: 1 },  // ← Changed from createdAt
+            {
+                expireAfterSeconds: retentionHours * 60 * 60,
+                name: 'updatedAt_ttl'
+            }
+        );
+    }
+
+
+    const logModel = mongoose.model(logModelName, schema, `log_${project.id}`);
+
+    // Drop the problematic index specifically
+    try {
+        const existingIndexes = await logModel.collection.indexes();
+
+        for (const idx of existingIndexes) {
+            if ((idx.name.includes('createdAt') || idx.name.includes('updatedAt'))
+                && idx.name !== 'updatedAt_ttl') {
+                await logModel.collection.dropIndex(idx.name);
+            }
+        }
+    } catch (e) {
+        // Ignore
+    }
+
+    await logModel.syncIndexes();
+
+    // === TIMESERIES COLLECTION ===
+    const collectionName = `logstamp_${project.id}`;
+
+    try {
+        // Check if collection exists
+        const collections = await mongoose.connection.db
+            .listCollections({ name: collectionName })
+            .toArray();
+
+        const collectionExists = collections.length > 0;
+
+        if (collectionExists) {
+            // Collection exists - check if TTL matches
+            const collInfo = collections[0];
+            const currentTTL = collInfo?.options?.expireAfterSeconds;
+            const desiredTTL = retentionHours ? retentionHours * 60 * 60 : null;
+
+            //drop if ttl ttl mismatched
+            if (currentTTL !== desiredTTL) {
+
+                await mongoose.connection.db.dropCollection(collectionName);
+
+                // Create with new TTL
+                const createOptions = {
+                    timeseries: {
+                        timeField: 'createdAt',
+                        metaField: 'level',
+                        granularity: 'seconds'
+                    }
+                };
+
+                if (retentionHours && retentionHours > 0) {
+                    createOptions.expireAfterSeconds = retentionHours * 60 * 60;
+                }
+
+                await mongoose.connection.db.createCollection(collectionName, createOptions);
+            }
+        } else {
+            // Collection doesn't exist - create it
+            const createOptions = {
+                timeseries: {
+                    timeField: 'createdAt',
+                    metaField: 'level',
+                    granularity: 'seconds'
+                }
+            };
+
+            if (retentionHours && retentionHours > 0) {
+                createOptions.expireAfterSeconds = retentionHours * 60 * 60;
+            }
+
+            await mongoose.connection.db.createCollection(collectionName, createOptions);
+        }
+    } catch (e) {
+        throw e;
+    }
+
+    // Create Mongoose model
+    const stampSchema = logstampSchema.clone();
+    delete stampSchema.options.timeseries;
+
+    const logStampModel = mongoose.model(logStampModelName, stampSchema, collectionName);
+
+    try {
+        await logStampModel.syncIndexes();
+    } catch (e) {
+        console.log('Note: Could not sync indexes on timeseries:', e.message);
+    }
+
+    Registry[project.id] = {
+        log: logModel,
+        logstamp: logStampModel
+    };
+
+    return null;
+}
+/**
+ * 
+ * @param {string} projectId 
+ * @returns 
+ */
+const getLogModel = async (projectId) => {
+    if (!isValidObjectId(projectId)) {
+        throw HttpError(INVALID_INPUT_ERR_CODE, `Invalid id`)
+    }
+
+    // Check in-memory registry first
+    if (Registry[projectId]) return Registry[projectId];
+
+    const project = await getProjectFromCache(projectId)
+    if (!project) {
+        throw HttpError(NOT_FOUND_ERR_CODE, NOT_FOUND_ERR_MESSAGE)
+    }
+
+    const logModelName = `Log_${project.id}`;
+    const logStampModelName = `Logstamp_${project.id}`;
+
+    // Check if models already exist in Mongoose, otherwise create them
+    const logModel = mongoose.models[logModelName] ||
+        mongoose.model(logModelName, logSchema.clone(), `log_${project.id}`);
+
+    const logStampModel = mongoose.models[logStampModelName] ||
+        mongoose.model(logStampModelName, logstampSchema.clone(), `logstamp_${project.id}`);
+
+    // Cache in registry
+    Registry[project.id] = {
+        log: logModel,
+        logstamp: logStampModel
+    };
+
+    return {
+        log: logModel,
+        logstamp: logStampModel
+    };
+}
 
 
 /**
@@ -300,7 +496,17 @@ const logTimeline = async (projectId, key) => {
     return hourlyStats
 }
 
+/**
+ * 
+ * @param {string} projectId 
+ * @param {*} field 
+ * @returns 
+ */
 const getDistinctValue = async (projectId, field) => {
+    if (!isValidObjectId(projectId)) {
+        return null
+    }
+
     const { log } = await getLogModel(projectId);
     let distinctValues = [];
 
@@ -351,9 +557,12 @@ const getDistinctValue = async (projectId, field) => {
 }
 
 module.exports = {
+    createLog,
     processWriteLog,
     processCreateSelfLog,
     paginateLogs,
     logTimeline,
-    getDistinctValue
+    getDistinctValue,
+    initLogger,
+    getLogModel
 }

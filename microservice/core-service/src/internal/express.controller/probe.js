@@ -3,9 +3,7 @@
 const { NO_ACCESS_ERR_CODE, NO_ACCESS_ERR_MESSAGE, SUCCESS_ERR_CODE, SUCCESS_ERR_MESSAGE, FORBIDDEN_ERR_CODE, NOT_FOUND_ERR_CODE, NOT_FOUND_ERR_MESSAGE, WRITE_PROJECT_USER_ROLE } = require("common/constant");
 const { HttpError, HttpResponse } = require("common/function");
 const { createProbe, findProbeById, updateProbe, removeProbe, paginateProbe, testConnection } = require("../service/probe");
-const { canUserAccessProject } = require("../utils/helper");
-const { canUserDo } = require("../../shared/provider/auth.service");
-const { canUserModifyProject } = require("../service/project");
+const { canUserModifyProject, canUserReadProject } = require("../service/project");
 
 module.exports = {
     /**
@@ -62,7 +60,7 @@ module.exports = {
 
         const data = await findProbeById(req?.params?.id)
 
-        const canAccessProject = await canUserAccessProject(req?.user?.id, req?.params?.id)
+        const canAccessProject = await canUserReadProject(req?.user?.id, req?.params?.id)
         if (!canAccessProject) {
             throw HttpError(FORBIDDEN_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
         }

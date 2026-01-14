@@ -1,15 +1,9 @@
 //@ts-check
 
-const { NO_ACCESS_ERR_CODE, NO_ACCESS_ERR_MESSAGE, NOT_FOUND_ERR_CODE, NOT_FOUND_ERR_MESSAGE, FULL_PAYLOAD_DEDUPLICATION_STRATEGY, NONE_DEDUPLICATION_STRATEGY, INDEX_ONLY_DEDUPLICATION_STRATEGY } = require("common/constant");
+const { NO_ACCESS_ERR_CODE, NO_ACCESS_ERR_MESSAGE, FULL_PAYLOAD_DEDUPLICATION_STRATEGY, NONE_DEDUPLICATION_STRATEGY, INDEX_ONLY_DEDUPLICATION_STRATEGY } = require("common/constant");
 const { HttpError, num2Int, getNestedValue, hashString } = require("common/function");
 const { default: striptags } = require("striptags")
 const crypto = require("crypto");
-const logSchema = require("../model/log.model");
-const { mongoose, isValidObjectId } = require("./../../shared/mongoose");
-const logstampSchema = require("../model/logstamp.model");
-const { getProjectFromCache } = require("../../shared/cache");
-const projectUserModel = require("../model/project.user.model");
-const { ObjectId } = mongoose.Types
 
 /**
  * 
@@ -91,199 +85,6 @@ const validateSignature = (project, headers, body) => {
     return true
 }
 
-
-const Registry = {};
-
-/**
- * 
- * @param {object} project 
- * @param {string} project.id 
- * @param {object} project.settings
- * @param {string[]} project.settings.indexes
- * @param {string[]} project.settings.rawIndexes
- * @param {number} project.settings.retentionHours 
- */
-const initLogger = async (project) => {
-    const logModelName = `Log_${project.id}`;
-    const logStampModelName = `Logstamp_${project.id}`;
-
-    // Delete existing models
-    if (mongoose.models[logModelName]) {
-        delete mongoose.models[logModelName];
-        delete mongoose.connection.models[logModelName];
-    }
-    if (mongoose.models[logStampModelName]) {
-        delete mongoose.models[logStampModelName];
-        delete mongoose.connection.models[logStampModelName];
-    }
-
-    // === LOG COLLECTION ===
-    const schema = logSchema.clone();
-
-    // Clear any existing createdAt indexes from schema
-    schema._indexes = schema._indexes.filter(idx => {
-        const fields = Object.keys(idx[0]);
-        return !fields.includes('createdAt') && !fields.includes('updatedAt');
-    });
-
-    // Add custom indexes
-    for (const field of project.settings.indexes) {
-        const hashField = `hash.${field.replace(/\./g, '_')}`;
-        schema.index({ [hashField]: 1 });
-    }
-
-    // Add raw indexes (non-hashed, good for numbers)
-    if (project.settings.rawIndexes) {
-        for (const field of project.settings.rawIndexes) {
-            const rawField = `raw.${field.replace(/\./g, '_')}`;
-            schema.index({ [rawField]: 1 });
-        }
-    }
-
-    // Add TTL index
-    const retentionHours = project.settings.retentionHours;
-    if (retentionHours && retentionHours > 0) {
-        schema.index(
-            { updatedAt: 1 },  // ← Changed from createdAt
-            {
-                expireAfterSeconds: retentionHours * 60 * 60,
-                name: 'updatedAt_ttl'
-            }
-        );
-    }
-
-
-    const logModel = mongoose.model(logModelName, schema, `log_${project.id}`);
-
-    // Drop the problematic index specifically
-    try {
-        const existingIndexes = await logModel.collection.indexes();
-
-        for (const idx of existingIndexes) {
-            if ((idx.name.includes('createdAt') || idx.name.includes('updatedAt'))
-                && idx.name !== 'updatedAt_ttl') {
-                await logModel.collection.dropIndex(idx.name);
-            }
-        }
-    } catch (e) {
-        // Ignore
-    }
-
-    await logModel.syncIndexes();
-
-    // === TIMESERIES COLLECTION ===
-    const collectionName = `logstamp_${project.id}`;
-
-    try {
-        // Check if collection exists
-        const collections = await mongoose.connection.db
-            .listCollections({ name: collectionName })
-            .toArray();
-
-        const collectionExists = collections.length > 0;
-
-        if (collectionExists) {
-            // Collection exists - check if TTL matches
-            const collInfo = collections[0];
-            const currentTTL = collInfo?.options?.expireAfterSeconds;
-            const desiredTTL = retentionHours ? retentionHours * 60 * 60 : null;
-
-            //drop if ttl ttl mismatched
-            if (currentTTL !== desiredTTL) {
-
-                await mongoose.connection.db.dropCollection(collectionName);
-
-                // Create with new TTL
-                const createOptions = {
-                    timeseries: {
-                        timeField: 'createdAt',
-                        metaField: 'level',
-                        granularity: 'seconds'
-                    }
-                };
-
-                if (retentionHours && retentionHours > 0) {
-                    createOptions.expireAfterSeconds = retentionHours * 60 * 60;
-                }
-
-                await mongoose.connection.db.createCollection(collectionName, createOptions);
-            }
-        } else {
-            // Collection doesn't exist - create it
-            const createOptions = {
-                timeseries: {
-                    timeField: 'createdAt',
-                    metaField: 'level',
-                    granularity: 'seconds'
-                }
-            };
-
-            if (retentionHours && retentionHours > 0) {
-                createOptions.expireAfterSeconds = retentionHours * 60 * 60;
-            }
-
-            await mongoose.connection.db.createCollection(collectionName, createOptions);
-        }
-    } catch (e) {
-        throw e;
-    }
-
-    // Create Mongoose model
-    const stampSchema = logstampSchema.clone();
-    delete stampSchema.options.timeseries;
-
-    const logStampModel = mongoose.model(logStampModelName, stampSchema, collectionName);
-
-    try {
-        await logStampModel.syncIndexes();
-    } catch (e) {
-        console.log('Note: Could not sync indexes on timeseries:', e.message);
-    }
-
-    Registry[project.id] = {
-        log: logModel,
-        logstamp: logStampModel
-    };
-
-    return null;
-}
-/**
- * 
- * @param {string} projectId 
- * @returns 
- */
-const getLogModel = async (projectId) => {
-    // Check in-memory registry first
-    if (Registry[projectId]) return Registry[projectId];
-
-    const project = await getProjectFromCache(projectId)
-    if (!project) {
-        throw HttpError(NOT_FOUND_ERR_CODE, NOT_FOUND_ERR_MESSAGE)
-    }
-
-    const logModelName = `Log_${project.id}`;
-    const logStampModelName = `Logstamp_${project.id}`;
-
-    // Check if models already exist in Mongoose, otherwise create them
-    const logModel = mongoose.models[logModelName] ||
-        mongoose.model(logModelName, logSchema.clone(), `log_${project.id}`);
-
-    const logStampModel = mongoose.models[logStampModelName] ||
-        mongoose.model(logStampModelName, logstampSchema.clone(), `logstamp_${project.id}`);
-
-    // Cache in registry
-    Registry[project.id] = {
-        log: logModel,
-        logstamp: logStampModel
-    };
-
-    return {
-        log: logModel,
-        logstamp: logStampModel
-    };
-}
-
-
 /**
  * 
  * @param {*} log 
@@ -322,7 +123,7 @@ const generateIndexedHashes = (log, project) => {
  * @returns 
  */
 const generateRawValues = (data, project) => {
-    
+
     if (!project?.settings?.rawIndexes || project.settings.rawIndexes.length === 0) {
         return {};
     }
@@ -410,36 +211,66 @@ const generateLogKey = (params, project) => {
     }
 };
 
-/**
- * 
- * @param {string} userId 
- * @param {string} projectId 
- * @returns 
- */
-const canUserAccessProject = async (userId, projectId) => {
-    if (!isValidObjectId(userId) || !isValidObjectId(projectId)) {
-        return false
+
+const buildMongoFilterQuery = (filters = {}, project = null) => {
+    /**
+     * 
+     * @param {*} field 
+     * @param {*} operator 
+     * @param {*} val 
+     * @returns 
+     */
+    const makeCond = (field, operator, val) => {
+        if (field === 'level') {
+            if (operator === 'ne') return { level: { $ne: val } };
+            if (operator === 'contains' && typeof val === 'string') return { level: { $regex: String(val), $options: 'i' } };
+            return { level: val };
+        }
+        const path = field.replace(/\./g, '_');
+        const hashKey = `hash.${path}`;
+        const rawKey = `raw.${path}`;
+        const isRaw = project?.settings?.rawIndexes?.includes(field);
+
+        if (isRaw) {
+            if (['gt', 'gte', 'lt', 'lte'].includes(operator)) {
+                const num = isNaN(Number(val)) ? val : Number(val);
+                return { [rawKey]: { [`$${operator}`]: num } };
+            }
+            if (operator === 'ne') return { [rawKey]: { $ne: val } };
+            if (operator === 'contains' && typeof val === 'string') return { [rawKey]: { $regex: String(val), $options: 'i' } };
+            return { [rawKey]: val };
+        } else {
+            const hashed = hashString(String(val), field);
+            if (operator === 'ne') return { [hashKey]: { $ne: hashed } };
+            return { [hashKey]: hashed };
+        }
+    };
+
+    if (Array.isArray(filters)) {
+        const andConds = [];
+        for (const f of filters) {
+            if (!f || !f.field) continue;
+            const operator = f.operator || 'eq';
+            andConds.push(makeCond(f.field, operator, f.value));
+        }
+        return andConds.length ? { $and: andConds } : {};
     }
 
-    const access = await projectUserModel.findOne({
-        project: ObjectId.createFromHexString(projectId),
-        "user.userId": ObjectId.createFromHexString(userId)
-    });
-
-    return !!access;
-};
-
-
+    const query = {};
+    if (!filters || typeof filters !== 'object') return query;
+    for (const [key, value] of Object.entries(filters)) {
+        Object.assign(query, makeCond(key, 'eq', value));
+    }
+    return query;
+}
 
 module.exports = {
     validateCustomIndex,
     validateOrigin,
     validateSignature,
-    initLogger,
-    getLogModel,
     generateIndexedHashes,
     isRecent,
     generateRawValues,
     generateLogKey,
-    canUserAccessProject
+    buildMongoFilterQuery
 }

@@ -17,7 +17,7 @@ const {
 
 } = require("common/constant");
 const { createProject, canUserModifyProject, removeProject, paginateProject, addUserToProject, removeUserFromProject, listUserFromProject, updateProject, findProjectBySlug, findProjectById, canUserReadProject, getProjectLogStats } = require("../service/project");
-const { paginateLogs, getDistinctValue } = require("../service/logger");
+const { paginateLogs, getDistinctValue, initLogger, getLogModel } = require("../service/logger");
 const { canUserDo } = require("../../shared/provider/auth.service");
 
 module.exports = {
@@ -40,7 +40,7 @@ module.exports = {
         const data = await createProject({
             ...req?.body,
             creator: req?.user?.id
-        })
+        }, initLogger)
 
         HttpResponse(res).json({
             error: SUCCESS_ERR_CODE,
@@ -64,7 +64,7 @@ module.exports = {
             throw HttpError(FORBIDDEN_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
         }
 
-        const data = await updateProject(req?.params?.id, req?.body)
+        const data = await updateProject(req?.params?.id, req?.body, initLogger)
 
         HttpResponse(res).json({
             error: SUCCESS_ERR_CODE,
@@ -97,7 +97,7 @@ module.exports = {
             throw HttpError(FORBIDDEN_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
         }
 
-        await removeProject(project?.id)
+        await removeProject(project?.id, getLogModel)
 
         HttpResponse(res).json({
             error: SUCCESS_ERR_CODE,
@@ -256,7 +256,7 @@ module.exports = {
             throw HttpError(FORBIDDEN_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
         }
 
-        const data = await getProjectLogStats(project?.id)
+        const data = await getProjectLogStats(project?.id, getLogModel)
 
         HttpResponse(res).json({
             error: SUCCESS_ERR_CODE,

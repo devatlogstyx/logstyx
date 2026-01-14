@@ -346,8 +346,7 @@ const paginateProbe = async (query = {}, sortBy = "createdAt:desc", limit = 10, 
 
 const crypto = require('crypto');
 const { logger } = require("../../shared/logger");
-const { generateLogKey, getLogModel, generateIndexedHashes, generateRawValues } = require("../utils/helper");
-const { EXECUTE_PROBE_WORKER_MQ_QUEUE } = require("common/routes/mq-queue");
+const { generateLogKey, generateIndexedHashes, generateRawValues } = require("../utils/helper");
 
 /**
  * Generate HMAC signature for Probestyx authentication
@@ -404,70 +403,12 @@ const buildAuthHeaders = (auth) => {
 };
 
 /**
- * 
- * @param {*} project 
- * @param {*} params 
- */
-const createProbesLog = async (project, params) => {
-    let timestampDate = new Date(params?.timestamp)
-    if (isNaN(timestampDate.getTime())) {
-        timestampDate = new Date()
-    }
-
-    const key = generateLogKey(params, project)
-
-    const { log, logstamp } = await getLogModel(project?.id)
-
-    const hashes = generateIndexedHashes({
-        context: params?.context,
-        data: params?.data
-    }, project);
-
-    // Generate raw values for rawIndexes
-    const rawValues = generateRawValues({
-        context: params?.context,
-        data: params?.data
-    }, project);
-
-    const [compressedContext, compressedData] = await Promise.all([
-        compressAndEncrypt(params?.context),
-        compressAndEncrypt(params?.data)
-    ])
-
-    await log.findOneAndUpdate(
-        { key },
-        {
-            $set: { updatedAt: timestampDate },
-            $inc: { count: 1 },
-            $setOnInsert: {
-                level: params?.level,
-                device: params?.device,
-                context: compressedContext,
-                data: compressedData,
-                hash: hashes,
-                raw: rawValues,
-                createdAt: timestampDate,
-            }
-        },
-        { upsert: true }
-    );
-
-    await logstamp.create({
-        key,
-        level: params?.level,
-        createdAt: timestampDate
-    });
-
-
-}
-
-/**
  * Execute a single probe - fetch data and log it
  * 
  * @param {string} probeId 
  * @returns 
  */
-const processExecuteProbeWorker = async (probeId) => {
+const processExecuteProbeWorker = async (probeId, createLogFunc) => {
 
     let probe
     const startTime = Date.now();
@@ -517,7 +458,7 @@ const processExecuteProbeWorker = async (probeId) => {
         }
 
         // Log successful fetch
-        await createProbesLog(project, {
+        await createLogFunc(project, {
             level: INFO_LOG_LEVEL,
             timestamp: Date.now(),
             device: {},
@@ -562,7 +503,7 @@ const processExecuteProbeWorker = async (probeId) => {
                     }
                 }
 
-                await createProbesLog(project, {
+                await createLogFunc(project, {
                     level: ERROR_LOG_LEVEL,
                     timestamp: Date.now(),
                     device: {},
