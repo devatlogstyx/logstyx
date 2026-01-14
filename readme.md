@@ -162,7 +162,7 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 
 If you want to use separate services (external Redis, MongoDB, or RabbitMQ), you can override the default configuration:
 
-1. Create a `.env` file with your service URLs:
+1. Copy the env.secret template from script directory and populate with your service URLs:
    ```env
    AMQP_HOST=amqp://your-rabbitmq-host:5672
    REDIS_URL=redis://your-redis-host:6379
