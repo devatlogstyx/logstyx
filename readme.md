@@ -7,12 +7,12 @@ Welcome to the Logstyx Project! An open-source server implementation of the LOGS
 - [Features](#features)
 - [Why Logstyx?](#why-logstyx)
 - [Roadmap](#roadmap)
+- [Quick Start](#quick-start)
 - [Services Structure](#services-structure)
 - [Technologies Used](#technologies-used)
-- [Setup Instructions](#setup-instructions)
-- [Setup For Production](#setup-for-production)
+- [Development Setup](#development-setup)
+- [Production Deployment](#production-deployment)
 - [Environment Variables](#environment-variables)
-- [Scripts](#scripts)
 
 ## Overview
 This project implements a microservices architecture, with each service tailored to specific functionalities. The services include:
@@ -86,6 +86,24 @@ We're actively working on these features:
 
 Want to contribute or have feature suggestions? Open an issue on our repository!
 
+## Quick Start
+
+Get Logstyx up and running in a single command:
+```bash
+curl -fsSL https://raw.githubusercontent.com/devatlogstyx/logstyx/main/install.sh | bash
+```
+
+Follow the prompts to configure your installation. The installer will optionally start services immediately.
+
+That's it! Access Logstyx at http://localhost:5000
+
+The installer will:
+- ✓ Check Docker prerequisites
+- ✓ Collect your admin credentials
+- ✓ Generate secure encryption keys
+- ✓ Create encrypted configuration
+- ✓ Optionally start services immediately
+
 ## Services Structure
 The project uses a monorepo structure managed with `pnpm`. Below is an overview of the main directories:
 
@@ -105,8 +123,6 @@ microservice
 │   ├── ...
 ├── common
 │   ├── ...
-└── script
-    ├── ...
 ```
 Each service has its own Docker configuration (`Dockerfile` and `docker-compose` files) and may have its own dependencies defined in a `package.json` file.
 
@@ -119,9 +135,9 @@ Each service has its own Docker configuration (`Dockerfile` and `docker-compose`
 - **Docker**: For containerization of services.
 - **React** + **Vite**: For building the frontend application.
 
-## Setup Instructions
+## Development Setup
 
-### Development Setup
+For local development with hot-reload:
 
 1. Clone the repository:
    ```bash
@@ -129,78 +145,114 @@ Each service has its own Docker configuration (`Dockerfile` and `docker-compose`
    cd <project-directory>
    ```
 
-2. Install dependencies using `pnpm`:
+2. Install dependencies:
    ```bash
    pnpm install
    ```
 
-3. Set up your environment variables:
-   - Create a `.env` file in the script directory
-   - Run the encryption script to generate an encrypted `.env.encrypted` file and build the frontend
-   - Make sure to set the required environment variables in `.env`
+3. Set up environment:
+   ```bash
+   ./install.sh
+   cd ..
+   ```
 
-4. To run the services locally, use the following command:
+4. Start development services:
    ```bash
    docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
    ```
 
-5. Access the application:
-   - Open http://localhost:5000 from your browser
+5. Access at http://localhost:5000
 
-## Setup For Production
+## Production Deployment
 
-We provide `docker-compose.prod.yml` to use the latest release from the Docker registry.
+### Option 1: Quick Install (Recommended)
 
-### Option 1: Using Docker Compose with bundled services
-This uses the included Redis, MongoDB, and RabbitMQ services:
+Run the installer and start immediately:
 
 ```bash
-docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+curl -fsSL https://raw.githubusercontent.com/devatlogstyx/logstyx/main/install.sh | bash
 ```
 
-### Option 2: Using external/separate services
+### Option 2: Manual Setup
 
-If you want to use separate services (external Redis, MongoDB, or RabbitMQ), you can override the default configuration:
+If you prefer manual configuration:
 
-1. Create a `.env` file with your service URLs:
-   ```env
-   AMQP_HOST=amqp://your-rabbitmq-host:5672
-   REDIS_URL=redis://your-redis-host:6379
-   MONGODB_HOST=mongodb://your-mongodb-host:27017
+1. **Download compose files:**
+   ```bash
+   curl -O https://raw.githubusercontent.com/devatlogstyx/logstyx/main/docker-compose.yml
+   curl -O https://raw.githubusercontent.com/devatlogstyx/logstyx/main/docker-compose.prod.yml
    ```
 
-2. Optionally, run the encryption script to use encrypted variables:
-   ```env
-   ENC_AMQP_HOST=your-encrypted-value
-   ENC_REDIS_URL=your-encrypted-value
-   ENC_MONGODB_HOST=your-encrypted-value
+2. **Generate encrypted configuration:**
+   ```bash
+   curl -fsSL https://raw.githubusercontent.com/devatlogstyx/logstyx/main/script/setup-encrypted-env.sh | bash
    ```
 
-3. Run docker compose:
+3. **Start services:**
+   ```bash
+   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+   ```
+
+### Using External Services
+
+To use your own Redis, MongoDB, or RabbitMQ:
+
+1. Add connection strings to `.env.encrypted`:
+   ```env
+   AMQP_HOST=amqp://your-rabbitmq:5672
+   REDIS_URL=redis://your-redis:6379
+   MONGODB_HOST=mongodb://your-mongodb:27017
+   ```
+
+2. Deploy without bundled services:
    ```bash
    docker compose -f docker-compose.prod.yml up -d
    ```
 
-**Note**: Environment variables in your `.env` file will automatically override the values in `docker-compose.prod.yml`. You don't need to remove anything from the compose file.
+### Deployment Commands
+
+```bash
+# Start services
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+
+# View logs
+docker compose logs -f
+
+# Stop services
+docker compose down
+
+# Update to latest version
+docker compose pull
+docker compose up -d
+
+# Remove everything including data
+docker compose down -v
+```
 
 ## Environment Variables
 
-Key environment variables used across services:
+### Core Variables (Auto-generated by installer)
+- `USER_NAME` - Initial admin username
+- `USER_EMAIL` - Initial admin email
+- `USER_PASSWORD` - Initial admin password
+- `SELF_PROJECT_TITLE` - Your project title
+- `CRYPTO_SECRET` - 32-char encryption secret
+- `REFRESH_TOKEN_SECRET` - 32-char JWT refresh token secret
+- `USER_AUTHENTICATION_JWT_SECRET` - 32-char auth secret
+- `MASTER_KEY` - Master decryption key
 
-- `AMQP_HOST`: RabbitMQ connection URL
-- `REDIS_URL`: Redis connection URL
-- `MONGODB_HOST`: MongoDB connection URL
-- `ENC_*`: Encrypted versions of sensitive variables
+### Optional Variables (External Services)
+- `AMQP_HOST` - RabbitMQ connection URL
+- `REDIS_URL` - Redis connection URL
+- `MONGODB_HOST` - MongoDB connection URL
 
-Refer to individual service directories for service-specific environment variables.
+All sensitive variables can use the `ENC_` prefix for encrypted values (e.g., `ENC_USER_PASSWORD`).
 
-## Scripts
+## Support
 
-The project includes utility scripts in the `script` directory for:
-- Environment variable encryption
-- Frontend build automation
-- Development setup helpers
+- **Issues**: [GitHub Issues](https://github.com/devatlogstyx/logstyx/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/devatlogstyx/logstyx/discussions)
 
 ---
 
-If you encounter issues or have questions, feel free to open an issue in the repository or contact the project maintainers. Happy coding!
+If you encounter issues or have questions, feel free to open an issue in the repository or contact the project maintainers.

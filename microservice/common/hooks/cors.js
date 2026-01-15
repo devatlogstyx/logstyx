@@ -2,7 +2,7 @@
 
 const { decryptSecret } = require("../function/encryptor");
 const { BROWSER_CLIENT_TYPE } = require("./../constant/auth");
-const ALLOWED_ORIGIN = decryptSecret(process?.env?.ENC_ALLOWED_ORIGIN)?.split(",") ?? []
+
 /**
  * 
  * @param {object} param0
@@ -11,7 +11,7 @@ const ALLOWED_ORIGIN = decryptSecret(process?.env?.ENC_ALLOWED_ORIGIN)?.split(",
  * @param {string | string[]} [param0.allowedOrigins]
  * @returns 
  */
-const useCors = ({ Detector, Cors, allowedOrigins = ALLOWED_ORIGIN }) => {
+const useCors = ({ Detector, Cors, allowedOrigins = [] }) => {
   const deviceDetector = new Detector();
 
   return (req, res, next) => {
