@@ -1,6 +1,6 @@
 //@ts-check
 
-import { Title, Text, Modal, TextInput, Select, Switch, Textarea, Badge, ActionIcon, Loader } from '@mantine/core';
+import { Title, Text, Modal, TextInput, Select, Switch, Textarea, Badge, ActionIcon, Loader, Pagination } from '@mantine/core';
 
 import { MdEdit, MdDelete, MdPlayArrow } from 'react-icons/md';
 import PrimaryButton from "./../../component/button/PrimaryButton";
@@ -10,6 +10,8 @@ import ModalWebhook from './ModalWebhook';
 const DashboardWebhook = () => {
 
     const {
+        page,
+        setPage,
         form,
         loading,
         openModal,
@@ -48,7 +50,7 @@ const DashboardWebhook = () => {
                     </PrimaryButton>
                 </div>
 
-                {webhooks.length === 0 ? (
+                {webhooks?.results.length === 0 ? (
                     <div className="border-2 border-dashed rounded-lg p-12 text-center">
                         <p className="text-gray-500 mb-4">No webhooks connectionured yet</p>
                         <PrimaryButton onClick={openModal}>
@@ -57,7 +59,7 @@ const DashboardWebhook = () => {
                     </div>
                 ) : (
                     <div className="grid gap-4">
-                        {webhooks.map((webhook) => (
+                        {webhooks?.results.map((webhook) => (
                             <div key={webhook.id} className="border rounded-lg p-4 bg-white hover:shadow-md transition-shadow">
                                 <div className="flex justify-between items-start">
                                     <div className="flex-1 min-w-0">
@@ -68,7 +70,7 @@ const DashboardWebhook = () => {
                                     <div className="flex gap-2 ml-4">
                                         <ActionIcon
                                             className="!bg-gray-50 !text-gray-600 hover:!bg-gray-100"
-                                            onClick={()=>handleEdit(webhook?.id)}
+                                            onClick={() => handleEdit(webhook?.id)}
                                             title="Edit"
                                         >
                                             <MdEdit size={18} />
@@ -86,6 +88,13 @@ const DashboardWebhook = () => {
                         ))}
                     </div>
                 )}
+            </div>
+            <div className="flex justify-end mt-4">
+                <Pagination
+                    total={webhooks?.totalPages}
+                    value={page}
+                    onChange={setPage}
+                />
             </div>
 
             <ModalWebhook

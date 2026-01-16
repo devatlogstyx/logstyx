@@ -2,7 +2,7 @@
 
 import { useForm } from "@mantine/form";
 import React, { useEffect, useState } from "react";
-import { createWebhook, deleteWebhook, findWebhookById, paginateWebhooks, testWebhook, updateWebhook } from "../../api/webhooks";
+import { createWebhook, deleteWebhook, findWebhookById, paginateWebhooks, updateWebhook } from "../../api/webhooks";
 import { useErrorMessage, useSuccessMessage } from "../../hooks/useMessage";
 import { useConfirmDialog } from "../../hooks/useConfirmDialog";
 
@@ -13,6 +13,7 @@ export default function useDashboardWebhook() {
     const [modalOpened, setModalOpened] = useState(false);
     const [editingWebhook, setEditingWebhook] = useState(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [page, setPage] = useState(1)
 
     const ErrorMessage = useErrorMessage()
     const SuccessMessage = useSuccessMessage()
@@ -69,8 +70,11 @@ export default function useDashboardWebhook() {
     const fetchWebhooks = React.useCallback(async () => {
         try {
             setLoading(true);
-            const data = await paginateWebhooks();
-            setWebhooks(data?.results || []);
+            const data = await paginateWebhooks({
+                page,
+                limit: 10
+            });
+            setWebhooks(data);
         } catch (err) {
             ErrorMessage(err);
         } finally {
@@ -177,6 +181,8 @@ export default function useDashboardWebhook() {
     }
 
     return {
+        page,
+        setPage,
         form,
         loading,
         openModal,

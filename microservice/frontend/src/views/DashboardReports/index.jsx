@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { ActionIcon, Badge, Modal, Select, Text, TextInput, Title } from '@mantine/core';
+import { ActionIcon, Badge, Modal, Pagination, Select, Text, TextInput, Title } from '@mantine/core';
 import PrimaryButton from "./../../component/button/PrimaryButton";
 import SecondaryButton from "./../../component/button/SecondaryButton";
 import { PRIVATE_REPORT_VISIBILITY, PUBLIC_REPORT_VISIBILITY } from '../../utils/constant';
@@ -12,6 +12,8 @@ export default function DashboardReports() {
   const {
     list,
     loading,
+    page,
+    setPage,
     createModalOpened,
     openCreateModal,
     closeCreateModal,
@@ -38,7 +40,7 @@ export default function DashboardReports() {
   } = useDashboardReports();
 
   return (
-    <div className="p-4">
+    <div className="p-4 ">
       <div className="flex justify-between items-start mb-8">
         <div>
           <Title className="text-3xl font-bold">Reports</Title>
@@ -59,7 +61,7 @@ export default function DashboardReports() {
       </div>
       {loading ? <div>Loading...</div> : (
         <ul className="space-y-2">
-          {list.map(r => (
+          {list?.results?.map(r => (
             <li key={r.id} className="border p-3 flex justify-between">
               <Link to={`/dashboard/reports/${r.slug}`} className="flex-1">
                 <div className="font-semibold hover:underline">{r.title}</div>
@@ -94,6 +96,13 @@ export default function DashboardReports() {
           ))}
         </ul>
       )}
+      <div className="flex justify-end mt-4">
+        <Pagination
+          total={list?.totalPages}
+          value={page}
+          onChange={setPage}
+        />
+      </div>
       <EditModal
         editModalOpened={editModalOpened}
         closeEditModal={closeEditModal}

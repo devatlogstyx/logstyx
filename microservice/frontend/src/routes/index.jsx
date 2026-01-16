@@ -18,6 +18,7 @@ import DashboardReports from "../views/DashboardReports";
 import DashboardReportDetail from "../views/DashboardReportDetail";
 import PublicReportView from "../views/PublicReportView";
 import DashboardWebhook from "../views/DashboardWebhook";
+import DashboardAlert from "../views/DashboardAlert";
 
 export default function Router() {
     return (
@@ -35,6 +36,7 @@ export default function Router() {
                         <Route path="/dashboard/reports" element={<DashboardReports />} />
                         <Route path="/dashboard/reports/:slug" element={<DashboardReportDetail />} />
                         <Route path="/dashboard/webhooks" element={<DashboardWebhook />} />
+                        <Route path="/dashboard/alerts" element={<DashboardAlert />} />
                     </Route>
                     <Route path="/invitations/:id" element={<InvitationPage />} />
                     <Route path="/logout" element={<Logout />} />

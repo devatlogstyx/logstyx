@@ -73,29 +73,37 @@ export const paginateUser = async (signal, params) => {
  * @returns 
  */
 export const listAllUser = async (signal) => {
-    let page = 1
-    /**
-     * @type {any[]}
-     */
-    let res = [];
 
-    while (true) {
-        let list = await paginateUser(signal, {
-            page,
-            limit: 50
-        });
+    const firstPage = await paginateUser(signal, {});
 
-
-        res = [...res, ...(list?.results || [])];  // Append new results
-        if (!list?.totalPages || page >= list?.totalPages) {
-            break;
-        }
-
-        page += 1;
-
+    if (!firstPage?.results) {
+        return [];
     }
 
-    return res;
+    const res = [...firstPage.results];
+    const totalPages = firstPage.totalPages || 1;
+
+    // Fetch remaining pages in parallel
+    if (totalPages > 1) {
+        const pagePromises = [];
+        for (let page = 2; page <= totalPages; page++) {
+            pagePromises.push(
+                await paginateUser(signal, {
+                    page,
+                    limit: 50
+                })
+            );
+        }
+
+        const remainingPages = await Promise.all(pagePromises);
+        remainingPages.forEach(pageData => {
+            if (pageData?.results?.length) {
+                res.push(...pageData.results);
+            }
+        });
+    }
+
+    return res?.sort((a, b) => a.fullname.localeCompare(b.fullname));
 }
 
 /**
@@ -131,7 +139,7 @@ export const updateUser = async (signal, id, payload) => {
  * @returns 
  */
 export const listMyProject = async (signal) => {
-    let { data } = await Axios.get("/v1/users/me/projects",{
+    let { data } = await Axios.get("/v1/users/me/projects", {
         signal
     });
     return data?.data;

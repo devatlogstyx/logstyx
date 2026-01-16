@@ -50,29 +50,38 @@ export const paginateUserInvitation = async (signal, params) => {
  * @returns 
  */
 export const listAllUserInvitation = async (signal) => {
-    let page = 1
-    /**
-     * @type {any[]}
-     */
-    let res = [];
 
-    while (true) {
-        let list = await paginateUserInvitation(signal, {
-            page,
-            limit: 50
-        });
+    const firstPage = await paginateUserInvitation(signal, {});
 
+    if (!firstPage?.results) {
+        return [];
+    }
 
-        res = [...res, ...(list?.results || [])];  // Append new results
-        if (!list?.totalPages || page >= list?.totalPages) {
-            break;
+    const res = [...firstPage.results];
+    const totalPages = firstPage.totalPages || 1;
+
+    // Fetch remaining pages in parallel
+    if (totalPages > 1) {
+        const pagePromises = [];
+        for (let page = 2; page <= totalPages; page++) {
+            pagePromises.push(
+                await paginateUserInvitation(signal, {
+                    page,
+                    limit: 50
+                })
+            );
         }
 
-        page += 1;
-
+        const remainingPages = await Promise.all(pagePromises);
+        remainingPages.forEach(pageData => {
+            if (pageData?.results?.length) {
+                res.push(...pageData.results);
+            }
+        });
     }
 
     return res;
+
 }
 
 /**

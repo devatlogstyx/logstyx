@@ -7,6 +7,7 @@ import { useConfirmDialog } from '../../hooks/useConfirmDialog';
 export function useDashboardReports() {
   const [list, setList] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1)
 
   const [createModalOpened, setCreateModalOpened] = useState(false);
   const [title, setTitle] = useState('');
@@ -27,16 +28,16 @@ export function useDashboardReports() {
 
   useEffect(() => {
     const ctrl = new AbortController();
-    paginateReports(ctrl.signal, { page: 1, limit: 50 })
+    paginateReports(ctrl.signal, { page, limit: 50 })
       .then((res) => {
-        setList(res?.results || []);
+        setList(res);
       })
       .catch((err) => {
         ErrorMessage(err);
       })
       .finally(() => setLoading(false));
     return () => ctrl.abort();
-  }, [ErrorMessage]);
+  }, [ErrorMessage, page]);
 
   const openCreateModal = useCallback(() => setCreateModalOpened(true), []);
   const closeCreateModal = useCallback(() => setCreateModalOpened(false), []);
@@ -138,7 +139,7 @@ export function useDashboardReports() {
             });
           }
         },
-        onCancel: () => {},
+        onCancel: () => { },
       });
     },
     [openConfirmDialog, ErrorMessage]
@@ -148,6 +149,8 @@ export function useDashboardReports() {
     // data
     list,
     loading,
+    page,
+    setPage,
 
     // create modal + form
     createModalOpened,

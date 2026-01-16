@@ -3,10 +3,11 @@
 import { useNavigate, useLocation } from "react-router-dom"
 import { IoPeopleOutline, IoLogOutOutline, IoBriefcaseOutline, IoFileTraySharp, IoStatsChart } from "react-icons/io5"
 import { useUser } from "../../../context/useUser"
-import { PROJECT_TITLE, READ_PROJECT_ROLE, READ_REPORT_USER_ROLE, READ_USER_USER_ROLE, READ_WEBHOOK_USER_ROLE } from "../../../utils/constant"
+import { PROJECT_TITLE, READ_ALERT_USER_ROLE, READ_PROJECT_ROLE, READ_REPORT_USER_ROLE, READ_USER_USER_ROLE, READ_WEBHOOK_USER_ROLE } from "../../../utils/constant"
 import React from "react"
 import { LuRadar } from 'react-icons/lu';
 import { TbWebhook } from "react-icons/tb"
+import { FaBell, FaRegBell } from "react-icons/fa"
 
 const DashboardSidebar = ({
     isOpen,
@@ -64,6 +65,15 @@ const DashboardSidebar = ({
         });
     }
 
+     if (user?.permissions?.includes(READ_ALERT_USER_ROLE)) {
+        menuItems.push({
+            id: 'alert',
+            label: 'Alerts',
+            icon: FaRegBell,
+            path: '/dashboard/alerts'
+        });
+    }
+
     if (user?.permissions?.includes(READ_USER_USER_ROLE)) {
         menuItems.push({
             id: 'users',
@@ -72,9 +82,6 @@ const DashboardSidebar = ({
             path: '/dashboard/users'
         });
     }
-    // if (user?.permissions?.includes(READ_SETTINGS_USER_ROLE)) {
-    //     menuItems.push({ id: 'settings', label: 'Settings', icon: IoSettingsOutline, path: '/dashboard/settings' })
-    // }
 
     const handleNavigation = (itemId, path) => {
         setActiveItem(itemId);
