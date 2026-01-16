@@ -292,6 +292,12 @@ const buildProjectSearchQuery = (params = {}) => {
         ]
     }
 
+    if (params.ids) {
+        queryProject._id = {
+            $in: params?.ids?.map((n) => ObjectId.createFromHexString(n))
+        }
+    }
+
     if (params?.user) {
         queryUser["user.userId"] = ObjectId.createFromHexString(params?.user)
     }
@@ -615,8 +621,8 @@ const processRemoveUserFromAllProject = async (userId) => {
  */
 const getProjectLogStats = async (projectId, getLogModelFunc) => {
 
-    if(!isValidObjectId(projectId)){
-        throw HttpError(INVALID_INPUT_ERR_CODE,`invalid id`)
+    if (!isValidObjectId(projectId)) {
+        throw HttpError(INVALID_INPUT_ERR_CODE, `invalid id`)
     }
 
     const { log: logModel } = await getLogModelFunc(projectId)

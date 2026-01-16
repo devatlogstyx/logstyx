@@ -22,6 +22,7 @@ const widgetSchema = new mongoose.Schema({
   title: {
     type: String,
     required: true,
+    trim: true,
     maxLength: 128
   },
   description: {

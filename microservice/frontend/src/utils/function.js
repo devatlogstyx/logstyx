@@ -73,3 +73,18 @@ export const getNestedValue = (obj, path) => {
     return path.split('.').reduce((acc, key) => acc?.[key], obj);
 }
 
+export const extractMustacheVars = (templateStr) => {
+    if (!templateStr) return [];
+    const regex = /\{\{([^}]+)\}\}/g;
+    const matches = [];
+    let match;
+
+    while ((match = regex.exec(templateStr)) !== null) {
+        const varName = match[1].trim();
+        if (!matches.includes(varName)) {
+            matches.push(varName);
+        }
+    }
+
+    return matches;
+};

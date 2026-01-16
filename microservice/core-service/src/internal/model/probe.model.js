@@ -17,9 +17,7 @@ const probeSchema = new mongoose.Schema(
         project: {
             type: ObjectId,
             required: true,
-            trim: true,
             index: true,
-            unique: true
         },
         delay: {// in seconds
             type: Number,

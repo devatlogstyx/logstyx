@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { BEARER_WEBHOOK_AUTH_TYPE } from "../../../utils/constant";
+import { extractMustacheVars } from "../../../utils/function";
 
 export default function useModalWebhook({
     form,
@@ -13,21 +14,7 @@ export default function useModalWebhook({
     const [isTesting, setIsTesting] = useState(false);
 
     // Extract {{variables}} from template
-    const extractMustacheVars = (templateStr) => {
-        if (!templateStr) return [];
-        const regex = /\{\{([^}]+)\}\}/g;
-        const matches = [];
-        let match;
-
-        while ((match = regex.exec(templateStr)) !== null) {
-            const varName = match[1].trim();
-            if (!matches.includes(varName)) {
-                matches.push(varName);
-            }
-        }
-
-        return matches;
-    };
+    
 
     // Provide sensible defaults for common variables
     const getDefaultValueForVar = (varName) => {

@@ -8,13 +8,11 @@ const refreshTokenSchema = new mongoose.Schema(
             required: true,
             trim: true,
             index: true,
-            maxLength:128,
         },
         salt: {
             type: String,
             required: true,
             trim: true,
-            maxLength:128,
         },
         expiredAt: {
             type: Date,
