@@ -15,19 +15,26 @@ const alertSchema = new mongoose.Schema({
         required: true,
         index: true
     },
-    filter: {
-        type: Mixed,
-        required: true
-    },
     webhook: {
         type: ObjectId,
         required: true,
         index: true
     },
-    template: {
-        type: Mixed,
-        required: true
-    },
+    config: {
+        filter: {
+            type: Mixed,
+            required: true
+        },
+        template: {
+            type: Mixed,
+            required: true
+        },
+        deduplicationMinutes: {
+            type: Number,
+            default: 0
+        }
+    }
+
 
 }, { timestamps: true });
 

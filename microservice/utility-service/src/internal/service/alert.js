@@ -1,14 +1,17 @@
 //@ts-check
 const { INVALID_INPUT_ERR_CODE, NOT_FOUND_ERR_CODE, NOT_FOUND_ERR_MESSAGE, INVALID_ID_ERR_MESSAGE } = require("common/constant");
-const { HttpError, decryptAndDecompress, sanitizeObject, num2Ceil, num2Floor, parseSortBy } = require("common/function");
+const { HttpError, decryptAndDecompress, sanitizeObject, num2Ceil, num2Floor, parseSortBy, num2Int } = require("common/function");
 const { Validator } = require("node-input-validator");
 const { findProjectById, listAllProject } = require("../../shared/provider/core.service");
 const { getWebhookFromCache, updateAlertCache, getAlertFromCache } = require("../../shared/cache");
 const { mongoose, isValidObjectId } = require("../../shared/mongoose");
-const { extractMustacheVars } = require("../utils/helper");
+const { extractMustacheVars, evaluateAlertFilter, parseMustacheTemplate } = require("../utils/helper");
 const { striptags } = require("striptags");
 const alertModel = require("../model/alert.model");
+const { submitProcessLogAlert, submitProcessSendWebhook } = require("../../shared/provider/mq-producer");
+const AlertDeduplicationModel = require("../model/alert.deduplication.model");
 const { ObjectId } = mongoose.Types
+const moment = require("moment-timezone")
 
 /**
  * 
@@ -19,9 +22,11 @@ const createAlert = async (params) => {
     const v = new Validator(params, {
         title: "required|string",
         project: "required|string",
-        filter: "required|arrayUnique",
         webhook: "required|string",
-        template: "required|object"
+        config: "required|object",
+        "config.filter": "required|arrayUnique",
+        "config.template": "required|object",
+        "config.deduplicationMinutes": "numeric"
     });
 
     let match = await v.check();
@@ -61,9 +66,12 @@ const createAlert = async (params) => {
     const payload = sanitizeObject({
         title: striptags(params?.title),
         project: ObjectId.createFromHexString(project?.id),
-        filter: params?.filter,
         webhook: ObjectId.createFromHexString(webhook?.id),
-        template: params?.template,
+        config: {
+            filter: params?.filter,
+            template: params?.template,
+            deduplicationMinutes: num2Int(params?.config?.deduplicationMinutes)
+        }
     });
 
     const alert = await alertModel.create(payload);
@@ -91,9 +99,11 @@ const updateAlert = async (id, params) => {
     const v = new Validator(params, {
         title: "required|string",
         project: "required|string",
-        filter: "required|arrayUnique",
         webhook: "required|string",
-        template: "required|object"
+        config: "required|object",
+        "config.filter": "required|arrayUnique",
+        "config.template": "required|object",
+        "config.deduplicationMinutes": "numeric"
     });
 
     let match = await v.check();
@@ -133,9 +143,12 @@ const updateAlert = async (id, params) => {
     const payload = sanitizeObject({
         title: striptags(params?.title),
         project: ObjectId.createFromHexString(project?.id),
-        filter: params?.filter,
         webhook: ObjectId.createFromHexString(webhook?.id),
-        template: params?.template,
+        config: {
+            filter: params?.filter,
+            template: params?.template,
+            deduplicationMinutes: num2Int(params?.config?.deduplicationMinutes)
+        }
     });
 
     await alertModel.findByIdAndUpdate(id, {
@@ -279,10 +292,74 @@ const paginateAlert = async (query, sortBy = "createdAt:desc", limit = 10, page 
     return list;
 }
 
+/**
+ * 
+ * @param {*} projectId 
+ * @param {*} alertId 
+ * @param {*} params 
+ * @returns 
+ */
+const processLogAlert = async (projectId, alertId, params) => {
+
+    if (!isValidObjectId(projectId)) {
+        return null
+    }
+
+    if (!alertId) {
+        const alerts = alertModel.find({
+            project: ObjectId.createFromHexString(projectId)
+        }).cursor()
+
+        for await (const alert of alerts) {
+            submitProcessLogAlert({
+                projectId,
+                alertId: alert?._id?.toString(),
+                params
+            })
+        }
+
+        return null
+    }
+
+    // handle alert log
+    const alert = await getAlertFromCache(alertId)
+    if (!alert) {
+        return null
+    }
+
+    if (alert?.config?.deduplicateMinute > 0) {
+        try {
+            // Atomic insert - will fail if key already exists
+            await AlertDeduplicationModel.create({
+                alert: ObjectId.createFromHexString(alertId),
+                expireAt: moment(new Date()).add(alert?.config?.deduplicateMinute || 0, "minute").toDate(),
+            });
+        } catch (error) {
+            return null
+        }
+    }
+
+
+    const shouldTriggerAlert = evaluateAlertFilter(params, alert?.config?.filter ?? []);
+    if (!shouldTriggerAlert) {
+        return null
+    }
+
+    const webhookPayload = parseMustacheTemplate(alert?.config?.template ?? {}, params)
+
+    submitProcessSendWebhook({
+        webhookId: alert?.webhook?.toString(),
+        payload: webhookPayload
+    })
+
+
+}
+
 module.exports = {
     createAlert,
     updateAlert,
     findAlertById,
     removeAlert,
-    paginateAlert
+    paginateAlert,
+    processLogAlert
 }

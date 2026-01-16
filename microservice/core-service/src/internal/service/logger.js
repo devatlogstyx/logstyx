@@ -10,6 +10,7 @@ const { mapLog } = require("../utils/mapper");
 const { compressAndEncrypt, decryptAndDecompress } = require("common/function");
 const logSchema = require("../model/log.model");
 const logstampSchema = require("../model/logstamp.model");
+const { submitProcessLogAlert } = require("../../shared/provider/mq-producer");
 
 const Registry = {};
 
@@ -275,6 +276,11 @@ const createLog = async (project, params) => {
     if (isNaN(timestampDate.getTime())) {
         timestampDate = new Date()
     }
+
+    submitProcessLogAlert({
+        projectId: project?.id,
+        params
+    })?.catch(console.error)
 
     const key = generateLogKey(params, project)
 

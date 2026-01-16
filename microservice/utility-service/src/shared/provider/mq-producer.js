@@ -14,7 +14,7 @@ const log = useLogger({
     Sender: createLog
 })
 
-const { CREATE_LOG_MQ_QUEUE, CACHE_REMOVE_MQ_QUEUE, CACHE_CREATE_MQ_QUEUE } = require('common/routes/mq-queue');
+const { CREATE_LOG_MQ_QUEUE, CACHE_REMOVE_MQ_QUEUE, CACHE_CREATE_MQ_QUEUE, PROCESS_LOG_ALERT_MQ_QUEUE, PROCESS_SEND_WEBHOOK_MQ_QUEUE } = require('common/routes/mq-queue');
 
 const produce = useMQProducer({
     amqp,
@@ -27,4 +27,6 @@ module.exports = {
     submitCreateLog: produce(CREATE_LOG_MQ_QUEUE),
     submitRemoveCache: produce(CACHE_REMOVE_MQ_QUEUE),
     submitCreateCache: produce(CACHE_CREATE_MQ_QUEUE),
+    submitProcessLogAlert: produce(PROCESS_LOG_ALERT_MQ_QUEUE),
+    submitProcessSendWebhook: produce(PROCESS_SEND_WEBHOOK_MQ_QUEUE),
 }

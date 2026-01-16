@@ -7,6 +7,8 @@ const { striptags } = require("striptags");
 const webhookModel = require("../model/webhook.model");
 const { updateWebhookCache, getWebhookFromCache } = require("../../shared/cache");
 const { submitRemoveCache } = require("../../shared/provider/mq-producer");
+const { parseMustacheTemplate } = require("../utils/helper");
+const axios = require("axios")
 
 /**
  * 
@@ -291,10 +293,102 @@ const paginateWebhook = async (query = {}, sortBy = "createdAt:desc", limit = 10
     return list;
 };
 
+/**
+ * 
+ * @param {string} webhookId 
+ * @param {*} payload 
+ */
+const processSendWebhook = async (webhookId, payload) => {
+    if (!isValidObjectId(webhookId)) {
+        return null
+    }
+
+    const webhook = await getWebhookFromCache(webhookId)
+    if (!webhook) {
+        return null
+    }
+
+    try {
+        // Decrypt webhook connection
+        const connection = await decryptAndDecompress(webhook.connection);
+
+        // Parse mustache variables in headers
+        const parsedHeaders = parseMustacheTemplate(connection.headers, payload);
+
+        // Parse mustache variables in body template
+        let parsedBody = parseMustacheTemplate(connection.body_template, payload);
+
+        // Convert body to string/JSON based on content type
+        let requestBody;
+        const contentType = parsedHeaders['Content-Type'] || parsedHeaders['content-type'] || 'application/json';
+
+        if (typeof parsedBody === 'string') {
+            requestBody = parsedBody;
+        } else if (contentType.includes('application/json')) {
+            requestBody = JSON.stringify(parsedBody);
+        } else {
+            requestBody = parsedBody;
+        }
+
+        // Prepare auth headers
+        let authHeaders = {};
+        if (connection.auth.type === BEARER_WEBHOOK_AUTH_TYPE) {
+            authHeaders['Authorization'] = `Bearer ${connection.auth.token}`;
+        } else if (connection.auth.type === BASIC_WEBHOOK_AUTH_TYPE) {
+            const credentials = Buffer.from(`${connection.auth.username}:${connection.auth.password}`).toString('base64');
+            authHeaders['Authorization'] = `Basic ${credentials}`;
+        } else if (connection.auth.type === API_KEY_WEBHOOK_AUTH_TYPE) {
+            const keyLocation = connection.auth.key_location || 'header';
+            if (keyLocation === 'header') {
+                authHeaders[connection.auth.key_name] = connection.auth.key_value;
+            } else if (keyLocation === 'query') {
+                // Add to URL query params
+                const url = new URL(connection.url);
+                url.searchParams.append(connection.auth.key_name, connection.auth.key_value);
+                connection.url = url.toString();
+            }
+        }
+
+        // Make the HTTP request using axios
+        const response = await axios({
+            url: connection.url,
+            method: connection.method,
+            headers: {
+                ...parsedHeaders,
+                ...authHeaders,
+                ...(typeof requestBody === 'string' && !parsedHeaders['Content-Type'] && { 'Content-Type': 'application/json' })
+            },
+            data: connection.method !== 'GET' ? requestBody : undefined,
+            timeout: connection.timeout || 10000,
+            validateStatus: () => true
+        });
+
+        return {
+            success: response.status >= 200 && response.status < 300,
+            status: response.status,
+            statusText: response.statusText,
+            data: response.data,
+            headers: response.headers
+        };
+
+    } catch (error) {
+        console.error('Webhook send error:', error);
+        return {
+            success: false,
+            error: error.message,
+            status: error.name === 'AbortError' ? 408 : 500,
+            statusText: error.name === 'AbortError' ? 'Request Timeout' : 'Internal Error'
+        };
+    }
+
+
+}
+
 module.exports = {
     createWebhook,
     updateWebhook,
     removeWebhook,
     findWebhookById,
     paginateWebhook,
+    processSendWebhook
 };

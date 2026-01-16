@@ -11,6 +11,7 @@ const {
     CREATE_LOG_MQ_QUEUE,
     EXECUTE_PROBE_WORKER_MQ_QUEUE,
     CREATE_AGENDA_JOB_MQ_QUEUE,
+    PROCESS_LOG_ALERT_MQ_QUEUE,
 } = require("common/routes/mq-queue");
 const { useLogger } = require("common/hooks");
 
@@ -32,4 +33,5 @@ module.exports = {
     submitCreateLog: produce(CREATE_LOG_MQ_QUEUE),
     submitExecuteProbeWorker: produce(EXECUTE_PROBE_WORKER_MQ_QUEUE),
     submitCreateAgendaJob: produce(CREATE_AGENDA_JOB_MQ_QUEUE),
+    submitProcessLogAlert: produce(PROCESS_LOG_ALERT_MQ_QUEUE),
 }
