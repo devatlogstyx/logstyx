@@ -1,9 +1,10 @@
 //@ts-check
 
 import React from "react";
-import { createAlert, paginateAlerts, updateAlert } from "../../api/alert";
+import { createAlert, deleteAlert, findAlertById, paginateAlerts, updateAlert } from "../../api/alert";
 import { useErrorMessage } from "../../hooks/useMessage";
 import { useForm } from "@mantine/form";
+import { useConfirmDialog } from "../../hooks/useConfirmDialog";
 
 const useDashboardAlert = () => {
 
@@ -15,6 +16,8 @@ const useDashboardAlert = () => {
     const [isSubmitting, setIsSubmitting] = React.useState(null)
 
     const controller = React.useMemo(() => new AbortController(), []);
+
+    const { openConfirmDialog, ConfirmDialogComponent } = useConfirmDialog();
 
     const ErrorMessage = useErrorMessage()
 
@@ -41,7 +44,7 @@ const useDashboardAlert = () => {
         try {
             setLoading(true);
             const data = await paginateAlerts(controller.signal, { page });
-            setList(data?.results || []);
+            setList(data);
         } catch (err) {
             ErrorMessage(err);
         } finally {
@@ -58,7 +61,8 @@ const useDashboardAlert = () => {
             setEditingAlert(alert);
             form.setValues({
                 title: alert?.title,
-                webhook: alert?.webhook?.id,
+                webhook: alert?.webhook,
+                project: alert?.project,
                 config: {
                     filter: alert?.config?.filter,
                     template: alert?.config?.template,
@@ -80,11 +84,31 @@ const useDashboardAlert = () => {
         setIsModalOpen(false);
     };
 
-    const handleDelete = () => {
+    const handleDelete = (id) => {
+        openConfirmDialog({
+            title: 'Remove Alert',
+            message: 'Are you sure you want to remove this Alert? This action cannot be undone.',
+            confirmLabel: 'Delete',
+            cancelLabel: 'Cancel',
+            onConfirm: async () => {
+                try {
+                    await deleteAlert(controller.signal, id);
+                    await fetchAlert();
+                } catch (err) {
+                    ErrorMessage(err)
+                }
+            },
+            onCancel: () => console.log('Delete cancelled'),
+        })
 
     }
-    const handleEdit = () => {
-
+    const handleEdit = async (id) => {
+        try {
+            const data = await findAlertById(controller.signal, id)
+            openModal(data)
+        } catch (e) {
+            ErrorMessage(e)
+        }
     }
 
     /**
@@ -134,7 +158,8 @@ const useDashboardAlert = () => {
         isSubmitting,
         handleDelete,
         handleEdit,
-        handleSubmit
+        handleSubmit,
+        ConfirmDialogComponent
     }
 }
 

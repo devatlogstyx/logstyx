@@ -21,7 +21,8 @@ const DashboardAlert = () => {
         editingAlert,
         handleDelete,
         handleEdit,
-        handleSubmit
+        handleSubmit,
+        ConfirmDialogComponent
     } = useDashboardAlert()
 
     if (loading) {
@@ -46,7 +47,7 @@ const DashboardAlert = () => {
                         Create New
                     </PrimaryButton>
                 </div>
-
+                
                 {list?.results?.length < 1 ? (
                     <div className="border-2 border-dashed rounded-lg p-12 text-center">
                         <p className="text-gray-500 mb-4">No Alert connectionured yet</p>
@@ -106,6 +107,8 @@ const DashboardAlert = () => {
                 handleSubmit={handleSubmit}
                 isSubmitting={isSubmitting}
             />
+
+            <ConfirmDialogComponent />
         </>
     )
 }
