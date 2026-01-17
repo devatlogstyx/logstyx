@@ -6,7 +6,6 @@ Welcome to the Logstyx Project! An open-source server implementation of the LOGS
 - [Overview](#overview)
 - [Features](#features)
 - [Why Logstyx?](#why-logstyx)
-- [Roadmap](#roadmap)
 - [Quick Start](#quick-start)
 - [Services Structure](#services-structure)
 - [Technologies Used](#technologies-used)
@@ -66,25 +65,6 @@ This project implements a microservices architecture, with each service tailored
 - ❌ Managed service with zero maintenance
 - ❌ Advanced APM features out of the box
 
-## Roadmap
-
-We're actively working on these features:
-
-### 🔔 Alerting & Notifications
-- **Alert Setup**: Configure custom alerts based on log patterns, error rates, or specific conditions
-- **Webhooks Integration**: Send notifications to external services (Slack, Discord, PagerDuty, etc.)
-- **Multi-channel Notifications**: Support for email, SMS, and other notification channels
-
-### 📊 Custom Dashboards
-- **Dashboard Builder**: Create custom dashboards tailored to your monitoring needs
-- **Widget System**: Flexible widgets for charts, graphs, and log visualizations
-- **Dashboard Sharing**: Share dashboards across teams
-
-### 🔗 Integrations
-- **Third-party Service Connectors**: Connect to incident management and collaboration tools
-- **API Webhooks**: Trigger external workflows based on log events
-
-Want to contribute or have feature suggestions? Open an issue on our repository!
 
 ## Quick Start
 
@@ -165,49 +145,11 @@ For local development with hot-reload:
 
 ## Production Deployment
 
-### Option 1: Quick Install (Recommended)
-
 Run the installer and start immediately:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/devatlogstyx/logstyx/main/install.sh | bash
 ```
-
-### Option 2: Manual Setup
-
-If you prefer manual configuration:
-
-1. **Download compose files:**
-   ```bash
-   curl -O https://raw.githubusercontent.com/devatlogstyx/logstyx/main/docker-compose.yml
-   curl -O https://raw.githubusercontent.com/devatlogstyx/logstyx/main/docker-compose.prod.yml
-   ```
-
-2. **Generate encrypted configuration:**
-   ```bash
-   curl -fsSL https://raw.githubusercontent.com/devatlogstyx/logstyx/main/script/setup-encrypted-env.sh | bash
-   ```
-
-3. **Start services:**
-   ```bash
-   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
-   ```
-
-### Using External Services
-
-To use your own Redis, MongoDB, or RabbitMQ:
-
-1. Add connection strings to `.env.encrypted`:
-   ```env
-   AMQP_HOST=amqp://your-rabbitmq:5672
-   REDIS_URL=redis://your-redis:6379
-   MONGODB_HOST=mongodb://your-mongodb:27017
-   ```
-
-2. Deploy without bundled services:
-   ```bash
-   docker compose -f docker-compose.prod.yml up -d
-   ```
 
 ### Deployment Commands
 

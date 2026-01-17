@@ -42,22 +42,6 @@ encrypt_value() {
     echo "${iv}:${encrypted}"
 }
 
-# Check if Docker is installed
-if ! command -v docker &> /dev/null; then
-    echo -e "${RED}Error: Docker is not installed${NC}"
-    echo "Please install Docker first: https://docs.docker.com/get-docker/"
-    exit 1
-fi
-
-# Check if Docker Compose is available
-if ! docker compose version &> /dev/null; then
-    echo -e "${RED}Error: Docker Compose is not installed${NC}"
-    echo "Please install Docker Compose: https://docs.docker.com/compose/install/"
-    exit 1
-fi
-
-echo -e "${GREEN}✓ Docker and Docker Compose detected${NC}\n"
-
 # Ask about deployment type
 echo -e "${BLUE}=== Deployment Type ===${NC}\n"
 echo "Do you want to:"
@@ -168,17 +152,6 @@ fi
 
 echo -e "${GREEN}✓ Configuration encrypted and saved${NC}\n"
 
-# Download docker-compose files if not present
-if [ ! -f "docker-compose.yml" ]; then
-    echo -e "${YELLOW}Downloading docker-compose.yml...${NC}"
-    curl -fsSL https://raw.githubusercontent.com/devatlogstyx/logstyx/main/docker-compose.yml -o docker-compose.yml
-fi
-
-if [ ! -f "docker-compose.prod.yml" ]; then
-    echo -e "${YELLOW}Downloading docker-compose.prod.yml...${NC}"
-    curl -fsSL https://raw.githubusercontent.com/devatlogstyx/logstyx/main/docker-compose.prod.yml -o docker-compose.prod.yml
-fi
-
 echo -e "\n${GREEN}=== Installation Summary ===${NC}"
 if [ "$USE_EXTERNAL" = true ]; then
     echo -e "Deployment: ${BLUE}External Services${NC}"
@@ -200,6 +173,33 @@ START_NOW=${START_NOW:-Y}
 
 if [[ "$START_NOW" =~ ^[Yy]$ ]]; then
     echo -e "\n${GREEN}Starting Logstyx services...${NC}\n"
+
+        # Check if Docker is installed
+    if ! command -v docker &> /dev/null; then
+        echo -e "${RED}Error: Docker is not installed${NC}"
+        echo "Please install Docker first: https://docs.docker.com/get-docker/"
+        exit 1
+    fi
+
+    # Check if Docker Compose is available
+    if ! docker compose version &> /dev/null; then
+        echo -e "${RED}Error: Docker Compose is not installed${NC}"
+        echo "Please install Docker Compose: https://docs.docker.com/compose/install/"
+        exit 1
+    fi
+
+    echo -e "${GREEN}✓ Docker and Docker Compose detected${NC}\n"
+
+    # Download docker-compose files if not present
+    if [ ! -f "docker-compose.yml" ]; then
+        echo -e "${YELLOW}Downloading docker-compose.yml...${NC}"
+        curl -fsSL https://raw.githubusercontent.com/devatlogstyx/logstyx/main/docker-compose.yml -o docker-compose.yml
+    fi
+
+    if [ ! -f "docker-compose.prod.yml" ]; then
+        echo -e "${YELLOW}Downloading docker-compose.prod.yml...${NC}"
+        curl -fsSL https://raw.githubusercontent.com/devatlogstyx/logstyx/main/docker-compose.prod.yml -o docker-compose.prod.yml
+    fi
     
     if [ "$USE_EXTERNAL" = true ]; then
         # Use only prod compose file when using external services
