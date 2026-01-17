@@ -200,7 +200,7 @@ const removeAlert = async (id) => {
 const buildAlertSearchQuery = (params = {}) => {
     let query = {}
 
-    if (params?.search) {
+    if (params?.search && typeof params?.search === "string") {
         query.$or = [
             {
                 title: {

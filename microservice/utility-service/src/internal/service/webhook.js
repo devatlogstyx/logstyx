@@ -249,7 +249,7 @@ const findWebhookById = async (id) => {
 const buildWebhookSearchQuery = (params = {}) => {
     let query = {}
 
-    if (params?.search) {
+    if (params?.search && typeof params?.search === "string") {
         query.$or = [
             {
                 title: {

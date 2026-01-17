@@ -246,7 +246,7 @@ const buildProbeSearchQuery = (params = {}) => {
     let queryProbe = {};
     let queryUser = {};
 
-    if (params.search) {
+    if (params.search && typeof params.search === "string") {
         queryProbe.$or = [
             {
                 title: {
@@ -257,11 +257,11 @@ const buildProbeSearchQuery = (params = {}) => {
         ];
     }
 
-    if (params?.project) {
+    if (params?.project && isValidObjectId(params?.project)) {
         queryProbe.project = ObjectId.createFromHexString(params?.project);
     }
 
-    if (params?.user) {
+    if (params?.user && isValidObjectId(params?.user)) {
         queryUser["user.userId"] = ObjectId.createFromHexString(params?.user);
     }
 

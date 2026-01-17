@@ -207,7 +207,7 @@ const removeUserInvitation = async (id) => {
  */
 const buildUserInvitationSearchQuery = (params) => {
     let query = {}
-    if (params?.search) {
+    if (params?.search && typeof params.search === "string") {
         query.$or = [
             {
                 "hash.email": hashString(params?.search)
@@ -215,7 +215,7 @@ const buildUserInvitationSearchQuery = (params) => {
         ]
     }
 
-    if (params?.permissions) {
+    if (params?.permissions && typeof params?.permissions === "string") {
         query.permissions = {
             $in: params?.permissions?.split(",")
         }
@@ -256,7 +256,7 @@ const validateUserInvitation = async (id, params) => {
     if (!isValidObjectId(id)) {
         throw HttpError(INVALID_INPUT_ERR_CODE, INVALID_ID_ERR_MESSAGE)
     }
-    
+
     const invitation = await userInvitationModel.findById(id)
     if (!invitation) {
         throw HttpError(NOT_FOUND_ERR_CODE, NOT_FOUND_ERR_MESSAGE)

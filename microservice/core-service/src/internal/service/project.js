@@ -281,7 +281,7 @@ const removeProject = async (id, getLogModelFunc) => {
 const buildProjectSearchQuery = (params = {}) => {
     let queryProject = {}
     let queryUser = {}
-    if (params.search) {
+    if (params.search && typeof params.search === "string") {
         queryProject.$or = [
             {
                 title: {
@@ -292,13 +292,13 @@ const buildProjectSearchQuery = (params = {}) => {
         ]
     }
 
-    if (params.ids) {
+    if (params.ids && Array.isArray(params.ids)) {
         queryProject._id = {
             $in: params?.ids?.map((n) => ObjectId.createFromHexString(n))
         }
     }
 
-    if (params?.user) {
+    if (params?.user && typeof params.user === "string") {
         queryUser["user.userId"] = ObjectId.createFromHexString(params?.user)
     }
 

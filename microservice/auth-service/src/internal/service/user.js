@@ -139,7 +139,7 @@ const handleUserLogin = async (params) => {
 const buildUserSearchQuery = (params = {}) => {
 
     let query = {}
-    if (params?.search) {
+    if (params?.search && typeof params.search === "string") {
         query.$or = [
             {
                 fullname: {
@@ -150,7 +150,7 @@ const buildUserSearchQuery = (params = {}) => {
         ]
     }
 
-    if (params?.group) {
+    if (params?.group && isValidObjectId(params?.group)) {
         query.group = ObjectId.createFromHexString(params?.group?.toString())
     }
 
