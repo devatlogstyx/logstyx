@@ -11,12 +11,12 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
-  "private": true,
+  
   "author": {
     "name": "Rizka Sanggar Darmawan",
     "email": "angga2oioi@gmail.com"
   },
-  "license": "UNLICENSED",
+  "license": "MIT",
   "packageManager": "pnpm@10.7.0",
   "dependencies": {
     "agenda": "^5.0.0",

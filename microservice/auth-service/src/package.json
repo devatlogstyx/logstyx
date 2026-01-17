@@ -11,12 +11,11 @@
     "fix": "node ./cmd/fixes.js"
   },
   "keywords": [],
-  "private": true,
   "author": {
     "name": "Rizka Sanggar Darmawan",
     "email": "angga2oioi@gmail.com"
   },
-  "license": "UNLICENSED",
+  "license": "MIT",
   "packageManager": "pnpm@10.7.0",
   "dependencies": {
     "amqplib": "^0.10.8",
