@@ -38,12 +38,12 @@ export default function ModalWebhook({
         <Modal
             opened={modalOpened}
             onClose={handleCloseModal}
-            title={editingWebhook ? 'Edit Webhook' : 'Create Webhook'}
+            title={editingWebhook?.id ? 'Edit Webhook' : 'Create Webhook'}
             size="lg"
         >
             <form onSubmit={form.onSubmit(handleSubmit)}>
                 <Stepper active={step} >
-                    <Stepper.Step label="Basic connectionuration" >
+                    <Stepper.Step label="Basic connection" >
                         <div className="space-y-4">
                             <TextInput
                                 label="Webhook Name"
@@ -224,7 +224,7 @@ export default function ModalWebhook({
                                             {isTesting ? 'Testing...' : 'Test Webhook'}
                                         </SecondaryButton>
                                         <PrimaryButton type="submit" disabled={isSubmitting}>
-                                            {isSubmitting ? 'Saving...' : editingWebhook ? 'Update' : 'Create'}
+                                            {isSubmitting ? 'Saving...' : editingWebhook?.id ? 'Update' : 'Create'}
                                         </PrimaryButton>
                                     </div>
                                 </>
@@ -238,7 +238,7 @@ export default function ModalWebhook({
                                             Back
                                         </SecondaryButton>
                                         <PrimaryButton type="submit" disabled={isSubmitting}>
-                                            {isSubmitting ? 'Saving...' : editingWebhook ? 'Update' : 'Create'}
+                                            {isSubmitting ? 'Saving...' : editingWebhook?.id ? 'Update' : 'Create'}
                                         </PrimaryButton>
                                     </div>
                                 </>

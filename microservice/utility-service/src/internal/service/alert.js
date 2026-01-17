@@ -68,8 +68,8 @@ const createAlert = async (params) => {
         project: ObjectId.createFromHexString(project?.id),
         webhook: ObjectId.createFromHexString(webhook?.id),
         config: {
-            filter: params?.filter,
-            template: params?.template,
+            filter: params?.config?.filter,
+            template: params?.config?.template,
             deduplicationMinutes: num2Int(params?.config?.deduplicationMinutes)
         }
     });
@@ -145,8 +145,8 @@ const updateAlert = async (id, params) => {
         project: ObjectId.createFromHexString(project?.id),
         webhook: ObjectId.createFromHexString(webhook?.id),
         config: {
-            filter: params?.filter,
-            template: params?.template,
+            filter: params?.config?.filter,
+            template: params?.config?.template,
             deduplicationMinutes: num2Int(params?.config?.deduplicationMinutes)
         }
     });
@@ -210,6 +210,8 @@ const buildAlertSearchQuery = (params = {}) => {
             }
         ]
     }
+
+    return query
 }
 
 /**

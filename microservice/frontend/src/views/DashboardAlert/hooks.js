@@ -1,34 +1,140 @@
 //@ts-check
 
 import React from "react";
-import { paginateAlerts } from "../../api/alert";
+import { createAlert, paginateAlerts, updateAlert } from "../../api/alert";
 import { useErrorMessage } from "../../hooks/useMessage";
+import { useForm } from "@mantine/form";
 
 const useDashboardAlert = () => {
 
-    const [webhooks, setWebhooks] = React.useState([]);
+    const [list, setList] = React.useState([]);
     const [loading, setLoading] = React.useState(true);
+    const [page, setPage] = React.useState(1)
+    const [isModalOpen, setIsModalOpen] = React.useState(false)
+    const [editingAlert, setEditingAlert] = React.useState(null)
+    const [isSubmitting, setIsSubmitting] = React.useState(null)
+
+    const controller = React.useMemo(() => new AbortController(), []);
 
     const ErrorMessage = useErrorMessage()
 
-    const fetchWebhooks = React.useCallback(async () => {
+    const form = useForm({
+        initialValues: {
+            title: '',
+            webhook: null,
+            project: null,
+            config: {
+                filter: [],
+                template: {},
+                deduplicationMinutes: 0,
+            }
+
+        },
+        validate: {
+            title: (value) => (!value || value.trim() === '' ? 'Webhook name is required' : null),
+
+        }
+    });
+
+
+    const fetchAlert = React.useCallback(async () => {
         try {
             setLoading(true);
-            const data = await paginateAlerts();
-            setWebhooks(data?.results || []);
+            const data = await paginateAlerts(controller.signal, { page });
+            setList(data?.results || []);
         } catch (err) {
             ErrorMessage(err);
         } finally {
             setLoading(false);
         }
-    }, [ErrorMessage])
+    }, [ErrorMessage, page, controller])
 
     React.useEffect(() => {
-        fetchWebhooks();
-    }, [fetchWebhooks]);
+        fetchAlert();
+    }, [fetchAlert]);
+
+    const openModal = (alert = null) => {
+        if (alert) {
+            setEditingAlert(alert);
+            form.setValues({
+                title: alert?.title,
+                webhook: alert?.webhook?.id,
+                config: {
+                    filter: alert?.config?.filter,
+                    template: alert?.config?.template,
+                    deduplicationMinutes: alert?.config?.deduplicationMinutes,
+                }
+            });
+        } else {
+            setEditingAlert(null);
+            form.reset();
+        }
+        setIsModalOpen(true);
+    };
+
+    const closeModal = () => {
+        if (editingAlert) {
+            setEditingAlert(null);
+            form.reset()
+        }
+        setIsModalOpen(false);
+    };
+
+    const handleDelete = () => {
+
+    }
+    const handleEdit = () => {
+
+    }
+
+    /**
+     * 
+     * @param {*} values 
+     */
+    const handleSubmit = async (values) => {
+        setIsSubmitting(true);
+        try {
+            // Parse JSON strings
+            const payload = {
+                title: values.title,
+                webhook: values.webhook,
+                project: values.project,
+                config: {
+                    filter: values?.config?.filter,
+                    template: values?.config?.template,
+                    deduplicationMinutes: values.config.deduplicationMinutes,
+                }
+            };
+
+            if (editingAlert?.id) {
+                await updateAlert(controller.signal, editingAlert.id, payload);
+            } else {
+                await createAlert(controller.signal, payload);
+            }
+
+            await fetchAlert();
+            closeModal();
+        } catch (err) {
+            ErrorMessage(err)
+        } finally {
+            setIsSubmitting(false);
+        }
+    }
 
     return {
-
+        page,
+        setPage,
+        loading,
+        list,
+        openModal,
+        editingAlert,
+        isModalOpen,
+        closeModal,
+        form,
+        isSubmitting,
+        handleDelete,
+        handleEdit,
+        handleSubmit
     }
 }
 

@@ -6,6 +6,7 @@ import PrimaryButton from "../../../component/button/PrimaryButton"
 import SecondaryButton from "../../../component/button/SecondaryButton"
 import SelectUserPermissions from "../../../component/select/SelectUserPermissions"
 import SelectUserProject from "../../../component/select/SelectUserProject"
+import { READ_PROJECT_ROLE } from "../../../utils/constant"
 
 const FormInviteUser = ({
     form,
@@ -39,7 +40,16 @@ const FormInviteUser = ({
                     Permission
                 </label>
                 <SelectUserPermissions
-                    form={form}
+                    clearable
+                    searchable
+                    {...form.getInputProps('permissions')}
+                    onChange={(value) => {
+                        // Ensure READ_PROJECT_ROLE is always included
+                        if (!value.includes(READ_PROJECT_ROLE)) {
+                            value.push(READ_PROJECT_ROLE);
+                        }
+                        form.setFieldValue('permissions', value);
+                    }}
                 />
             </div>
 
@@ -48,7 +58,10 @@ const FormInviteUser = ({
                     Projects
                 </label>
                 <SelectUserProject
-                    form={form}
+                    mode="multi"
+                    clearable
+                    searchable
+                    {...form.getInputProps('projects')}
                 />
             </div>
 

@@ -138,6 +138,7 @@ const useCreateProject = ({
                     indexes: values?.indexes,
                     rawIndexes: values?.rawIndexes,
                     allowedOrigin: values?.allowedOrigin,
+                    retentionHours: values?.retentionUnit === "days" ? values.retentionValue * 24 : values.retentionValue,
                     deduplicationStrategy: values?.deduplicationStrategy
                 }
             }

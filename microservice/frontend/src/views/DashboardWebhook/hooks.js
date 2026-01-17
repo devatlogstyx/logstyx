@@ -15,8 +15,9 @@ export default function useDashboardWebhook() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [page, setPage] = useState(1)
 
+    const controller = React.useMemo(() => new AbortController(), []);
+
     const ErrorMessage = useErrorMessage()
-    const SuccessMessage = useSuccessMessage()
     const { openConfirmDialog, ConfirmDialogComponent } = useConfirmDialog();
 
     const form = useForm({
@@ -70,7 +71,7 @@ export default function useDashboardWebhook() {
     const fetchWebhooks = React.useCallback(async () => {
         try {
             setLoading(true);
-            const data = await paginateWebhooks({
+            const data = await paginateWebhooks(controller.signal, {
                 page,
                 limit: 10
             });
@@ -80,7 +81,7 @@ export default function useDashboardWebhook() {
         } finally {
             setLoading(false);
         }
-    }, [ErrorMessage])
+    }, [ErrorMessage, page, controller])
 
     useEffect(() => {
         fetchWebhooks();
@@ -138,9 +139,9 @@ export default function useDashboardWebhook() {
             };
 
             if (editingWebhook?.id) {
-                await updateWebhook(editingWebhook.id, payload);
+                await updateWebhook(controller.signal, editingWebhook.id, payload);
             } else {
-                await createWebhook(payload);
+                await createWebhook(controller.signal, payload);
             }
 
             await fetchWebhooks();
@@ -160,7 +161,7 @@ export default function useDashboardWebhook() {
             cancelLabel: 'Cancel',
             onConfirm: async () => {
                 try {
-                    await deleteWebhook(id);
+                    await deleteWebhook(controller.signal, id);
                     await fetchWebhooks();
                 } catch (err) {
                     ErrorMessage(err)
@@ -169,11 +170,11 @@ export default function useDashboardWebhook() {
             onCancel: () => console.log('Delete cancelled'),
         })
 
-    }, [ErrorMessage, fetchWebhooks, openConfirmDialog])
+    }, [ErrorMessage, fetchWebhooks, openConfirmDialog, controller])
 
     const handleEdit = async (id) => {
         try {
-            const data = await findWebhookById(id)
+            const data = await findWebhookById(controller.signal, id)
             openModal(data)
         } catch (e) {
             ErrorMessage(e)

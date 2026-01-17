@@ -9,7 +9,7 @@ import {
 } from "./../../../utils/constant"
 
 const SelectDeduplicationStrategy = ({
-    form,
+    ...props
 }) => {
 
     const available_strategy = [
@@ -26,7 +26,7 @@ const SelectDeduplicationStrategy = ({
                     Controls how duplicate logs are handled. <br /> FULL_PAYLOAD: exact matches only. <br />INDEX_ONLY: group by indexed fields (reduces storage). <br />NONE: store every log separately.</>}
                 placeholder="Select Strategy"
                 data={available_strategy}
-                {...form.getInputProps('deduplicationStrategy')}
+                {...props}
             />
         </>
     )

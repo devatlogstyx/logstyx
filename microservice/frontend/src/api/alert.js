@@ -1,26 +1,26 @@
 import Axios from "./AxiosClient";
 
-export const createAlert = async (payload) => {
-    const { data } = await Axios.post('/v1/alerts', payload);
+export const createAlert = async (signal, payload) => {
+    const { data } = await Axios.post('/v1/alerts', payload, { signal });
     return data?.data;
 };
 
-export const paginateAlerts = async (params = {}) => {
-    const { data } = await Axios.get('/v1/alerts', { params });
+export const paginateAlerts = async (signal, params = {}) => {
+    const { data } = await Axios.get('/v1/alerts', { params, signal });
     return data?.data;
 };
 
-export const updateAlert = async (id, payload) => {
-    const { data } = await Axios.put(`/v1/alerts/${id}`, payload);
+export const updateAlert = async (signal, id, payload) => {
+    const { data } = await Axios.put(`/v1/alerts/${id}`, payload, { signal });
     return data?.data;
 };
 
-export const deleteAlert = async (id) => {
-    const { data } = await Axios.delete(`/v1/alerts/${id}`);
+export const deleteAlert = async (signal, id) => {
+    const { data } = await Axios.delete(`/v1/alerts/${id}`, { signal });
     return data?.data;
 };
 
-export const findAlertById = async (id) => {
-    const { data } = await Axios.get(`/v1/alerts/${id}`);
+export const findAlertById = async (signal, id) => {
+    const { data } = await Axios.get(`/v1/alerts/${id}`, { signal });
     return data?.data;
 };

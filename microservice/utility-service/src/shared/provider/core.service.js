@@ -46,7 +46,7 @@ const paginateProject = (query, sortBy, limit, page) => ws.createCall(PAGINATE_P
  * @returns 
  */
 const listAllProject = async (query) => {
-    const firstPage = await this.paginateProject(query, "createdAt:desc", 10, 1);
+    const firstPage = await paginateProject(query, "createdAt:desc", 10, 1);
 
     if (!firstPage?.results) {
         return [];
@@ -60,7 +60,7 @@ const listAllProject = async (query) => {
         const pagePromises = [];
         for (let page = 2; page <= totalPages; page++) {
             pagePromises.push(
-                this.paginateProject(query, "createdAt:desc", 10, page)
+                paginateProject(query, "createdAt:desc", 10, page)
             );
         }
 

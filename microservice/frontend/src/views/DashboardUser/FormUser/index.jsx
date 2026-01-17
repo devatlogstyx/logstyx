@@ -5,6 +5,7 @@ import { TextInput } from "@mantine/core"
 import PrimaryButton from "../../../component/button/PrimaryButton"
 import SecondaryButton from "../../../component/button/SecondaryButton"
 import SelectUserPermissions from "../../../component/select/SelectUserPermissions"
+import { READ_PROJECT_ROLE } from "../../../utils/constant"
 
 const FormUser = ({
     form,
@@ -54,7 +55,14 @@ const FormUser = ({
                     Permission
                 </label>
                 <SelectUserPermissions
-                    form={form}
+                    {...form.getInputProps('permissions')}
+                    onChange={(value) => {
+                        // Ensure READ_PROJECT_ROLE is always included
+                        if (!value.includes(READ_PROJECT_ROLE)) {
+                            value.push(READ_PROJECT_ROLE);
+                        }
+                        form.setFieldValue('permissions', value);
+                    }}
                 />
             </div>
 

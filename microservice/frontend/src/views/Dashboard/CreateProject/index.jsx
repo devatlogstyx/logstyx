@@ -55,7 +55,7 @@ const CreateProject = ({
                             {...form.getInputProps('rawIndexes')}
                         />
                         <SelectDeduplicationStrategy
-                            form={form}
+                            {...form.getInputProps('deduplicationStrategy')}
                         />
 
                         <div className="space-y-1">

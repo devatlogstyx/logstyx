@@ -88,15 +88,14 @@ const DashboardWebhook = () => {
                         ))}
                     </div>
                 )}
+                <div className="flex justify-end mt-4">
+                    <Pagination
+                        total={webhooks?.totalPages}
+                        value={page}
+                        onChange={setPage}
+                    />
+                </div>
             </div>
-            <div className="flex justify-end mt-4">
-                <Pagination
-                    total={webhooks?.totalPages}
-                    value={page}
-                    onChange={setPage}
-                />
-            </div>
-
             <ModalWebhook
                 modalOpened={modalOpened}
                 closeModal={closeModal}

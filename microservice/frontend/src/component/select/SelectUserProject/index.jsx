@@ -1,10 +1,11 @@
 //@ts-check
 
-import { MultiSelect } from "@mantine/core";
+import { MultiSelect, Select } from "@mantine/core";
 import useSelectProject from "./hook";
 
 const SelectUserProject = ({
-    form,
+    mode = "multi",
+    ...props
 }) => {
 
     const {
@@ -14,20 +15,34 @@ const SelectUserProject = ({
 
     return (
         <>
-            <MultiSelect
-                placeholder="Select Project"
-                disabled={isLoading}
-                data={projects?.map((n) => {
-                    return {
-                        value: n?.id,
-                        label: n?.title
-                    }
-                })}
-                clearable
-                searchable
-                {...form.getInputProps('projects')}
+            {mode === "multi" &&
+                <MultiSelect
+                    label="Select Project"
+                    disabled={isLoading}
+                    data={projects?.map((n) => {
+                        return {
+                            value: n?.id,
+                            label: n?.title
+                        }
+                    })}
+                    {...props}
 
-            />
+                />
+            }
+
+            {mode === "single" &&
+                <Select
+                    label="Select Project"
+                    disabled={isLoading}
+                    data={projects?.map((n) => {
+                        return {
+                            value: n?.id,
+                            label: n?.title
+                        }
+                    })}
+                    {...props}
+                />
+            }
         </>
     )
 }

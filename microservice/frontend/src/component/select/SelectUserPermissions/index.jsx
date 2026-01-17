@@ -15,7 +15,7 @@ import {
 } from "./../../../utils/constant"
 
 const SelectUserPermissions = ({
-    form,
+    ...props
 }) => {
 
     const available_permission = [
@@ -36,16 +36,7 @@ const SelectUserPermissions = ({
             <MultiSelect
                 placeholder="Select Permission"
                 data={available_permission}
-                clearable
-                searchable
-                {...form.getInputProps('permissions')}
-                onChange={(value) => {
-                    // Ensure READ_PROJECT_ROLE is always included
-                    if (!value.includes(READ_PROJECT_ROLE)) {
-                        value.push(READ_PROJECT_ROLE);
-                    }
-                    form.setFieldValue('permissions', value);
-                }}
+                {...props}
 
             />
         </>
