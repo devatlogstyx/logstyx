@@ -1,24 +1,18 @@
 FROM node:20-alpine AS frontend-builder
 WORKDIR /app
 
-# Install pnpm
-RUN corepack enable && corepack prepare pnpm@latest --activate
-
-# Copy package.json and lock file
+# Install only dependencies first for better layer caching
 COPY microservice/frontend/package.json ./
-COPY pnpm-lock.yaml ./
+RUN npm ci --no-audit --no-fund
 
-# Install dependencies
-RUN pnpm install --frozen-lockfile --no-optional
-
-# Copy the rest of the frontend source
+# Copy the rest of the frontend source including .env.sample
 COPY microservice/frontend/. ./
 
 # Copy .env.sample to .env.local before building
 RUN cp .env.sample .env.local
 
 # Build the frontend
-RUN pnpm run build
+RUN npm run build
 
 # ---- Runtime image ----
 FROM nginx:alpine
