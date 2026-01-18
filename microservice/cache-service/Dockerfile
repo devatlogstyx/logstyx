@@ -4,7 +4,7 @@ WORKDIR /app
 RUN apk add --no-cache git
 # Install pnpm AND pm2
 RUN corepack enable && \
-    corepack prepare pnpm@latest --activate && \
+    corepack prepare pnpm@10.7.0 --activate && \
     npm install -g pm2
 
 # Copy workspace files from root
