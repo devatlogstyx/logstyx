@@ -80,8 +80,10 @@ validate_encrypted_env() {
 rotate_master_key() {
     echo -e "\n${BLUE}=== Master Key Rotation ===${NC}\n"
     
-    if [ ! -f ".env.encrypted" ]; then
-        echo -e "${RED}Error: .env.encrypted file is missing${NC}"
+    # Validate the encrypted env file first
+    if ! validate_encrypted_env; then
+        echo -e "${RED}Error: .env.encrypted file is missing or incomplete${NC}"
+        echo "Cannot proceed with key rotation."
         exit 1
     fi
     
@@ -128,6 +130,8 @@ rotate_master_key() {
     echo -e "\n${GREEN}✓ Master key rotated successfully!${NC}"
     echo -e "${YELLOW}Old MASTER_KEY: ${OLD_MASTER_KEY}${NC}"
     echo -e "${GREEN}New MASTER_KEY: ${NEW_MASTER_KEY}${NC}\n"
+    echo -e "${YELLOW}⚠  Backup saved to: ${BACKUP_FILE}${NC}"
+    echo -e "${YELLOW}   You can safely delete this backup after verifying the new configuration works${NC}\n"
     
     exit 0
 }
