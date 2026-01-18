@@ -42,6 +42,128 @@ encrypt_value() {
     echo "${iv}:${encrypted}"
 }
 
+# Function to decrypt value using AES-256-CTR
+decrypt_value() {
+    local encrypted_data=$1
+    local master_key=$2
+    
+    # Split IV and encrypted data
+    local iv=$(echo "$encrypted_data" | cut -d':' -f1)
+    local encrypted=$(echo "$encrypted_data" | cut -d':' -f2)
+    
+    # Convert master key to hex
+    local master_key_hex=$(echo -n "$master_key" | xxd -p | tr -d '\n')
+    
+    # Decrypt using AES-256-CTR
+    echo -n "$encrypted" | xxd -r -p | openssl enc -d -aes-256-ctr -K "$master_key_hex" -iv "$iv"
+}
+
+# Function to validate encrypted env file
+validate_encrypted_env() {
+    local required_vars=("ENC_USER_NAME" "ENC_USER_EMAIL" "ENC_USER_PASSWORD" "ENC_SELF_PROJECT_TITLE" "ENC_CRYPTO_SECRET" "ENC_REFRESH_TOKEN_SECRET" "ENC_USER_AUTHENTICATION_JWT_SECRET" "MASTER_KEY")
+    
+    if [ ! -f ".env.encrypted" ]; then
+        return 1
+    fi
+    
+    for var in "${required_vars[@]}"; do
+        if ! grep -q "^${var}=" .env.encrypted; then
+            echo -e "${RED}Error: Missing required variable ${var} in .env.encrypted${NC}"
+            return 1
+        fi
+    done
+    
+    return 0
+}
+
+# Function to rotate master key
+rotate_master_key() {
+    echo -e "\n${BLUE}=== Master Key Rotation ===${NC}\n"
+    
+    if [ ! -f ".env.encrypted" ]; then
+        echo -e "${RED}Error: .env.encrypted file is missing${NC}"
+        exit 1
+    fi
+    
+    # Load existing configuration to get the current MASTER_KEY
+    source .env.encrypted
+    OLD_MASTER_KEY="$MASTER_KEY"
+    
+    if [ -z "$OLD_MASTER_KEY" ]; then
+        echo -e "${RED}Error: No MASTER_KEY found in .env.encrypted${NC}"
+        exit 1
+    fi
+
+    echo -e "${GREEN}Generating new MASTER_KEY...${NC}"
+    NEW_MASTER_KEY=$(generate_secret 32)
+    
+    # Backup old file
+    BACKUP_FILE=".env.encrypted.backup.$(date +%Y%m%d_%H%M%S)"
+    cp .env.encrypted "$BACKUP_FILE"
+    echo -e "${GREEN}✓ Backup created: $BACKUP_FILE${NC}"
+
+    # Initialize the new file with the new MASTER_KEY
+    echo "MASTER_KEY=$NEW_MASTER_KEY" > .env.encrypted.new
+
+    echo -e "${GREEN}Re-encrypting all ENC_ variables...${NC}"
+
+    # Loop through every line that starts with ENC_
+    while IFS='=' read -r var_name encrypted_value; do
+        if [[ $var_name == ENC_* ]]; then
+            # Decrypt with old key
+            decrypted=$(decrypt_value "$encrypted_value" "$OLD_MASTER_KEY")
+            
+            # Re-encrypt with new key
+            re_encrypted=$(encrypt_value "$decrypted" "$NEW_MASTER_KEY")
+            
+            # Write to new file
+            echo "${var_name}=${re_encrypted}" >> .env.encrypted.new
+            echo -e "  Re-encrypted: ${BLUE}$var_name${NC}"
+        fi
+    done < <(grep "^ENC_" "$BACKUP_FILE")
+
+    # Replace old file with new one
+    mv .env.encrypted.new .env.encrypted
+    
+    echo -e "\n${GREEN}✓ Master key rotated successfully!${NC}"
+    echo -e "${YELLOW}Old MASTER_KEY: ${OLD_MASTER_KEY}${NC}"
+    echo -e "${GREEN}New MASTER_KEY: ${NEW_MASTER_KEY}${NC}\n"
+    
+    exit 0
+}
+
+# Check if this is a key rotation operation
+if [ -f ".env.encrypted" ]; then
+    echo -e "${YELLOW}Existing .env.encrypted file detected${NC}\n"
+    echo "What would you like to do?"
+    echo "  1) Rotate master key (re-encrypt existing configuration)"
+    echo "  2) Fresh installation (will backup existing .env.encrypted)"
+    echo "  3) Exit"
+    echo ""
+    read -p "Choice [1]: " OPERATION_TYPE
+    OPERATION_TYPE=${OPERATION_TYPE:-1}
+    
+    case $OPERATION_TYPE in
+        1)
+            rotate_master_key
+            ;;
+        2)
+            BACKUP_FILE=".env.encrypted.backup.$(date +%Y%m%d_%H%M%S)"
+            mv .env.encrypted "$BACKUP_FILE"
+            echo -e "${GREEN}✓ Existing configuration backed up to: $BACKUP_FILE${NC}\n"
+            echo -e "${BLUE}Proceeding with fresh installation...${NC}\n"
+            ;;
+        3)
+            echo -e "${YELLOW}Installation cancelled${NC}"
+            exit 0
+            ;;
+        *)
+            echo -e "${RED}Invalid choice${NC}"
+            exit 1
+            ;;
+    esac
+fi
+
 # Ask about deployment type
 echo -e "${BLUE}=== Deployment Type ===${NC}\n"
 echo "Do you want to:"
@@ -174,7 +296,7 @@ START_NOW=${START_NOW:-Y}
 if [[ "$START_NOW" =~ ^[Yy]$ ]]; then
     echo -e "\n${GREEN}Starting Logstyx services...${NC}\n"
 
-        # Check if Docker is installed
+    # Check if Docker is installed
     if ! command -v docker &> /dev/null; then
         echo -e "${RED}Error: Docker is not installed${NC}"
         echo "Please install Docker first: https://docs.docker.com/get-docker/"
