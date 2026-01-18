@@ -23,21 +23,26 @@ export function useDashboardReports() {
 
   const [deletingIds, setDeletingIds] = useState(() => new Set());
 
+  const controller = useMemo(() => new AbortController(), []);
+
   const ErrorMessage = useErrorMessage();
   const { openConfirmDialog, ConfirmDialogComponent } = useConfirmDialog();
 
+  const fetchReports = useCallback(async () => {
+    try {
+      setLoading(true)
+      const res = await paginateReports(controller.signal, { page, limit: 50 })
+      setList(res);
+    } catch (e) {
+      ErrorMessage(e)
+    } finally {
+      setLoading(false)
+    }
+  }, [ErrorMessage, controller, page])
+
   useEffect(() => {
-    const ctrl = new AbortController();
-    paginateReports(ctrl.signal, { page, limit: 50 })
-      .then((res) => {
-        setList(res);
-      })
-      .catch((err) => {
-        ErrorMessage(err);
-      })
-      .finally(() => setLoading(false));
-    return () => ctrl.abort();
-  }, [ErrorMessage, page]);
+    fetchReports()
+  }, [fetchReports]);
 
   const openCreateModal = useCallback(() => setCreateModalOpened(true), []);
   const closeCreateModal = useCallback(() => setCreateModalOpened(false), []);
@@ -76,7 +81,8 @@ export function useDashboardReports() {
         const ctrl = new AbortController();
         const data = await createReport(ctrl.signal, { title: title.trim(), visibility });
         if (data) {
-          setList((prev) => [data, ...prev]);
+
+          fetchReports()
           resetForm();
           closeCreateModal();
         }
@@ -86,7 +92,7 @@ export function useDashboardReports() {
         setCreating(false);
       }
     },
-    [title, visibility, ErrorMessage, closeCreateModal, resetForm]
+    [title, visibility, ErrorMessage, closeCreateModal, resetForm, fetchReports]
   );
 
   const onEditSubmit = useCallback(
@@ -101,7 +107,7 @@ export function useDashboardReports() {
           visibility: editVisibility,
         });
         if (updated) {
-          setList((prev) => prev.map((r) => (r.id === editId ? { ...r, ...updated } : r)));
+          fetchReports()
           closeEditModal();
         }
       } catch (err) {
@@ -110,7 +116,7 @@ export function useDashboardReports() {
         setUpdating(false);
       }
     },
-    [editId, editTitle, editVisibility, ErrorMessage, closeEditModal]
+    [editId, editTitle, editVisibility, ErrorMessage, closeEditModal, fetchReports]
   );
 
   const isDeleting = useCallback((id) => deletingIds.has(id), [deletingIds]);
