@@ -1,18 +1,26 @@
 FROM node:20-alpine AS frontend-builder
 WORKDIR /app
 
-# Install only dependencies first for better layer caching
-COPY microservice/frontend/package.json ./
-RUN npm ci --no-audit --no-fund
+# Install pnpm
+RUN npm install -g pnpm
 
-# Copy the rest of the frontend source including .env.sample
-COPY microservice/frontend/. ./
+# Copy workspace configuration files from root
+COPY pnpm-workspace.yaml ./
+COPY pnpm-lock.yaml ./
 
-# Copy .env.sample to .env.local before building
+# Copy frontend package.json
+COPY microservice/frontend/package.json ./microservice/frontend/
+
+# Install dependencies for frontend only
+RUN pnpm install --frozen-lockfile --filter frontend
+
+# Copy frontend source
+COPY microservice/frontend/. ./microservice/frontend/
+
+# Build frontend
+WORKDIR /app/microservice/frontend
 RUN cp .env.sample .env.local
-
-# Build the frontend
-RUN npm run build
+RUN pnpm run build
 
 # ---- Runtime image ----
 FROM nginx:alpine
@@ -23,7 +31,7 @@ COPY microservice/gateway-service/proxy_settings.conf /etc/nginx/proxy_settings.
 COPY microservice/gateway-service/include.d/ /etc/nginx/include.d/
 
 # Copy built frontend assets from builder
-COPY --from=frontend-builder /app/dist/ /usr/share/nginx/html/
+COPY --from=frontend-builder /app/microservice/frontend/dist/ /usr/share/nginx/html/
 
 EXPOSE 80
 
