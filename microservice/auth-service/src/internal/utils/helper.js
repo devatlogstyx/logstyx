@@ -2,12 +2,11 @@
 const { JSONParseX, decrypt } = require("common/function");
 const bcrypt = require("bcryptjs");
 const { getUserFromCache } = require("../../shared/cache");
+const { isValidObjectId } = require("../../shared/mongoose");
 
 /**
  * 
- * @param {object} credentials 
- * @param {string} credentials.iv
- * @param {string} credentials.content
+ * @param {string} credentials 
  * @param {string} inputPassword 
  * @returns 
  */
@@ -24,6 +23,9 @@ const verifyUserPassword = async (credentials, inputPassword) => {
  * @returns 
  */
 const CanUserDo = async (userId, access) => {
+    if (!isValidObjectId(userId) || !access) {
+        return false
+    }
 
     const user = await getUserFromCache(userId);
     if (!user) {

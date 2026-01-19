@@ -73,7 +73,7 @@ const findUserById = async (id,) => {
 const loginUserWithEmailPassword = async (params) => {
 
     const v = new Validator(params, {
-        email: "required|string",
+        email: "required|email",
         password: "required|string"
     });
 
@@ -264,6 +264,10 @@ const patchUserPermission = async (id, permissions) => {
  * @returns 
  */
 const createUserToken = async (user, refreshToken) => {
+    if (!isValidObjectId(user?.id)) {
+        throw HttpError(INVALID_INPUT_ERR_CODE, INVALID_ID_ERR_MESSAGE)
+    }
+
     const token = jwt.sign(
         sanitizeObject({
             id: user?.id,
@@ -414,7 +418,7 @@ const updateUserProfile = async (id, params) => {
 
     const v = new Validator(params, {
         fullname: "required|string",
-        email: "required|string",
+        email: "required|email",
     });
 
     let match = await v.check();

@@ -3,7 +3,7 @@
 const { mongoose, isValidObjectId } = require("./../../shared/mongoose");
 const { getProjectFromCache } = require("../../shared/cache");
 const { HttpError, hashString, decryptSecret, createSlug, encrypt, decrypt } = require("common/function");
-const { NOT_FOUND_ERR_CODE, NOT_FOUND_ERR_MESSAGE, BROWSER_CLIENT_TYPE, INVALID_INPUT_ERR_CODE, INVALID_INPUT_ERR_MESSAGE } = require("common/constant");
+const { NOT_FOUND_ERR_CODE, NOT_FOUND_ERR_MESSAGE, BROWSER_CLIENT_TYPE, INVALID_INPUT_ERR_CODE, INVALID_INPUT_ERR_MESSAGE, INVALID_ID_ERR_MESSAGE } = require("common/constant");
 const { validateOrigin, validateSignature, generateIndexedHashes, validateCustomIndex, generateRawValues, generateLogKey } = require("../utils/helper");
 const projectModel = require("../model/project.model");
 const { mapLog } = require("../utils/mapper");
@@ -24,6 +24,10 @@ const Registry = {};
  * @param {number} project.settings.retentionHours 
  */
 const initLogger = async (project) => {
+    if (!isValidObjectId(project.id)) {
+        throw HttpError(INVALID_INPUT_ERR_CODE, INVALID_ID_ERR_MESSAGE)
+    }
+
     const logModelName = `Log_${project.id}`;
     const logStampModelName = `Logstamp_${project.id}`;
 
@@ -174,7 +178,7 @@ const initLogger = async (project) => {
  */
 const getLogModel = async (projectId) => {
     if (!isValidObjectId(projectId)) {
-        throw HttpError(INVALID_INPUT_ERR_CODE, `Invalid id`)
+        throw HttpError(INVALID_INPUT_ERR_CODE, INVALID_ID_ERR_MESSAGE)
     }
 
     // Check in-memory registry first
@@ -272,6 +276,10 @@ const processWriteLog = async ({ headers, body }) => {
  * @param {string|number|Date} params.timestamp
  */
 const createLog = async (project, params) => {
+    if (!isValidObjectId(project?.id)) {
+        throw HttpError(INVALID_INPUT_ERR_CODE, INVALID_ID_ERR_MESSAGE)
+    }
+
     let timestampDate = new Date(params?.timestamp)
     if (isNaN(timestampDate.getTime())) {
         timestampDate = new Date()
@@ -371,8 +379,9 @@ const processCreateSelfLog = async (params) => {
 /**
  * 
  * @param {object} [params] 
- * @param {string} [params.filterField]
- * @param {string} [params.filterValue]
+ * @param {string[]} [params.filterFields]
+ * @param {string[]} [params.filterValues]
+ * @param {string[]} [params.filterOperators]
  * @param {object} [project] 
  * @returns 
  */
@@ -384,8 +393,8 @@ const buildLogsSearchQuery = (params = {}, project) => {
         params.filterFields.length === params.filterValues.length) {
 
         params.filterFields.forEach((field, index) => {
-            const value = params.filterValues[index]
-            const operator = params.filterOperators?.[index] || 'eq' // Default to equals
+            const value = params?.filterValues?.[index]
+            const operator = params?.filterOperators?.[index] || 'eq' // Default to equals
 
             if (field && value !== undefined && value !== null) {
 
@@ -444,8 +453,8 @@ const buildLogsSearchQuery = (params = {}, project) => {
  */
 const paginateLogs = async (query, sortBy = "updatedAt:desc", limit = 10, page = 1) => {
 
-    if (!query?.project) {
-        throw HttpError(INVALID_INPUT_ERR_CODE, `Unknown Project`)
+    if (isValidObjectId(query?.project)) {
+        throw HttpError(INVALID_INPUT_ERR_CODE, INVALID_ID_ERR_MESSAGE)
     }
 
     const project = await getProjectFromCache(query?.project)
@@ -470,6 +479,10 @@ const paginateLogs = async (query, sortBy = "updatedAt:desc", limit = 10, page =
  */
 const logTimeline = async (projectId, key) => {
 
+    if (!isValidObjectId(projectId)) {
+        throw HttpError(INVALID_INPUT_ERR_CODE, INVALID_ID_ERR_MESSAGE)
+    }
+    
     const { logstamp } = await getLogModel(projectId)
 
     const hourlyStats = await logstamp.aggregate([

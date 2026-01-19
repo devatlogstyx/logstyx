@@ -1,5 +1,5 @@
 //@ts-check
-const { INVALID_INPUT_ERR_CODE, NOT_FOUND_ERR_CODE, USER_NOT_FOUND_ERR_MESSAGE, PROJECT_NOT_FOUND_ERR_MESSAGE, ALREADY_A_MEMBER_ERR_MESSAGE, NOT_A_MEMBER_ERR_MESSAGE, NOT_FOUND_ERR_MESSAGE, ERROR_LOG_LEVEL, CRITICAL_LOG_LEVEL, WRITE_PROJECT_USER_ROLE, INDEX_ONLY_DEDUPLICATION_STRATEGY, FULL_PAYLOAD_DEDUPLICATION_STRATEGY } = require("common/constant");
+const { INVALID_INPUT_ERR_CODE, NOT_FOUND_ERR_CODE, USER_NOT_FOUND_ERR_MESSAGE, PROJECT_NOT_FOUND_ERR_MESSAGE, ALREADY_A_MEMBER_ERR_MESSAGE, NOT_A_MEMBER_ERR_MESSAGE, NOT_FOUND_ERR_MESSAGE, ERROR_LOG_LEVEL, CRITICAL_LOG_LEVEL, WRITE_PROJECT_USER_ROLE, INDEX_ONLY_DEDUPLICATION_STRATEGY, FULL_PAYLOAD_DEDUPLICATION_STRATEGY, INVALID_ID_ERR_MESSAGE } = require("common/constant");
 const { HttpError, num2Ceil, num2Floor, parseSortBy, sanitizeObject, createSlug } = require("common/function");
 const { Validator } = require("node-input-validator");
 const { findUserById } = require("../../shared/provider/auth.service");
@@ -17,8 +17,13 @@ const probeModel = require("../model/probe.model");
 const widgetModel = require("../model/widget.model");
 const { isValidObjectId } = require("../../shared/mongoose");
 
+/**
+ * 
+ * @param {string} baseSlug 
+ * @returns 
+ */
 const generateUniqueSlug = async (baseSlug) => {
-    let slug = baseSlug
+    let slug = baseSlug?.toString()
     let counter = 1
 
     while (await projectModel.exists({ slug })) {
@@ -148,6 +153,11 @@ const createProject = async (params, initLoggerFunc) => {
  * @param {Function} initLoggerFunc
  */
 const updateProject = async (id, params, initLoggerFunc) => {
+
+    if (!isValidObjectId(id)) {
+        throw HttpError(INVALID_INPUT_ERR_CODE, INVALID_ID_ERR_MESSAGE)
+    }
+
     const project = await getProjectFromCache(id)
     if (!project) {
         throw HttpError(NOT_FOUND_ERR_CODE, NOT_FOUND_ERR_MESSAGE)
@@ -366,6 +376,11 @@ const paginateProject = async (query = {}, sortBy = "createdAt:desc", limit = 10
  * @param {string} projectId 
  */
 const addUserToProject = async (userId, projectId) => {
+
+    if (!isValidObjectId(userId) || !isValidObjectId(projectId)) {
+        throw HttpError(INVALID_INPUT_ERR_CODE, INVALID_ID_ERR_MESSAGE)
+    }
+
     const project = await getProjectFromCache(projectId);
     if (!project)
         throw HttpError(NOT_FOUND_ERR_CODE, PROJECT_NOT_FOUND_ERR_MESSAGE);
@@ -403,6 +418,11 @@ const addUserToProject = async (userId, projectId) => {
  * @returns 
  */
 const removeUserFromProject = async (userId, projectId) => {
+
+    if (!isValidObjectId(userId) || !isValidObjectId(projectId)) {
+        throw HttpError(INVALID_INPUT_ERR_CODE, INVALID_ID_ERR_MESSAGE)
+    }
+
     const project = await getProjectFromCache(projectId);
     if (!project)
         throw HttpError(NOT_FOUND_ERR_CODE, PROJECT_NOT_FOUND_ERR_MESSAGE);
@@ -432,6 +452,10 @@ const removeUserFromProject = async (userId, projectId) => {
  * @returns 
  */
 const listUserFromProject = async (projectId) => {
+    if (!isValidObjectId(projectId)) {
+        throw HttpError(INVALID_INPUT_ERR_CODE, INVALID_ID_ERR_MESSAGE)
+    }
+
     const project = await getProjectFromCache(projectId);
     if (!project)
         throw HttpError(NOT_FOUND_ERR_CODE, PROJECT_NOT_FOUND_ERR_MESSAGE);
@@ -451,6 +475,10 @@ const listUserFromProject = async (projectId) => {
  * @returns 
  */
 const getUsersDashboardProjectsStats = async (userId, getLogModelFunc) => {
+    if (!isValidObjectId(userId)) {
+        throw HttpError(INVALID_INPUT_ERR_CODE, INVALID_ID_ERR_MESSAGE)
+    }
+
     const projectUsers = await projectUserModel.find({ 'user.userId': ObjectId.createFromHexString(userId) })
 
     const projectsWithStats = await Promise.all(
@@ -552,6 +580,11 @@ const getUsersDashboardProjectsStats = async (userId, getLogModelFunc) => {
  * @returns 
  */
 const listUserProject = async (userId) => {
+
+    if (!isValidObjectId(userId)) {
+        throw HttpError(INVALID_INPUT_ERR_CODE, INVALID_ID_ERR_MESSAGE)
+    }
+
     const projects = await projectUserModel.aggregate([
         {
             $match: { 'user.userId': ObjectId.createFromHexString(userId) }
@@ -580,6 +613,10 @@ const listUserProject = async (userId) => {
  * @returns 
  */
 const findProjectById = async (id) => {
+    if (!isValidObjectId(id)) {
+        throw HttpError(INVALID_INPUT_ERR_CODE, INVALID_ID_ERR_MESSAGE)
+    }
+
     const raw = await getProjectFromCache(id)
     if (!raw) {
         return null
@@ -607,6 +644,11 @@ const findProjectBySlug = async (slug) => {
  * @param {string} userId 
  */
 const processRemoveUserFromAllProject = async (userId) => {
+
+    if (!isValidObjectId(userId)) {
+        throw HttpError(INVALID_INPUT_ERR_CODE, INVALID_ID_ERR_MESSAGE)
+    }
+
     await projectUserModel.deleteMany({
         "user.userId": ObjectId.createFromHexString(userId)
     });

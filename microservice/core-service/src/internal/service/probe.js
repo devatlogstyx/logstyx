@@ -1,6 +1,6 @@
 //@ts-check
 
-const { INVALID_INPUT_ERR_CODE, NOT_FOUND_ERR_CODE, BEARER_PROBE_AUTH_TYPE, PROJECT_NOT_FOUND_ERR_MESSAGE, BASIC_PROBE_AUTH_TYPE, PROBESTYX_PROBE_AUTH_TYPE, NOT_FOUND_ERR_MESSAGE, PROBE_CACHE_KEY, INVALID_ID_ERR_MESSAGE, PROBE_NOT_FOUND_ERR_MESSAGE, NONE_PROBE_AUTH_TYPE, CUSTOM_PROBE_AUTH_TYPE, PROBE_LOG_CONTEXT_SOURCE, ERROR_LOG_LEVEL, INFO_LOG_LEVEL, SUBMIT_MESSAGE_QUEUE_AGENDA_JOB } = require("common/constant");
+const { INVALID_INPUT_ERR_CODE, NOT_FOUND_ERR_CODE, BEARER_PROBE_AUTH_TYPE, PROJECT_NOT_FOUND_ERR_MESSAGE, BASIC_PROBE_AUTH_TYPE, PROBESTYX_PROBE_AUTH_TYPE, NOT_FOUND_ERR_MESSAGE, PROBE_CACHE_KEY, INVALID_ID_ERR_MESSAGE, PROBE_NOT_FOUND_ERR_MESSAGE, NONE_PROBE_AUTH_TYPE, CUSTOM_PROBE_AUTH_TYPE, PROBE_LOG_CONTEXT_SOURCE, ERROR_LOG_LEVEL, INFO_LOG_LEVEL, SUBMIT_MESSAGE_QUEUE_AGENDA_JOB, HMAC_PROBE_AUTH_TYPE } = require("common/constant");
 const { HttpError, compressAndEncrypt, sanitizeObject, decryptAndDecompress, num2Ceil, num2Floor, parseSortBy } = require("common/function");
 const { Validator } = require("node-input-validator");
 const { getProjectFromCache, updateProbeCache, getProbeFromCache } = require("../../shared/cache");
@@ -11,6 +11,9 @@ const { submitRemoveCache, submitExecuteProbeWorker, submitCreateLog, submitCrea
 const projectUserModel = require("../model/project.user.model");
 const { ObjectId } = mongoose.Types
 const axios = require("axios")
+const allowedAuthType = [NONE_PROBE_AUTH_TYPE, BEARER_PROBE_AUTH_TYPE, BASIC_PROBE_AUTH_TYPE, PROBESTYX_PROBE_AUTH_TYPE, CUSTOM_PROBE_AUTH_TYPE]
+const crypto = require('crypto');
+const { logger } = require("../../shared/logger");
 
 /**
  * 
@@ -25,7 +28,7 @@ const createProbe = async (params) => {
         "connection.method": "required|string|in:GET,POST,PUT,PATCH,DELETE",
         "connection.url": "required|url",
         "connection.timeout": "numeric",
-        "connection.auth.type": "required|string|in:NONE,BEARER,BASIC,HMAC,CUSTOM",
+        "connection.auth.type": "required|string|in:" + allowedAuthType?.join(","),
     });
 
     let match = await v.check();
@@ -134,7 +137,7 @@ const updateProbe = async (id, params) => {
         "connection.method": "string|in:GET,POST,PUT,PATCH,DELETE",
         "connection.url": "url",
         "connection.timeout": "numeric",
-        "connection.auth.type": "string|in:NONE,BEARER,BASIC,HMAC,CUSTOM",
+        "connection.auth.type": "string|in:" + allowedAuthType.join(","),
     });
 
     let match = await v.check();
@@ -343,10 +346,6 @@ const paginateProbe = async (query = {}, sortBy = "createdAt:desc", limit = 10, 
 
     return list;
 };
-
-const crypto = require('crypto');
-const { logger } = require("../../shared/logger");
-const { generateLogKey, generateIndexedHashes, generateRawValues } = require("../utils/helper");
 
 /**
  * Generate HMAC signature for Probestyx authentication

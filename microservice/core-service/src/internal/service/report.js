@@ -8,7 +8,7 @@ const widgetModel = require("../model/widget.model");
 const projectModel = require("../model/project.model");
 const { buildMongoFilterQuery } = require("../utils/helper");
 const { decryptAndDecompress } = require("common/function");
-const { NOT_FOUND_ERR_CODE, NOT_FOUND_ERR_MESSAGE, INVALID_INPUT_ERR_CODE, FORBIDDEN_ERR_CODE, WIDGET_TEMPLATES, PRIVATE_REPORT_VISIBILITY, WIDGET_CACHE_KEY } = require("common/constant");
+const { NOT_FOUND_ERR_CODE, NOT_FOUND_ERR_MESSAGE, INVALID_INPUT_ERR_CODE, FORBIDDEN_ERR_CODE, WIDGET_TEMPLATES, PRIVATE_REPORT_VISIBILITY, WIDGET_CACHE_KEY, INVALID_ID_ERR_MESSAGE } = require("common/constant");
 const { isValidObjectId } = require("../../shared/mongoose");
 const { submitRemoveCache } = require("../../shared/provider/mq-producer");
 
@@ -217,6 +217,11 @@ const findReportById = async (id) => {
  * @returns 
  */
 const updateReport = async (id, params) => {
+
+  if (!isValidObjectId(id)) {
+    throw HttpError(INVALID_INPUT_ERR_CODE, INVALID_ID_ERR_MESSAGE)
+  }
+
   const rpt = await reportModel.findById(id);
   if (!rpt) throw HttpError(NOT_FOUND_ERR_CODE, NOT_FOUND_ERR_MESSAGE);
 
@@ -288,6 +293,11 @@ const isReportPublic = (report) => report.visibility && report.visibility !== PR
  * @returns 
  */
 const createWidget = async (reportId, payload) => {
+
+  if (!isValidObjectId(reportId)) {
+    throw HttpError(INVALID_INPUT_ERR_CODE, INVALID_ID_ERR_MESSAGE)
+  }
+
   const rpt = await getReportFromCache(reportId);
   if (!rpt) throw HttpError(NOT_FOUND_ERR_CODE, NOT_FOUND_ERR_MESSAGE);
 
@@ -345,6 +355,11 @@ const findWidgetById = async (id) => {
  * @returns 
  */
 const listWidgets = async (report, includeProjectInfo = false) => {
+
+  if (!isValidObjectId(report.id) && !isValidObjectId(report._id)) {
+    throw HttpError(INVALID_INPUT_ERR_CODE, INVALID_ID_ERR_MESSAGE)
+  }
+
   const q = widgetModel.find({ report: ObjectId.createFromHexString(report.id || report._id.toString()) });
   if (includeProjectInfo) {
     q.populate('project');
@@ -373,6 +388,10 @@ const listWidgets = async (report, includeProjectInfo = false) => {
  * @returns 
  */
 const updateWidget = async (widgetId, payload, getLogModelFunc) => {
+
+  if (!isValidObjectId(widgetId)) {
+    throw HttpError(INVALID_INPUT_ERR_CODE, INVALID_ID_ERR_MESSAGE)
+  }
 
   const w = await getWidgetFromCache(widgetId)
   if (!w) throw HttpError(NOT_FOUND_ERR_CODE, NOT_FOUND_ERR_MESSAGE);
