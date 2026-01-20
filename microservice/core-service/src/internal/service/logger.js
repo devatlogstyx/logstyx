@@ -99,41 +99,27 @@ const initLogger = async (project) => {
     const collectionName = `logstamp_${project.id}`;
 
     try {
-        // Check if collection exists
         const collections = await mongoose.connection.db
             .listCollections({ name: collectionName })
             .toArray();
 
         const collectionExists = collections.length > 0;
+        const desiredTTL = retentionHours ? retentionHours * 60 * 60 : null;
 
         if (collectionExists) {
             // Collection exists - check if TTL matches
             const collInfo = collections[0];
             const currentTTL = collInfo?.options?.expireAfterSeconds;
-            const desiredTTL = retentionHours ? retentionHours * 60 * 60 : null;
 
-            //drop if ttl ttl mismatched
+            // If TTL is different, update it without dropping the data
             if (currentTTL !== desiredTTL) {
-
-                await mongoose.connection.db.dropCollection(collectionName);
-
-                // Create with new TTL
-                const createOptions = {
-                    timeseries: {
-                        timeField: 'createdAt',
-                        metaField: 'level',
-                        granularity: 'seconds'
-                    }
-                };
-
-                if (retentionHours && retentionHours > 0) {
-                    createOptions.expireAfterSeconds = retentionHours * 60 * 60;
-                }
-
-                await mongoose.connection.db.createCollection(collectionName, createOptions);
+                await mongoose.connection.db.command({
+                    collMod: collectionName,
+                    expireAfterSeconds: desiredTTL
+                });
             }
         } else {
-            // Collection doesn't exist - create it
+            // Collection doesn't exist - create it for the first time
             const createOptions = {
                 timeseries: {
                     timeField: 'createdAt',
@@ -142,13 +128,14 @@ const initLogger = async (project) => {
                 }
             };
 
-            if (retentionHours && retentionHours > 0) {
-                createOptions.expireAfterSeconds = retentionHours * 60 * 60;
+            if (desiredTTL) {
+                createOptions.expireAfterSeconds = desiredTTL;
             }
 
             await mongoose.connection.db.createCollection(collectionName, createOptions);
         }
     } catch (e) {
+        console.error(`Failed to sync timeseries for ${collectionName}:`, e.message);
         throw e;
     }
 
@@ -482,7 +469,7 @@ const logTimeline = async (projectId, key) => {
     if (!isValidObjectId(projectId)) {
         throw HttpError(INVALID_INPUT_ERR_CODE, INVALID_ID_ERR_MESSAGE)
     }
-    
+
     const { logstamp } = await getLogModel(projectId)
 
     const hourlyStats = await logstamp.aggregate([
