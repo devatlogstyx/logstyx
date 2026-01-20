@@ -20,6 +20,7 @@ Logstyx focuses on *secure, structured logging* for modern backend systems witho
 * [Development Setup](#development-setup)
 * [Production Deployment](#production-deployment)
 * [Environment Variables](#environment-variables)
+* [Roadmap](#roadmap)
 * [Support](#support)
 
 ---
@@ -34,15 +35,50 @@ The system is designed to scale horizontally, run on commodity infrastructure, a
 
 ## Who Is This For?
 
-Logstyx is a good fit if you:
+Logstyx is built primarily for **developers who just want to see logs from deployed applications** — without adopting a complex observability stack or paying recurring SaaS fees.
 
-* Run backend or microservice-based systems
-* Require **full control over log data**
-* Operate in privacy‑sensitive or regulated environments
-* Want predictable infrastructure costs (no usage-based billing)
-* Prefer self‑hosting over managed SaaS logging tools
+It is especially suitable if you:
 
-Logstyx may *not* be suitable if you require advanced fuzzy search, full-text indexing, or zero‑maintenance managed services.
+* Deploy applications to servers or VMs (not only Kubernetes)
+* Want to inspect logs from production without SSH access
+* Prefer simple SDK-based integration over agents and collectors
+* Do not want to learn or operate a full logging ecosystem
+* Cannot justify or approve recurring SaaS logging costs
+
+Logstyx intentionally focuses on **"logging as a developer utility"**, not as a full observability platform.
+
+---
+
+## Why Logstyx Exists
+
+Logstyx started from a practical, real-world problem.
+
+Debugging deployed applications often meant:
+
+* SSH-ing into production servers
+* Manually opening log files
+* Searching through rotated or truncated logs
+* Repeating the process across multiple machines
+
+This workflow is fragile, slow, and error-prone.
+
+At the same time:
+
+* Giving every developer SSH access is not ideal
+* Sharing cloud provider dashboards broadly is often restricted
+* Managed logging services introduce ongoing costs
+
+In one real setup, a trial of AWS CloudWatch Logs resulted in **~$20 of charges in under a month** for minimal usage — enough to raise concerns. In addition, access to the AWS console could not be safely shared with the whole team.
+
+Logstyx was built to solve exactly this gap:
+
+* A **self-hosted log viewer** for deployed apps
+* Accessible via a web UI
+* No SSH access required
+* No cloud dashboard sharing
+* No usage-based pricing
+
+If you just want to **deploy your app and see its logs**, Logstyx is built for that purpose.
 
 ---
 
@@ -133,6 +169,78 @@ Consider this carefully when evaluating Logstyx for your use case.
 * ❌ Fuzzy or full-text log search
 * ❌ Fully managed SaaS with zero maintenance
 * ❌ Built-in APM, metrics, or tracing
+
+---
+
+## Why Not Loki, Datadog, or ELK?
+
+Logstyx is **not a drop-in replacement** for every logging platform. It is intentionally opinionated. Below is a practical comparison to help you decide.
+
+### 🔍 Grafana Loki
+
+**Loki is a good choice if you need:**
+
+* Deep integration with Grafana dashboards
+* Label-based querying with flexible text search
+* Kubernetes-native logging
+
+**Why you might choose Logstyx instead:**
+
+* Loki still stores *raw log content* in plaintext by default
+* Logstyx prioritizes **encrypted log storage** and privacy-first design
+* Logstyx is simpler to operate outside Kubernetes environments
+* No tight coupling to Grafana or Prometheus ecosystems
+
+Logstyx trades advanced query flexibility for **stronger data control and simpler mental models**.
+
+---
+
+### 📈 Datadog Logs
+
+**Datadog is a good choice if you need:**
+
+* Fully managed SaaS with zero operational overhead
+* Advanced analytics, correlations, and APM
+* Deep integrations across cloud providers
+
+**Why you might choose Logstyx instead:**
+
+* Datadog pricing scales aggressively with log volume
+* Logs are stored and processed by a third party
+* Long-term retention can become prohibitively expensive
+
+Logstyx is designed for teams that want **predictable costs**, self-hosting, and **no vendor lock‑in**.
+
+---
+
+### 🧱 ELK Stack (Elasticsearch, Logstash, Kibana)
+
+**ELK is a good choice if you need:**
+
+* Powerful full-text and fuzzy search
+* Complex aggregations and analytics
+* A highly flexible schema
+
+**Why you might choose Logstyx instead:**
+
+* ELK is operationally heavy and resource-intensive
+* Elasticsearch clusters require careful tuning and maintenance
+* Plaintext indexing increases data exposure risk
+
+Logstyx deliberately avoids full-text indexing to reduce **operational complexity and security surface area**.
+
+---
+
+### Summary
+
+| Platform    | Strengths                                          | Trade-offs                      |
+| ----------- | -------------------------------------------------- | ------------------------------- |
+| **Logstyx** | Privacy-first, encrypted storage, predictable cost | No fuzzy search                 |
+| **Loki**    | Flexible queries, Grafana-native                   | Weaker data privacy guarantees  |
+| **Datadog** | Zero ops, rich features                            | High cost, vendor lock-in       |
+| **ELK**     | Powerful search                                    | Heavy ops, higher risk exposure |
+
+Choose Logstyx if you value **control, simplicity, and privacy** over maximal query power.
 
 ---
 
@@ -272,6 +380,16 @@ docker compose down -v
 * `MONGODB_HOST`
 
 Sensitive values can be prefixed with `ENC_` to store encrypted values.
+
+---
+
+## Roadmap (Non-Binding)
+
+* Optional plaintext or hybrid indexing
+* Log retention and lifecycle policies
+* Role-based access control (RBAC)
+* Metrics and tracing integration
+* Improved query and aggregation tooling
 
 ---
 
