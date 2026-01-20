@@ -4,8 +4,6 @@ const { decryptSecret } = require("../function/encryptor");
 const { BROWSER_CLIENT_TYPE } = require("./../constant/auth");
 const ALLOWED_ORIGIN = decryptSecret(process?.env?.ENC_ALLOWED_ORIGIN)?.split(",") ?? []
 
-console.log(ALLOWED_ORIGIN)
-
 /**
  * 
  * @param {object} param0
