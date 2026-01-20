@@ -440,7 +440,7 @@ const buildLogsSearchQuery = (params = {}, project) => {
  */
 const paginateLogs = async (query, sortBy = "updatedAt:desc", limit = 10, page = 1) => {
 
-    if (isValidObjectId(query?.project)) {
+    if (!isValidObjectId(query?.project)) {
         throw HttpError(INVALID_INPUT_ERR_CODE, INVALID_ID_ERR_MESSAGE)
     }
 

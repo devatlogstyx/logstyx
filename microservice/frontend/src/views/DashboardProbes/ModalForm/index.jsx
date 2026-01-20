@@ -195,7 +195,7 @@ const ModalForm = ({
                             </SecondaryButton>
                         )}
 
-                        {currentStep < 3 && (
+                        {currentStep < 2 && (
                             <PrimaryButton
                                 onClick={goToNextStep}
                                 disabled={currentStep === 1 ? !isValidStep1 : currentStep === 2 ? !isValidStep2 : false}
@@ -204,7 +204,7 @@ const ModalForm = ({
                             </PrimaryButton>
                         )}
 
-                        {currentStep === 3 && (
+                        {currentStep === 2 && (
                             <PrimaryButton type="submit" loading={isSubmitting}>
                                 {editingProbe ? 'Update' : 'Create'}
                             </PrimaryButton>
