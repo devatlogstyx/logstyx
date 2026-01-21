@@ -468,6 +468,14 @@ const listUserFromProject = async (projectId) => {
     return list?.map(mapProjectUser);
 };
 
+const generateHourlyActivity = (activityMap, hoursToTrack) => {
+    return Array.from({ length: hoursToTrack }, (_, i) => {
+        const date = new Date(Date.now() - (hoursToTrack - 1 - i) * 60 * 60 * 1000);
+        const key = date.toISOString().slice(0, 13).replace('T', '-');
+        return activityMap.get(key) || 0;
+    });
+};
+
 /**
  * 
  * @param {string} userId 
@@ -476,39 +484,66 @@ const listUserFromProject = async (projectId) => {
  */
 const getUsersDashboardProjectsStats = async (userId, getLogModelFunc) => {
     if (!isValidObjectId(userId)) {
-        throw HttpError(INVALID_INPUT_ERR_CODE, INVALID_ID_ERR_MESSAGE)
+        throw HttpError(INVALID_INPUT_ERR_CODE, INVALID_ID_ERR_MESSAGE);
     }
 
-    const projectUsers = await projectUserModel.find({ 'user.userId': ObjectId.createFromHexString(userId) })
+    const HOURS_TO_TRACK = 7;
+    const MILLISECONDS_PER_HOUR = 60 * 60 * 1000;
+    const activityCutoff = new Date(Date.now() - HOURS_TO_TRACK * MILLISECONDS_PER_HOUR);
 
-    const projectsWithStats = await Promise.all(
-        projectUsers.map(async (pu) => {
-            const project = await getProjectFromCache(pu.project?.toString());
+    // Get all user projects with project details in one query
+    const usersProjects = await projectUserModel.aggregate([
+        {
+            $match: {
+                'user.userId': ObjectId.createFromHexString(userId)
+            }
+        },
+        {
+            $lookup: {
+                from: "projects",
+                localField: "project",
+                foreignField: "_id",
+                as: "project"
+            }
+        },
+        { $unwind: "$project" },
+        {
+            $project: {
+                'project._id': 1,
+                'project.title': 1,
+                'project.slug': 1
+            }
+        }
+    ]);
 
-            const { log } = await getLogModelFunc(project?.id?.toString())
+    if (!usersProjects.length) {
+        return [];
+    }
+
+    // Get all log models in parallel
+    const logModels = await Promise.all(
+        usersProjects.map(up => getLogModelFunc(up.project._id.toString()))
+    );
+
+    // Process all log aggregations in parallel
+    const projectsWithStats = await Promise.allSettled(
+        usersProjects.map(async (userProject, index) => {
+            const { log } = logModels[index];
+            const project = userProject.project;
 
             const [result] = await log.aggregate([
                 {
                     $facet: {
-                        // Total logs (all time)
                         totalLogs: [
                             { $group: { _id: null, total: { $sum: "$count" } } }
                         ],
-
-                        // Last log
                         lastLog: [
                             { $sort: { updatedAt: -1 } },
                             { $limit: 1 },
-                            { $project: { updatedAt: 1, key: 1, level: 1 } }
+                            { $project: { updatedAt: 1 } }
                         ],
-
-                        // Activity per hour (last 7 hours)
                         activity: [
-                            {
-                                $match: {
-                                    updatedAt: { $gte: new Date(Date.now() - 7 * 60 * 60 * 1000) }
-                                }
-                            },
+                            { $match: { updatedAt: { $gte: activityCutoff } } },
                             {
                                 $group: {
                                     _id: {
@@ -522,57 +557,53 @@ const getUsersDashboardProjectsStats = async (userId, getLogModelFunc) => {
                             },
                             { $sort: { _id: 1 } }
                         ],
-
-                        // Total errors (all time)
-                        totalErrors: [
+                        errorStats: [
                             {
-                                $match: { level: ERROR_LOG_LEVEL }
+                                $match: {
+                                    level: { $in: [ERROR_LOG_LEVEL, CRITICAL_LOG_LEVEL] }
+                                }
                             },
-                            { $group: { _id: null, total: { $sum: "$count" } } }
-                        ],
-
-                        // Total critical (all time)
-                        totalCritical: [
                             {
-                                $match: { level: CRITICAL_LOG_LEVEL }
-                            },
-                            { $group: { _id: null, total: { $sum: "$count" } } }
+                                $group: {
+                                    _id: "$level",
+                                    total: { $sum: "$count" }
+                                }
+                            }
                         ]
                     }
                 }
             ]);
 
-            const totalLogs = result.totalLogs[0]?.total || 0;
-            const lastLogData = result.lastLog[0];
-            const errorCount = result.totalErrors[0]?.total || 0;
-            const criticalCount = result.totalCritical[0]?.total || 0;
+            const errorStatsMap = new Map(
+                result.errorStats.map(item => [item._id, item.total])
+            );
 
             const activityMap = new Map(
                 result.activity.map(item => [item._id, item.count])
             );
 
-            const activity = Array.from({ length: 7 }, (_, i) => {
-                const date = new Date(Date.now() - (6 - i) * 60 * 60 * 1000);
-                const key = date.toISOString().slice(0, 13).replace('T', '-');
-                return activityMap.get(key) || 0;
-            });
+            const activity = generateHourlyActivity(activityMap, HOURS_TO_TRACK);
+            const lastLogData = result.lastLog[0];
 
             return {
-                id: project.id,
+                id: project._id?.toString(),
                 title: project.title,
                 slug: project.slug,
                 status: lastLogData && isRecent(lastLogData.updatedAt) ? 'active' : 'inactive',
                 lastLog: lastLogData ? moment(lastLogData.updatedAt).fromNow() : 'Never',
-                totalLogs: totalLogs,
-                errorCount: errorCount,
-                criticalCount: criticalCount,
-                activity: activity
+                totalLogs: result.totalLogs[0]?.total || 0,
+                errorCount: errorStatsMap.get(ERROR_LOG_LEVEL) || 0,
+                criticalCount: errorStatsMap.get(CRITICAL_LOG_LEVEL) || 0,
+                activity
             };
         })
     );
 
-    return projectsWithStats;
-}
+    return projectsWithStats
+        .filter(result => result.status === 'fulfilled')
+        .map(result => result.value);
+};
+
 
 /**
  * 
