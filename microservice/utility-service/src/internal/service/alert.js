@@ -342,7 +342,9 @@ const processLogAlert = async (projectId, alertId, params) => {
     }
 
 
+
     const shouldTriggerAlert = evaluateAlertFilter(params, alert?.config?.filter ?? []);
+
     if (!shouldTriggerAlert) {
         return null
     }

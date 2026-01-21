@@ -42,11 +42,11 @@ const getNestedValue = (obj, path) => {
 const evaluateCondition = (data, filter) => {
     const { field, operator, value } = filter;
     const fieldValue = getNestedValue(data, field);
-
     // Handle null/undefined field values
     if (fieldValue === undefined || fieldValue === null) {
         return false;
     }
+
 
     switch (operator) {
         case 'gt':
@@ -62,7 +62,10 @@ const evaluateCondition = (data, filter) => {
             return Number(fieldValue) <= Number(value);
 
         case 'eq':
-            return fieldValue == value;
+            return fieldValue === value;
+
+        case 'ne':
+            return fieldValue != value;
 
         case 'contain':
             if (typeof fieldValue === 'string') {
@@ -86,6 +89,7 @@ const evaluateCondition = (data, filter) => {
  * @returns 
  */
 const evaluateAlertFilter = (data, filters) => {
+
     return filters.every(filter => evaluateCondition(data, filter));
 };
 
