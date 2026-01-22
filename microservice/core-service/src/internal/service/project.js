@@ -9,7 +9,7 @@ const { ObjectId } = mongoose.Types
 const { striptags } = require("striptags")
 const randomstring = require("randomstring");
 const projectUserModel = require("../model/project.user.model");
-const { updateProjectCache, getProjectFromCache } = require("../../shared/cache");
+const { updateProjectCache, getProjectFromCache, updateAllowedOriginCache } = require("../../shared/cache");
 const { mapProjectUser, mapProject } = require("../utils/mapper");
 const { validateCustomIndex, isRecent } = require("../utils/helper");
 const moment = require("moment-timezone");
@@ -126,6 +126,8 @@ const createProject = async (params, initLoggerFunc) => {
 
         const project = await updateProjectCache(projects?.[0]?._id?.toString())
 
+        updateAllowedOriginCache()?.catch(console.error)
+
         initLoggerFunc(project)?.catch(console.error)
 
         return project
@@ -203,6 +205,8 @@ const updateProject = async (id, params, initLoggerFunc) => {
     )
 
     const updated = await updateProjectCache(id)
+
+    updateAllowedOriginCache()?.catch(console.error)
     initLoggerFunc(updated)
 
     return updated
@@ -723,7 +727,6 @@ const getProjectLogStats = async (projectId, getLogModelFunc) => {
     return logsStats
 }
 
-
 module.exports = {
     createProject,
     updateProject,
@@ -739,5 +742,5 @@ module.exports = {
     canUserReadProject,
     listUserProject,
     processRemoveUserFromAllProject,
-    getProjectLogStats
+    getProjectLogStats,
 }

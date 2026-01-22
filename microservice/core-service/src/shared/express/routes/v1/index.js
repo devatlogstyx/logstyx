@@ -4,7 +4,8 @@ const express = require("express");
 const router = express.Router();
 const { useCors } = require("common/hooks");
 const cors = require("cors");
-const DeviceDetector = require("device-detector-js")
+const DeviceDetector = require("device-detector-js");
+const { getAllowedOriginFromCache } = require("../../../cache");
 
 
 const privateMiddleware = useCors({
@@ -16,7 +17,7 @@ const privateMiddleware = useCors({
 const publicMiddleware = useCors({
     Detector: DeviceDetector,
     Cors: cors,
-    allowedOrigins: '*'
+    allowedOrigins: getAllowedOriginFromCache
 });
 
 

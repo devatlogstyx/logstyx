@@ -1,6 +1,6 @@
 //@ts-check
 
-const { PROJECT_CACHE_KEY, PROBE_CACHE_KEY, WIDGET_DATA_CACHE_KEY, WIDGET_CACHE_KEY, REPORT_CACHE_KEY } = require("common/constant")
+const { PROJECT_CACHE_KEY, PROBE_CACHE_KEY, WIDGET_DATA_CACHE_KEY, WIDGET_CACHE_KEY, REPORT_CACHE_KEY, ALLOWED_ORIGIN_CACHE_KEY } = require("common/constant")
 
 const { submitCreateCache } = require("../provider/mq-producer")
 
@@ -59,6 +59,28 @@ exports.updateWidgetDataCache = async (id, data) => {
  */
 exports.getWidgetDataCache = async (id) => {
     let res = await readCache({ key: WIDGET_DATA_CACHE_KEY, id });
+    if (res) {
+        return res;
+    }
+
+    return null
+}
+
+exports.updateAllowedOriginCache = async () => {
+    const list = await projectModel.distinct("settings.allowedOrigin");
+    const origin = (list || []).filter(item => typeof item === 'string' && item.length > 0);
+
+    submitCreateCache({
+        id: "cache",
+        key: ALLOWED_ORIGIN_CACHE_KEY,
+        data: origin,
+    })
+
+    return origin
+}
+
+exports.getAllowedOriginFromCache = async () => {
+    let res = await readCache({ key: WIDGET_DATA_CACHE_KEY, id: "cache" });
     if (res) {
         return res;
     }
