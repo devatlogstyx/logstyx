@@ -11,7 +11,6 @@ const { compressAndEncrypt, decryptAndDecompress } = require("common/function");
 const logSchema = require("../model/log.model");
 const logstampSchema = require("../model/logstamp.model");
 const { submitProcessLogAlert } = require("../../shared/provider/mq-producer");
-const { ObjectId } = mongoose.Types
 const Registry = {};
 
 /**
