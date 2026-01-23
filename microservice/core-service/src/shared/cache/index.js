@@ -20,19 +20,19 @@ const { updateCache, getCache } = useCache({
     Log
 })
 
-exports.updateProjectCache = async (id) => updateCache(PROJECT_CACHE_KEY, id, projectModel)
-exports.getProjectFromCache = async (id) => getCache(PROJECT_CACHE_KEY, id, projectModel)
+const updateProjectCache = async (id) => updateCache(PROJECT_CACHE_KEY, id, projectModel)
+const getProjectFromCache = async (id) => getCache(PROJECT_CACHE_KEY, id, projectModel)
 
-exports.updateProbeCache = async (id) => updateCache(PROBE_CACHE_KEY, id, probeModel)
-exports.getProbeFromCache = async (id) => getCache(PROBE_CACHE_KEY, id, probeModel)
-
-
-exports.updateWidgetCache = async (id) => updateCache(WIDGET_CACHE_KEY, id, widgetModel)
-exports.getWidgetFromCache = async (id) => getCache(WIDGET_CACHE_KEY, id, widgetModel)
+const updateProbeCache = async (id) => updateCache(PROBE_CACHE_KEY, id, probeModel)
+const getProbeFromCache = async (id) => getCache(PROBE_CACHE_KEY, id, probeModel)
 
 
-exports.updateReportCache = async (id) => updateCache(REPORT_CACHE_KEY, id, reportModel)
-exports.getReportFromCache = async (id) => getCache(REPORT_CACHE_KEY, id, reportModel)
+const updateWidgetCache = async (id) => updateCache(WIDGET_CACHE_KEY, id, widgetModel)
+const getWidgetFromCache = async (id) => getCache(WIDGET_CACHE_KEY, id, widgetModel)
+
+
+const updateReportCache = async (id) => updateCache(REPORT_CACHE_KEY, id, reportModel)
+const getReportFromCache = async (id) => getCache(REPORT_CACHE_KEY, id, reportModel)
 
 
 /**
@@ -41,7 +41,7 @@ exports.getReportFromCache = async (id) => getCache(REPORT_CACHE_KEY, id, report
  * @param {*} data 
  * @returns 
  */
-exports.updateWidgetDataCache = async (id, data) => {
+const updateWidgetDataCache = async (id, data) => {
     submitCreateCache({
         id,
         key: WIDGET_DATA_CACHE_KEY,
@@ -52,12 +52,7 @@ exports.updateWidgetDataCache = async (id, data) => {
     return data
 }
 
-/**
- * 
- * @param {*} id 
- * @returns 
- */
-exports.getWidgetDataCache = async (id) => {
+const getWidgetDataCache = async (id) => {
     let res = await readCache({ key: WIDGET_DATA_CACHE_KEY, id });
     if (res) {
         return res;
@@ -66,7 +61,7 @@ exports.getWidgetDataCache = async (id) => {
     return null
 }
 
-exports.updateAllowedOriginCache = async () => {
+const updateAllowedOriginCache = async () => {
     const list = await projectModel.distinct("settings.allowedOrigin");
     const origin = (list || []).filter(item => typeof item === 'string' && item.length > 0);
 
@@ -79,11 +74,31 @@ exports.updateAllowedOriginCache = async () => {
     return origin
 }
 
-exports.getAllowedOriginFromCache = async () => {
+const getAllowedOriginFromCache = async () => {
     let res = await readCache({ key: WIDGET_DATA_CACHE_KEY, id: "cache" });
     if (res) {
         return res;
     }
 
-    return null
+    return updateAllowedOriginCache()
+}
+
+module.exports = {
+    updateProjectCache,
+    getProjectFromCache,
+
+    updateProbeCache,
+    getProbeFromCache,
+
+    updateWidgetCache,
+    getWidgetFromCache,
+
+    updateReportCache,
+    getReportFromCache,
+
+    updateWidgetDataCache,
+    getWidgetDataCache,
+
+    updateAllowedOriginCache,
+    getAllowedOriginFromCache,
 }
