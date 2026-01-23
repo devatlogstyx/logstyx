@@ -14,6 +14,7 @@ const {
 import moment from "moment-timezone"
 import useTabLogs from "./hooks"
 import SecondaryButton from "../../../component/button/SecondaryButton"
+import ExportLogs from "../ExportLog"
 
 const TabLogs = ({
     project,
@@ -59,6 +60,9 @@ const TabLogs = ({
             <div className="p-6 rounded-md border shadow-sm bg-white flex flex-col gap-4 overflow-x-auto">
                 <div className="flex justify-between items-center mb-4">
                     <h3 className="text-xl font-semibold">Recent Logs</h3>
+                    <ExportLogs projectId={project?.id} />
+                </div>
+                <div className="flex justify-end">
                     <div className="flex flex-col gap-3">
                         <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center">
                             {/* Column visibility menu */}

@@ -2,7 +2,7 @@
 
 const { mongoose, isValidObjectId } = require("./../../shared/mongoose");
 const { getProjectFromCache } = require("../../shared/cache");
-const { HttpError, hashString, decryptSecret, createSlug, encrypt, decrypt } = require("common/function");
+const { HttpError, hashString, decryptSecret, createSlug, encrypt, decrypt, num2Ceil, num2Floor } = require("common/function");
 const { NOT_FOUND_ERR_CODE, NOT_FOUND_ERR_MESSAGE, BROWSER_CLIENT_TYPE, INVALID_INPUT_ERR_CODE, INVALID_INPUT_ERR_MESSAGE, INVALID_ID_ERR_MESSAGE } = require("common/constant");
 const { validateOrigin, validateSignature, generateIndexedHashes, validateCustomIndex, generateRawValues, generateLogKey } = require("../utils/helper");
 const projectModel = require("../model/project.model");
@@ -11,7 +11,7 @@ const { compressAndEncrypt, decryptAndDecompress } = require("common/function");
 const logSchema = require("../model/log.model");
 const logstampSchema = require("../model/logstamp.model");
 const { submitProcessLogAlert } = require("../../shared/provider/mq-producer");
-
+const { ObjectId } = mongoose.Types
 const Registry = {};
 
 /**
@@ -444,6 +444,9 @@ const paginateLogs = async (query, sortBy = "updatedAt:desc", limit = 10, page =
         throw HttpError(INVALID_INPUT_ERR_CODE, INVALID_ID_ERR_MESSAGE)
     }
 
+    limit = num2Ceil(num2Floor(limit, 1), 50)
+    page = num2Floor(page, 1)
+
     const project = await getProjectFromCache(query?.project)
     if (!project) {
         throw HttpError(NOT_FOUND_ERR_CODE, `Project Not Found`)
@@ -461,10 +464,66 @@ const paginateLogs = async (query, sortBy = "updatedAt:desc", limit = 10, page =
 
 /**
  * 
+ * @param {*} projectId 
+ * @param {object} param1 
+ * @param {number} param1.limit
+ * @param {number} param1.page
+ * @returns 
+ */
+async function listProjectTimeline(projectId, { limit = 50, page = 1 }) {
+
+    limit = num2Ceil(num2Floor(limit, 1), 50);
+    page = num2Floor(page, 1)
+    const skip = (page - 1) * limit;
+
+    const { log, logstamp } = await getLogModel(projectId);
+
+    const timeline = await logstamp.find({})
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean();
+
+    const totalResults = await logstamp.countDocuments({})
+    const totalPages = Math.ceil(totalResults / limit)
+
+    if (!timeline.length) return {
+        results: [],
+        page,
+        limit,
+        totalResults,
+        totalPages,
+    };
+
+    const pageKeys = timeline.map(s => s.key);
+    const details = await log.find({ key: { $in: pageKeys } }).lean();
+
+    const detailsLog = await Promise.all(details?.map((n) => mapLog(n)) || []);
+    const detailsMap = new Map(detailsLog.map(d => [d.key, d]));
+
+    const results = timeline.map(stamp => {
+        const detail = detailsMap.get(stamp.key) || {};
+        return {
+            ...detail,
+            createdAt: stamp.createdAt,
+        };
+    });
+
+    return {
+        results,
+        page,
+        limit,
+        totalResults,
+        totalPages,
+    }
+}
+
+/**
+ * 
  * @param {string} projectId 
  * @param {string} key 
  */
-const logTimeline = async (projectId, key) => {
+const logTimelineByKey = async (projectId, key) => {
 
     if (!isValidObjectId(projectId)) {
         throw HttpError(INVALID_INPUT_ERR_CODE, INVALID_ID_ERR_MESSAGE)
@@ -567,8 +626,9 @@ module.exports = {
     processWriteLog,
     processCreateSelfLog,
     paginateLogs,
-    logTimeline,
+    logTimelineByKey,
     getDistinctValue,
     initLogger,
-    getLogModel
+    getLogModel,
+    listProjectTimeline
 }

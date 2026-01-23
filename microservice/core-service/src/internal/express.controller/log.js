@@ -17,7 +17,7 @@ const {
 
 } = require("common/constant");
 const { submitWriteLog } = require("../../shared/provider/mq-producer");
-const { logTimeline } = require("../service/logger");
+const { logTimelineByKey } = require("../service/logger");
 const { findProjectBySlug, findProjectById, canUserReadProject } = require("../service/project");
 
 module.exports = {
@@ -59,7 +59,7 @@ module.exports = {
      * @param {*} req 
      * @param {*} res 
      */
-    async LogGetTimeline(req, res) {
+    async LogGetTimelineByKey(req, res) {
 
 
         if (!req?.user) {
@@ -80,7 +80,7 @@ module.exports = {
             throw HttpError(FORBIDDEN_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
         }
 
-        const data = await logTimeline(req?.params?.id, req?.params?.key)
+        const data = await logTimelineByKey(req?.params?.id, req?.params?.key)
 
         HttpResponse(res).json({
             error: SUCCESS_ERR_CODE,
