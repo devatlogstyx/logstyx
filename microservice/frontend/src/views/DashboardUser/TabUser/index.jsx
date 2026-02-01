@@ -6,6 +6,7 @@ import { useUser } from "../../../context/useUser"
 import useTabUser from "./hooks"
 import UpdateUser from "../UpdateUser"
 import { IoTrash } from "react-icons/io5"
+import moment from "moment-timezone"
 
 const TabUser = ({
     users,
@@ -72,6 +73,22 @@ const TabUser = ({
                                         </>
                                     }
                                 </div>
+
+                            </div>
+                            <div className="mt-4 pt-4 border-t border-gray-100">
+                                {
+                                    user?.lastLogin?.at &&
+                                    <div className="text-xs text-gray-600">
+                                        Last login: <span className="font-medium text-gray-900">{moment(user?.lastLogin?.at).format("MMM Do YYYY, HH:mm")}</span>
+                                    </div>
+                                }
+                                {
+                                    user?.lastLogin?.from &&
+                                    <div className="text-xs text-gray-600 mt-1">
+                                        Location: <span className="font-medium text-gray-900">{user?.lastLogin?.from?.location}</span> • IP: <span className="font-medium text-gray-900">{user?.lastLogin?.from?.ip}</span>
+                                    </div>
+                                }
+
                             </div>
                         </Paper>
                     ))

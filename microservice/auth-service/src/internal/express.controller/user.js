@@ -24,7 +24,7 @@ const {
 const { paginateUser, removeUser, handleUserLogin, createUserToken, patchUserPermission, updateUserProfile, patchUserPassword } = require("../service/user");
 const { createRefreshToken, expireRefreshToken } = require("../service/auth");
 const { getUserDashboardProjectStats, listUsersProject } = require("../../shared/provider/core.service");
-const { CanUserDo } = require("../utils/helper");
+const { CanUserDo, getLastLogin } = require("../utils/helper");
 const { getUserFromCache } = require("../../shared/cache");
 
 module.exports = {
@@ -142,7 +142,12 @@ module.exports = {
      */
     async UserLogin(req, res) {
 
-        const user = await handleUserLogin(req?.body)
+        const lastLogin = getLastLogin(req)
+        const user = await handleUserLogin({
+            ...req?.body,
+            lastLogin
+        })
+        
         if (!user) {
             throw HttpError(NO_ACCESS_ERR_CODE, NO_ACCESS_ERR_MESSAGE);
         }

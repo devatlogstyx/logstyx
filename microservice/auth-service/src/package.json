@@ -28,6 +28,7 @@
     "device-detector-js": "^3.0.3",
     "dotenv": "^16.4.7",
     "express": "^5.1.0",
+    "geoip-lite": "^1.4.10",
     "html-to-text": "^9.0.5",
     "jsonrpc-ws": "gitlab:angga2oioi/jsonrpc-ws",
     "jsonwebtoken": "^9.0.2",

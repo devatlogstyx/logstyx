@@ -11,6 +11,8 @@ const { ExpressNotFoundHandler, ExpressSuccessHandler, ValidateSignature, Valida
 const { useCors } = require("common/hooks");
 
 const app = express();
+app.set('trust proxy', true);
+
 app.disable('x-powered-by');
 
 app.use(useCors({

@@ -36,10 +36,16 @@ const userLoginSchema = new mongoose.Schema(
         hash: {
             type: hashSchema,
         },
-        lastLoginAt: {
-            type: Date,
-            index: true
-        }
+        lastLogin: {
+            at: {
+                type: Date,
+            },
+            from: {
+                ip: { type: String },
+                userAgent: { type: String },
+                location: { type: String } // city/country
+            }
+        },
     },
     {
         timestamps: true,

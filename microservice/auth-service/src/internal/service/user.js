@@ -1,6 +1,6 @@
 //@ts-check
 
-const { HttpError, hashString, num2Ceil, num2Floor, sanitizeObject, encrypt, decryptSecret, createSlug } = require("common/function")
+const { HttpError, hashString, num2Ceil, num2Floor, sanitizeObject, encrypt, decryptSecret, createSlug, parseSortBy } = require("common/function")
 const { getUserFromCache, updateUserCache } = require("../../shared/cache")
 const { mapUser, } = require("../utils/mapper")
 const { Validator } = require("node-input-validator")
@@ -68,6 +68,7 @@ const findUserById = async (id,) => {
  * @param {object} params
  * @param {string} params.email 
  * @param {string} params.password
+ * @param {*} params.lastLogin
  * @returns 
  */
 const loginUserWithEmailPassword = async (params) => {
@@ -105,7 +106,7 @@ const loginUserWithEmailPassword = async (params) => {
 
     await userLoginModel.findByIdAndUpdate(login?._id, {
         $set: {
-            lastLoginAt: new Date()
+            lastLogin: params?.lastLogin
         }
     })
 
@@ -164,16 +165,71 @@ const paginateUser = async (query = {}, sortBy = "createdAt:desc", limit = 10, p
     limit = num2Ceil(num2Floor(limit, 1), 50)
     page = num2Floor(page, 1)
 
+    const sort = parseSortBy(sortBy)
 
-    let list = await userModel.paginate(queryParams, { sortBy, limit, page });
+    const aggregate = userModel.aggregate([
+        {
+            $match: queryParams
+        },
+        {
+            $lookup: {
+                from: 'userlogins',
+                let: { userId: '$_id' },
+                pipeline: [
+                    {
+                        $match: {
+                            $expr: { $eq: ['$user', '$$userId'] }
+                        }
+                    },
+                    {
+                        $sort: { "lastLogin.at": -1 }
+                    },
+                    {
+                        $limit: 1
+                    }
+                ],
+                as: 'lastLogin'
+            }
+        },
+        {
+            $unwind: {
+                path: '$lastLogin',
+                preserveNullAndEmptyArrays: true
+            }
+        },
+        {
+            $project: {
+                _id: 1,
+                fullname: 1,
+                email: 1,
+                image: 1,
+                permissions: 1,
+                lastLogin: '$lastLogin.lastLogin',
+                createdAt: 1,
+                updatedAt: 1
+            }
+        },
+        {
+            $sort: {
+                ...sort
+            }
+        }
 
-    list.results = list?.results?.map((/** @type {any} */ doc) => {
-        let n = new userModel(doc);
-        n.decryptFieldsSync();
-        return mapUser(n?.toJSON())
-    })
+    ])
+
+    let res = await userModel.aggregatePaginate(aggregate, { limit, page });
+
+    let list = {
+        results: res?.docs?.map((doc) => {
+            return mapUser(doc)
+        }),
+        page,
+        totalResults: res.total,
+        totalPages: res.pages,
+    };
 
     return list
+
 }
 
 /**

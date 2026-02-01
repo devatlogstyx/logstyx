@@ -8,6 +8,7 @@ module.exports = {
             fullname: json?.fullname,
             image: json?.image,
             permissions: json?.permissions,
+            lastLogin: json?.lastLogin
         }
     },
     mapUserInvitation: (json) => {
@@ -15,7 +16,7 @@ module.exports = {
             id: json?.id || json?._id?.toString(),
             email: json?.email,
             permissions: json?.permissions,
-            projects:json?.projects
+            projects: json?.projects
         })
     },
 }
