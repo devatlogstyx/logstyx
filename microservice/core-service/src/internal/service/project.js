@@ -546,7 +546,7 @@ const getUsersDashboardProjectsStats = async (userId, getLogModelFunc) => {
 
     // Get all unique log models
     const uniqueBucketIds = [...new Set(buckets.map(b => b._id.toString()))];
-    const logModelPromises = uniqueBucketIds.map(bucketId => 
+    const logModelPromises = uniqueBucketIds.map(bucketId =>
         getLogModelFunc(bucketId)
             .then(logModel => ({ bucketId, logModel }))
             .catch(() => null)
@@ -564,7 +564,7 @@ const getUsersDashboardProjectsStats = async (userId, getLogModelFunc) => {
             const project = userProject.project;
             const projectId = project._id.toString();
             const bucketIds = projectToBucketsMap.get(projectId);
-            
+
             if (!bucketIds || bucketIds.length === 0) {
                 // Return empty stats if no buckets found
                 return {
@@ -802,29 +802,73 @@ const getProjectLogStats = async (projectId, getLogModelFunc) => {
         throw HttpError(INVALID_INPUT_ERR_CODE, `invalid id`)
     }
 
-    const { log: logModel } = await getLogModelFunc(projectId)
+    // Find all buckets that contain this project
+    const buckets = await bucketModel.find({
+        projects: ObjectId.createFromHexString(projectId)
+    });
 
-    const logsStats = await logModel.aggregate([
-        {
-            $group: {
-                _id: "$level",
-                count: { $sum: "$count" }
+    if (!buckets || buckets.length === 0) {
+        return [];
+    }
+
+    // Get log models for all buckets
+    const logModelPromises = buckets.map(bucket =>
+        getLogModelFunc(bucket._id.toString())
+            .then(logModel => ({ bucketId: bucket._id.toString(), logModel }))
+            .catch(() => null)
+    );
+    const logModelsArray = await Promise.all(logModelPromises);
+    const validLogModels = logModelsArray.filter(item => item !== null);
+
+    if (validLogModels.length === 0) {
+        return [];
+    }
+
+    // Aggregate stats from all buckets
+    const allStats = await Promise.all(
+        validLogModels.map(async ({ logModel }) => {
+            try {
+                const { log } = logModel;
+                const stats = await log.aggregate([
+                    {
+                        $group: {
+                            _id: "$level",
+                            count: { $sum: "$count" }
+                        }
+                    },
+                    {
+                        $project: {
+                            level: "$_id",
+                            count: 1,
+                            _id: 0
+                        }
+                    }
+                ]);
+                return stats;
+            } catch (error) {
+                return [];
             }
-        },
-        {
-            $project: {
-                level: "$_id",
-                count: 1,
-                _id: 0
-            }
-        },
-        {
-            $sort: { count: -1 } // Optional: sort by count descending
-        }
-    ]);
+        })
+    );
 
+    // Combine stats from all buckets by level
+    const combinedStatsMap = new Map();
 
-    return logsStats
+    allStats.flat().forEach(stat => {
+        const existing = combinedStatsMap.get(stat.level) || 0;
+        combinedStatsMap.set(stat.level, existing + stat.count);
+    });
+
+    // Convert map back to array format
+    const logsStats = Array.from(combinedStatsMap.entries()).map(([level, count]) => ({
+        level,
+        count
+    }));
+
+    // Sort by count descending
+    logsStats.sort((a, b) => b.count - a.count);
+
+    return logsStats;
 }
 
 

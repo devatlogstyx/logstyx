@@ -19,6 +19,7 @@ const {
 const { submitWriteLog } = require("../../shared/provider/mq-producer");
 const { logTimelineByKey } = require("../service/logger");
 const { findProjectBySlug, findProjectById, canUserReadProject } = require("../service/project");
+const { getBucketFromCache } = require("../../shared/cache");
 
 module.exports = {
 
@@ -66,18 +67,9 @@ module.exports = {
             throw HttpError(NO_ACCESS_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
         }
 
-        let project = await findProjectBySlug(req?.params?.id)
-        if (!project) {
-            project = await findProjectById(req?.params?.id)
-        }
-
-        if (!project) {
+        let bucket = await getBucketFromCache(req?.params?.id)
+        if (!bucket) {
             throw HttpError(NOT_FOUND_ERR_CODE, NOT_FOUND_ERR_MESSAGE)
-        }
-
-        const canAccess = await canUserReadProject(req?.user?.id, project?.id)
-        if (!canAccess) {
-            throw HttpError(FORBIDDEN_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
         }
 
         const data = await logTimelineByKey(req?.params?.id, req?.params?.key)

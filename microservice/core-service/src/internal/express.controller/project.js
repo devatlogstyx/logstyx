@@ -68,7 +68,7 @@ module.exports = {
             throw HttpError(FORBIDDEN_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
         }
 
-        const data = await updateProject(req?.params?.id, req?.body, initLogger)
+        const data = await updateProject(req?.params?.id, req?.body)
 
         HttpResponse(res).json({
             error: SUCCESS_ERR_CODE,
@@ -268,96 +268,7 @@ module.exports = {
             data
         });
     },
-    /**
-     * 
-     * @param {*} req 
-     * @param {*} res 
-     */
-    async ProjectPaginateLogs(req, res) {
-        if (!req?.user) {
-            throw HttpError(NO_ACCESS_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
-        }
-
-
-        let project = await findProjectBySlug(req?.params?.id)
-        if (!project) {
-            project = await findProjectById(req?.params?.id)
-        }
-
-        if (!project) {
-            throw HttpError(NOT_FOUND_ERR_CODE, NOT_FOUND_ERR_MESSAGE)
-        }
-
-        const canAccess = await canUserReadProject(req?.user?.id, project?.id)
-        if (!canAccess) {
-            throw HttpError(FORBIDDEN_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
-        }
-
-        const {
-            filterField,
-            filterValue,
-            filterOperator,
-            'filterField[]': filterFieldArray,
-            'filterValue[]': filterValueArray,
-            'filterOperator[]': filterOperatorArray,
-            sortBy,
-            limit,
-            page
-        } = req?.query ?? {}
-
-        // Handle both formats: with and without [] suffix
-        const filterFields = filterFieldArray || filterField
-        const filterValues = filterValueArray || filterValue
-        const filterOperators = filterOperatorArray || filterOperator
-        // Convert to arrays if they're not already
-        const filterFieldsArray = Array.isArray(filterFields) ? filterFields : (filterFields ? [filterFields] : [])
-        const filterValuesArray = Array.isArray(filterValues) ? filterValues : (filterValues ? [filterValues] : [])
-        const filterOperatorsArray = Array.isArray(filterOperators) ? filterOperators : (filterOperators ? [filterOperators] : [])
-
-        const params = { project: project?.id, filterFields: filterFieldsArray, filterValues: filterValuesArray, filterOperators: filterOperatorsArray }
-
-        const data = await paginateLogs(params, sortBy, limit, page)
-
-        HttpResponse(res).json({
-            error: SUCCESS_ERR_CODE,
-            message: SUCCESS_ERR_MESSAGE,
-            data
-        });
-    },
-    /**
-     * 
-     * @param {*} req 
-     * @param {*} res 
-     */
-    async ProjectListDistinctValues(req, res) {
-        if (!req?.user) {
-            throw HttpError(NO_ACCESS_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
-        }
-
-
-        let project = await findProjectBySlug(req?.params?.id)
-        if (!project) {
-            project = await findProjectById(req?.params?.id)
-        }
-
-        if (!project) {
-            throw HttpError(NOT_FOUND_ERR_CODE, NOT_FOUND_ERR_MESSAGE)
-        }
-
-        const canAccess = await canUserReadProject(req?.user?.id, project?.id)
-        if (!canAccess) {
-            throw HttpError(FORBIDDEN_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
-        }
-
-
-        const data = await getDistinctValue(project?.id, req?.query?.field)
-
-        HttpResponse(res).json({
-            error: SUCCESS_ERR_CODE,
-            message: SUCCESS_ERR_MESSAGE,
-            data
-        });
-    },
+   
     /**
      * 
      * @param {*} req 
