@@ -1,7 +1,7 @@
 //@ts-check
 
 const { NO_ACCESS_ERR_CODE, NO_ACCESS_ERR_MESSAGE, FULL_PAYLOAD_DEDUPLICATION_STRATEGY, NONE_DEDUPLICATION_STRATEGY, INDEX_ONLY_DEDUPLICATION_STRATEGY } = require("common/constant");
-const { HttpError, num2Int, getNestedValue, hashString } = require("common/function");
+const { HttpError, num2Int, getNestedValue, hashString, evaluateCondition } = require("common/function");
 const { default: striptags } = require("striptags")
 const crypto = require("crypto");
 
@@ -264,6 +264,17 @@ const buildMongoFilterQuery = (filters = {}, project = null) => {
     return query;
 }
 
+/**
+ * 
+ * @param {*} data 
+ * @param {*} filters 
+ * @returns 
+ */
+const evaluateBucketFilter = (data, filters) => {
+    return filters.every(filter => evaluateCondition(data, filter));
+};
+
+
 module.exports = {
     validateCustomIndex,
     validateOrigin,
@@ -272,5 +283,6 @@ module.exports = {
     isRecent,
     generateRawValues,
     generateLogKey,
-    buildMongoFilterQuery
+    buildMongoFilterQuery,
+    evaluateBucketFilter
 }

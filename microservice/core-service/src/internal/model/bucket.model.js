@@ -1,20 +1,19 @@
 //@ts-check
 
 const { mongoose } = require("../../shared/mongoose");
-const { ObjectId } = mongoose.Schema.Types
+const { ObjectId, Mixed } = mongoose.Schema.Types
 const { FULL_PAYLOAD_DEDUPLICATION_STRATEGY, INDEX_ONLY_DEDUPLICATION_STRATEGY, NONE_DEDUPLICATION_STRATEGY } = require("common/constant");
 
 const SettingSchema = new mongoose.Schema(
     {
+        filter: {
+            type: Mixed,
+        },
         indexes: { // indexed field but hashed,
             type: [String],
             index: true,
         },
         rawIndexes: { // indexed field without being hashed
-            type: [String],
-            index: true,
-        },
-        allowedOrigin: {
             type: [String],
             index: true,
         },

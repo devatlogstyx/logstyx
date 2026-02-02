@@ -1,11 +1,11 @@
 //@ts-check
 const { INVALID_INPUT_ERR_CODE, NOT_FOUND_ERR_CODE, NOT_FOUND_ERR_MESSAGE, INVALID_ID_ERR_MESSAGE } = require("common/constant");
-const { HttpError, decryptAndDecompress, sanitizeObject, num2Ceil, num2Floor, parseSortBy, num2Int } = require("common/function");
+const { HttpError, decryptAndDecompress, sanitizeObject, num2Ceil, num2Floor, parseSortBy, num2Int, parseMustacheTemplate, extractMustacheVars } = require("common/function");
 const { Validator } = require("node-input-validator");
-const { findProjectById, listAllProject, findBucketById, listAllBucket } = require("../../shared/provider/core.service");
+const { findBucketById, listAllBucket } = require("../../shared/provider/core.service");
 const { getWebhookFromCache, updateAlertCache, getAlertFromCache } = require("../../shared/cache");
 const { mongoose, isValidObjectId } = require("../../shared/mongoose");
-const { extractMustacheVars, evaluateAlertFilter, parseMustacheTemplate } = require("../utils/helper");
+const { evaluateAlertFilter } = require("../utils/helper");
 const { striptags } = require("striptags");
 const alertModel = require("../model/alert.model");
 const { submitProcessLogAlert, submitProcessSendWebhook } = require("../../shared/provider/mq-producer");

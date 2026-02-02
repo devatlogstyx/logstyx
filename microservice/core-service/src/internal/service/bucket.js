@@ -28,6 +28,7 @@ const createBucket = async (params, { initLogger, canUserModifyProject }) => {
         title: "required|string",
         projects: "required|arrayUnique",
         "settings.indexes": "arrayUnique",
+        "settings.filter": "arrayUnique",
         "settings.rawIndexes": "arrayUnique",
         "settings.retentionHours": "numeric",
         "settings.deduplicationStrategy": "string",
@@ -74,6 +75,7 @@ const createBucket = async (params, { initLogger, canUserModifyProject }) => {
         const payload = sanitizeObject({
             title: striptags(params?.title),
             settings: {
+                filter: params?.config?.filter,
                 indexes: params?.settings?.indexes?.filter((n) => validateCustomIndex(n)),
                 rawIndexes: params?.settings?.rawIndexes?.filter((n) => validateCustomIndex(n)),
                 deduplicationStrategy: params?.settings?.deduplicationStrategy || FULL_PAYLOAD_DEDUPLICATION_STRATEGY,
@@ -124,6 +126,7 @@ const updateBucket = async (id, params, { initLogger }) => {
     const v = new Validator(params, {
         title: "required|string",
         indexes: "arrayUnique",
+        filter: "arrayUnique",
         rawIndexes: "arrayUnique",
         deduplicationStrategy: "string",
         retentionHours: "numeric"
@@ -150,6 +153,7 @@ const updateBucket = async (id, params, { initLogger }) => {
         {
             $set: sanitizeObject({
                 title: striptags(params?.title),
+                "settings.filter": params?.config?.filter,
                 "settings.indexes": params?.indexes?.filter((n) => validateCustomIndex(n)),
                 "settings.rawIndexes": params?.rawIndexes?.filter((n) => validateCustomIndex(n)),
                 "settings.deduplicationStrategy": params?.deduplicationStrategy || FULL_PAYLOAD_DEDUPLICATION_STRATEGY,
