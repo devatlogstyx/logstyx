@@ -13,6 +13,7 @@ const { updateBucketCache, getBucketFromCache } = require("../../shared/cache");
 const probeModel = require("../model/probe.model");
 const widgetModel = require("../model/widget.model");
 const projectUserModel = require("../model/project.user.model");
+const { mapBucket } = require("../utils/mapper");
 const { ObjectId } = mongoose.Types
 
 
@@ -299,9 +300,39 @@ const paginateBucket = async (query = {}, sortBy = "createdAt:desc", limit = 10,
     return list;
 };
 
+const listUserBucket = async (userId) => {
+
+    if (!isValidObjectId(userId)) {
+        throw HttpError(INVALID_INPUT_ERR_CODE, INVALID_ID_ERR_MESSAGE)
+    }
+
+    const bucket = await projectUserModel.aggregate([
+        {
+            $match: { 'user.userId': ObjectId.createFromHexString(userId) }
+        },
+        {
+            $lookup: {
+                from: 'buckets', // your projects collection name
+                localField: 'project',
+                foreignField: 'projects',
+                as: 'bucketDetails'
+            }
+        },
+        {
+            $unwind: '$bucketDetails'
+        },
+        {
+            $replaceRoot: { newRoot: '$bucketDetails' }
+        }
+    ]);
+
+    return bucket?.map(mapBucket)
+}
+
 module.exports = {
     createBucket,
     updateBucket,
     removeBucket,
     paginateBucket,
+    listUserBucket
 }

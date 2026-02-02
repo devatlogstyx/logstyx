@@ -3,7 +3,8 @@
 const {
     CREATE_LOG_WSROUTE,
     GET_USER_DASHBOARD_PROJECT_STATS_WSROUTE,
-    LIST_USER_PROJECT_WSROUTE
+    LIST_USER_PROJECT_WSROUTE,
+    LIST_USER_BUCKET_WSROUTE
 } = require("common/routes/rpc-websockets")
 
 const { useRPCWebsocket } = require("common/hooks");
@@ -39,3 +40,10 @@ exports.getUserDashboardProjectStats = (userId) => ws.createCall(GET_USER_DASHBO
  * @returns 
  */
 exports.listUsersProject = (userId) => ws.createCall(LIST_USER_PROJECT_WSROUTE, { userId })
+
+/**
+ * 
+ * @param {string} userId 
+ * @returns 
+ */
+exports.listUsersBucket = (userId) => ws.createCall(LIST_USER_BUCKET_WSROUTE, { userId })

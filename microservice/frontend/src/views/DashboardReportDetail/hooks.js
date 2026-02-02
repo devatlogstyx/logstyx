@@ -2,19 +2,20 @@ import { useEffect, useRef, useState } from 'react';
 import { useForm } from '@mantine/form';
 import { useParams } from 'react-router-dom';
 import { getReportBySlug, createWidget, deleteWidget, updateReport, updateWidget } from '../../api/report';
-import { listAllMyProject } from '../../api/project';
 import { useConfirmDialog } from '../../hooks/useConfirmDialog';
+import { listMyBucket } from '../../api/bucket';
 
 export function useDashboardReportDetail() {
   const { slug } = useParams();
   const [report, setReport] = useState(null);
-  const [projects, setProjects] = useState([]);
+  const [buckets, setBuckets] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const initialValues = {
     template: 'total_value',
     title: '',
-    project: '',
+    bucket: '',
     description: "",
     config: { operation: 'count', filters: [] }
   };
@@ -32,14 +33,15 @@ export function useDashboardReportDetail() {
   useEffect(() => {
     const ctrl = new AbortController();
     getReportBySlug(ctrl.signal, slug).then(setReport).finally(() => setLoading(false));
-    listAllMyProject(ctrl.signal).then(setProjects);
+    listMyBucket(ctrl.signal).then(setBuckets);
     return () => ctrl.abort();
   }, [slug]);
 
   const onAddWidget = form.onSubmit(async (values) => {
+    setIsSubmitting(true)
     const ctrl = new AbortController();
     const created = await createWidget(ctrl.signal, report.id, {
-      project: values.project,
+      bucket: values.bucket,
       template: values.template,
       title: values.title || `${values.template}`,
       description: values.description,
@@ -48,6 +50,7 @@ export function useDashboardReportDetail() {
     setReport({ ...report, widgets: [...(report.widgets || []), created] });
     form.setValues(initialValues);
     setModalOpened(false);
+    setIsSubmitting(false)
   });
 
   const onChangeVisibility = async (e) => {
@@ -67,6 +70,7 @@ export function useDashboardReportDetail() {
       onConfirm: async () => {
         setDeletingId(widgetId);
         try {
+          setIsSubmitting(true)
           const ctrl = new AbortController();
           await deleteWidget(ctrl.signal, widgetId);
           setReport({ ...report, widgets: (report.widgets || []).filter(w => w.id !== widgetId) });
@@ -74,6 +78,7 @@ export function useDashboardReportDetail() {
           setDeleteError(err?.message || 'Failed to delete');
         } finally {
           setDeletingId(null);
+          setIsSubmitting(false)
         }
       },
       onCancel: () => { }
@@ -88,7 +93,7 @@ export function useDashboardReportDetail() {
     form.setValues({
       template: w.template,
       title: w.title,
-      project: w.project?.id,
+      bucket: w.bucket?.id,
       description: w.description || '',
       config: w.config || {}
     });
@@ -96,10 +101,11 @@ export function useDashboardReportDetail() {
   };
 
   const handleSubmit = form.onSubmit(async (values) => {
+    setIsSubmitting(true)
     if (editingWidgetId) {
       const ctrl = new AbortController();
       const updated = await updateWidget(ctrl.signal, editingWidgetId, {
-        project: values.project,
+        bucket: values.bucket,
         template: values.template,
         title: values.title || `${values.template}`,
         description: values.description,
@@ -113,7 +119,7 @@ export function useDashboardReportDetail() {
     } else {
       const ctrl = new AbortController();
       const created = await createWidget(ctrl.signal, report.id, {
-        project: values.project,
+        bucket: values.bucket,
         template: values.template,
         title: values.title || `${values.template}`,
         description: values.description,
@@ -123,6 +129,7 @@ export function useDashboardReportDetail() {
       form.reset();
       if (report) setReport({ ...report, widgets: [...(report.widgets || []), created] });
     }
+    setIsSubmitting(false)
   });
 
   const onClose = () => {
@@ -191,7 +198,7 @@ export function useDashboardReportDetail() {
 
   return {
     report,
-    projects,
+    buckets,
     loading,
     form,
     modalOpened,
@@ -211,6 +218,7 @@ export function useDashboardReportDetail() {
     containerRef,
     layout,
     width,
-    handleLayoutChange
+    handleLayoutChange,
+    isSubmitting
   };
 }

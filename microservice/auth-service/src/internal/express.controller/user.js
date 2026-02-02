@@ -23,7 +23,7 @@ const {
 } = require("common/constant");
 const { paginateUser, removeUser, handleUserLogin, createUserToken, patchUserPermission, updateUserProfile, patchUserPassword } = require("../service/user");
 const { createRefreshToken, expireRefreshToken } = require("../service/auth");
-const { getUserDashboardProjectStats, listUsersProject } = require("../../shared/provider/core.service");
+const { getUserDashboardProjectStats, listUsersProject, listUsersBucket } = require("../../shared/provider/core.service");
 const { CanUserDo, getLastLogin } = require("../utils/helper");
 const { getUserFromCache } = require("../../shared/cache");
 
@@ -220,6 +220,19 @@ module.exports = {
         }
 
         const data = await listUsersProject(req?.user?.id)
+
+        HttpResponse(res).json({
+            error: SUCCESS_ERR_CODE,
+            message: SUCCESS_ERR_MESSAGE,
+            data
+        });
+    },
+    async UserListBucket(req, res) {
+        if (!req?.user) {
+            throw HttpError(NO_ACCESS_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
+        }
+
+        const data = await listUsersBucket(req?.user?.id)
 
         HttpResponse(res).json({
             error: SUCCESS_ERR_CODE,

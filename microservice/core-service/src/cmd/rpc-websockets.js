@@ -7,11 +7,12 @@ const {
     FIND_PROJECT_BY_ID_WSROUTE,
     PAGINATE_PROJECT_WSROUTE,
     PAGINATE_BUCKET_WSROUTE,
-    FIND_BUCKET_BY_ID_WSROUTE
+    FIND_BUCKET_BY_ID_WSROUTE,
+    LIST_USER_BUCKET_WSROUTE
 } = require("common/routes/rpc-websockets");
 const { processCreateSelfLog, getLogModel } = require("../internal/service/logger");
 const { getUsersDashboardProjectsStats, findProjectById, paginateProject, listUserProject } = require("../internal/service/project");
-const { paginateBucket } = require("../internal/service/bucket");
+const { paginateBucket, listUserBucket } = require("../internal/service/bucket");
 const { getBucketFromCache } = require("../shared/cache");
 
 /**
@@ -30,6 +31,10 @@ exports.init = (rpc) => {
 
     rpc.use(LIST_USER_PROJECT_WSROUTE, async ({ userId }) => {
         return listUserProject(userId)
+    });
+
+    rpc.use(LIST_USER_BUCKET_WSROUTE, async ({ userId }) => {
+        return listUserBucket(userId)
     });
 
     rpc.use(FIND_PROJECT_BY_ID_WSROUTE, async ({ projectId }) => {

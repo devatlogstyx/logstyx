@@ -8,6 +8,15 @@ module.exports = {
             createdAt: json?.createdAt
         }
     },
+    mapBucket: (json) => {
+        return {
+            id: json?.id || json?._id?.toString(),
+            title: json?.title,
+            projects: json?.projects,
+            settings: json?.settings,
+            createdAt: json?.createdAt
+        }
+    },
     mapProject: (json) => {
         return {
             id: json?.id || json?._id?.toString(),

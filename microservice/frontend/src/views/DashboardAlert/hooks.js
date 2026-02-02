@@ -25,7 +25,7 @@ const useDashboardAlert = () => {
         initialValues: {
             title: '',
             webhook: null,
-            project: null,
+            bucket: null,
             config: {
                 filter: [],
                 template: {},
@@ -62,7 +62,7 @@ const useDashboardAlert = () => {
             form.setValues({
                 title: alert?.title,
                 webhook: alert?.webhook,
-                project: alert?.project,
+                bucket: alert?.bucket,
                 config: {
                     filter: alert?.config?.filter,
                     template: alert?.config?.template,
@@ -122,7 +122,7 @@ const useDashboardAlert = () => {
             const payload = {
                 title: values.title,
                 webhook: values.webhook,
-                project: values.project,
+                bucket: values.bucket,
                 config: {
                     filter: values?.config?.filter,
                     template: values?.config?.template,

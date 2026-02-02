@@ -11,7 +11,7 @@ import PrimaryButton from '../../component/button/PrimaryButton';
 export default function DashboardReportDetail() {
   const {
     report,
-    projects,
+    buckets,
     loading,
     form,
     modalOpened,
@@ -25,7 +25,8 @@ export default function DashboardReportDetail() {
     layout,
     width,
     handleLayoutChange,
-    setModalOpened
+    setModalOpened,
+    isSubmitting
   } = useDashboardReportDetail();
 
 
@@ -78,7 +79,8 @@ export default function DashboardReportDetail() {
         onClose={onClose}
         onAddWidget={handleSubmit}
         form={form}
-        projects={projects}
+        buckets={buckets}
+        isSubmitting={isSubmitting}
       />
     </div>
   );
