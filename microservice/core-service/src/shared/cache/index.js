@@ -1,6 +1,6 @@
 //@ts-check
 
-const { PROJECT_CACHE_KEY, PROBE_CACHE_KEY, WIDGET_DATA_CACHE_KEY, WIDGET_CACHE_KEY, REPORT_CACHE_KEY, ALLOWED_ORIGIN_CACHE_KEY } = require("common/constant")
+const { PROJECT_CACHE_KEY, PROBE_CACHE_KEY, WIDGET_DATA_CACHE_KEY, WIDGET_CACHE_KEY, REPORT_CACHE_KEY, ALLOWED_ORIGIN_CACHE_KEY, BUCKET_CACHE_KEY } = require("common/constant")
 
 const { submitCreateCache } = require("../provider/mq-producer")
 
@@ -10,15 +10,19 @@ const { useCache } = require("common/hooks")
 const { logger: Log } = require("../logger")
 const projectModel = require("../../internal/model/project.model")
 const probeModel = require("../../internal/model/probe.model")
-const { CACHE_CREATE_MQ_QUEUE } = require("common/routes/mq-queue")
+
 const widgetModel = require("../../internal/model/widget.model")
 const reportModel = require("../../internal/model/report.model")
+const bucketModel = require("../../internal/model/bucket.model")
 
 const { updateCache, getCache } = useCache({
     ReadCache: readCache,
     SubmitCache: submitCreateCache,
     Log
 })
+
+const updateBucketCache = async (id) => updateCache(BUCKET_CACHE_KEY, id, bucketModel)
+const getBucketFromCache = async (id) => getCache(BUCKET_CACHE_KEY, id, bucketModel)
 
 const updateProjectCache = async (id) => updateCache(PROJECT_CACHE_KEY, id, projectModel)
 const getProjectFromCache = async (id) => getCache(PROJECT_CACHE_KEY, id, projectModel)
@@ -84,6 +88,9 @@ const getAllowedOriginFromCache = async () => {
 }
 
 module.exports = {
+    updateBucketCache,
+    getBucketFromCache,
+
     updateProjectCache,
     getProjectFromCache,
 
