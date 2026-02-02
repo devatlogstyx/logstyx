@@ -19,6 +19,7 @@ const {
 const { createProject, canUserModifyProject, removeProject, paginateProject, addUserToProject, removeUserFromProject, listUserFromProject, updateProject, findProjectBySlug, findProjectById, canUserReadProject, getProjectLogStats } = require("../service/project");
 const { paginateLogs, getDistinctValue, initLogger, getLogModel, listProjectTimeline } = require("../service/logger");
 const { canUserDo } = require("../../shared/provider/auth.service");
+const { createBucket } = require("../service/bucket");
 
 module.exports = {
 
@@ -40,7 +41,10 @@ module.exports = {
         const data = await createProject({
             ...req?.body,
             creator: req?.user?.id
-        }, initLogger)
+        }, {
+            createBucketFunc: createBucket,
+            initLoggerFunc: initLogger
+        })
 
         HttpResponse(res).json({
             error: SUCCESS_ERR_CODE,

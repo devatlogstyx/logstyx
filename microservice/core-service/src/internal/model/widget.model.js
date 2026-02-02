@@ -9,9 +9,9 @@ const widgetSchema = new mongoose.Schema({
     required: true,
     index: true
   },
-  project: {
+  bucket: {
     type: ObjectId,
-    ref: 'project',
+    ref: 'bucket',
     required: true
   },
   template: {
