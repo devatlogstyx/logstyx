@@ -24,7 +24,6 @@ const { ObjectId } = mongoose.Types
  * @returns 
  */
 const createBucket = async (params, { initLogger, canUserModifyProject }) => {
-
     const v = new Validator(params, {
         title: "required|string",
         projects: "required|arrayUnique",
@@ -71,10 +70,12 @@ const createBucket = async (params, { initLogger, canUserModifyProject }) => {
     const session = await mongoose.startSession();
     session.startTransaction();
 
+    let bucket
     try {
 
         const payload = sanitizeObject({
             title: striptags(params?.title),
+            projects: projects.map((n) => n?._id),
             settings: {
                 filter: params?.config?.filter,
                 indexes: params?.settings?.indexes?.filter((n) => validateCustomIndex(n)),
@@ -88,14 +89,10 @@ const createBucket = async (params, { initLogger, canUserModifyProject }) => {
             payload
         ], { session })
 
+        bucket = rawBucket?.toJSON()
 
         await session.commitTransaction()
 
-        const bucket = await updateBucketCache(rawBucket?._id)
-
-        initLogger(bucket)?.catch(console.error)
-
-        return bucket
 
     } catch (e) {
         await session.abortTransaction();
@@ -103,6 +100,12 @@ const createBucket = async (params, { initLogger, canUserModifyProject }) => {
     } finally {
         session.endSession()
     }
+
+    await updateBucketCache(bucket?.id)
+
+    initLogger(bucket)?.catch(console.error)
+
+    return bucket
 
 }
 
@@ -173,6 +176,8 @@ const updateBucket = async (id, params, { initLogger }) => {
 /**
  * 
  * @param {string} id 
+ * @param {*} param1 
+ * @returns 
  */
 const removeBucket = async (id, { getLogModel }) => {
     if (!isValidObjectId(id)) {

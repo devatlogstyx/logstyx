@@ -157,10 +157,13 @@ const useUpdateSettings = ({
 
     const handleSubmit = React.useCallback(async (values) => {
         try {
+            setIsSubmitting(true)
             await updateProject(controller.signal, project?.id, values)
             onUpdate()
         } catch (e) {
             ErrorMessage(e)
+        } finally {
+            setIsSubmitting(false)
         }
     }, [ErrorMessage, controller, project, onUpdate])
 

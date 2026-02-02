@@ -76,18 +76,6 @@ const TabOverview = ({
                     <div className="space-y-4">
                         <div>
                             <div className="text-sm text-gray-500 mb-1">
-                                Indexed Fields
-                            </div>
-                            <div className="flex gap-2 flex-wrap">
-                                {project.settings.indexes.map((index, i) => (
-                                    <Badge key={i} variant="light">
-                                        {index}
-                                    </Badge>
-                                ))}
-                            </div>
-                        </div>
-                        <div>
-                            <div className="text-sm text-gray-500 mb-1">
                                 Allowed Origins
                             </div>
                             <div className="space-y-1">

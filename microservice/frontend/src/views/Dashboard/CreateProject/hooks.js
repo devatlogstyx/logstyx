@@ -14,6 +14,7 @@ const useCreateProject = ({
 
     const [isSubmitting, setIsSubmitting] = React.useState(false)
     const [isModalVisible, setIsModalVisible] = React.useState(false)
+    const [step, setStep] = React.useState(0)
 
     const ErrorMessage = useErrorMessage()
 
@@ -21,6 +22,7 @@ const useCreateProject = ({
         mode: 'uncontrolled',
         initialValues: {
             title: "",
+            filter: [],
             indexes: [],
             rawIndexes: [],
             allowedOrigin: [],
@@ -135,6 +137,7 @@ const useCreateProject = ({
             const payload = {
                 title: values?.title,
                 settings: {
+                    filter: values?.filter,
                     indexes: values?.indexes,
                     rawIndexes: values?.rawIndexes,
                     allowedOrigin: values?.allowedOrigin,
@@ -156,8 +159,13 @@ const useCreateProject = ({
         isSubmitting,
         isModalVisible,
         openModal: () => setIsModalVisible(true),
-        closeModal: () => setIsModalVisible(false),
-        handleSubmit
+        closeModal: () => {
+            setIsModalVisible(false)
+            setStep(0)
+        },
+        handleSubmit,
+        step,
+        setStep
     }
 }
 

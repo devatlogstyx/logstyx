@@ -49,14 +49,15 @@ const generateUniqueSlug = async (baseSlug) => {
  * @param {*} params1
  */
 const createProject = async (params, {
-    createBucketFunc,
-    initLoggerFunc
+    createBucket,
+    initLogger
 }) => {
 
     const v = new Validator(params, {
         title: "required|string",
         slug: "string",
         creator: "required|string",
+        "settings.filter": "arrayUnique",
         "settings.indexes": "arrayUnique",
         "settings.rawIndexes": "arrayUnique",
         "settings.allowedOrigin": "arrayUnique",
@@ -94,6 +95,8 @@ const createProject = async (params, {
     const session = await mongoose.startSession();
     session.startTransaction();
 
+    let createdProject = null
+
     try {
 
         const secret = randomstring.generate(32)
@@ -106,13 +109,13 @@ const createProject = async (params, {
             }
         })
 
-        const projects = await projectModel.create([
+        const [newProject] = await projectModel.create([
             payload
         ], { session })
 
         await projectUserModel.create([
             {
-                project: projects?.[0]?._id,
+                project: newProject?._id,
                 user: {
                     userId: ObjectId.createFromHexString(creator?.id),
                     fullname: creator?.fullname,
@@ -120,24 +123,9 @@ const createProject = async (params, {
             }
         ])
 
+        createdProject = newProject;
+
         await session.commitTransaction()
-
-        const project = await updateProjectCache(projects?.[0]?._id?.toString())
-
-        updateAllowedOriginCache()?.catch(console.error)
-
-        createBucketFunc({
-            title: project?.title,
-            projects: [project?.id],
-            settings: {
-                indexes: params?.settings?.indexes?.filter((n) => validateCustomIndex(n)),
-                rawIndexes: params?.settings?.rawIndexes?.filter((n) => validateCustomIndex(n)),
-                deduplicationStrategy: params?.settings?.deduplicationStrategy || FULL_PAYLOAD_DEDUPLICATION_STRATEGY,
-                retentionHours: params?.settings?.retentionHours || 1
-            }
-        }, initLoggerFunc)?.catch(console.error)
-
-        return project
 
     } catch (e) {
         await session.abortTransaction();
@@ -145,6 +133,25 @@ const createProject = async (params, {
     } finally {
         session.endSession()
     }
+
+    const project = await updateProjectCache(createdProject?._id?.toString())
+
+    updateAllowedOriginCache()?.catch(console.error)
+
+    await createBucket({
+        title: `${project?.title} - Default Bucket`,
+        projects: [project?.id],
+        settings: {
+            filter: params?.settings?.filter,
+            indexes: params?.settings?.indexes?.filter((n) => validateCustomIndex(n)),
+            rawIndexes: params?.settings?.rawIndexes?.filter((n) => validateCustomIndex(n)),
+            deduplicationStrategy: params?.settings?.deduplicationStrategy || FULL_PAYLOAD_DEDUPLICATION_STRATEGY,
+            retentionHours: params?.settings?.retentionHours || 1
+        },
+        creator: creator?.id
+    }, { initLogger, canUserModifyProject })
+
+    return project
 
 }
 
@@ -245,9 +252,10 @@ const canUserReadProject = async (userId, projectId) => {
 /**
  * 
  * @param {string} id 
- * @param {Function}  getLogModelFunc
+ * @param {*} param1 
+ * @returns 
  */
-const removeProject = async (id, getLogModelFunc) => {
+const removeProject = async (id, { getLogModel }) => {
     const project = await getProjectFromCache(id)
     if (!project) {
         throw HttpError(NOT_FOUND_ERR_CODE, PROJECT_NOT_FOUND_ERR_MESSAGE)
@@ -272,13 +280,12 @@ const removeProject = async (id, getLogModelFunc) => {
     }).cursor();
 
     for await (const bucket of emptyBuckets) {
-        const { log, logstamp } = await getLogModelFunc(bucket.toJSON())
+        const { log, logstamp } = await getLogModel(bucket._id.toString())
         await Promise.all([
             log.collection.drop(),
             logstamp.collection.drop(),
+            bucketModel.findByIdAndDelete(bucket._id)
         ])
-
-        await bucket.findByIdAndDelete(bucket._id)
     }
 
     return null
@@ -549,7 +556,7 @@ const getUsersDashboardProjectsStats = async (userId, getLogModelFunc) => {
 
     // Get all unique log models
     const uniqueBucketIds = [...new Set(buckets.map(b => b._id.toString()))];
-    
+
     const logModelPromises = uniqueBucketIds.map(bucketId =>
         getLogModelFunc(bucketId)
             .then(logModel => ({ bucketId, logModel }))
@@ -646,7 +653,7 @@ const getUsersDashboardProjectsStats = async (userId, getLogModelFunc) => {
                                 }
                             }
                         ]);
-                        
+
                         return result;
                     } catch (error) {
 
@@ -721,7 +728,7 @@ const getUsersDashboardProjectsStats = async (userId, getLogModelFunc) => {
         })
     );
 
-    
+
     return projectsWithStats
         .filter(result => result.status === 'fulfilled')
         .map(result => result.value);

@@ -42,8 +42,8 @@ module.exports = {
             ...req?.body,
             creator: req?.user?.id
         }, {
-            createBucketFunc: createBucket,
-            initLoggerFunc: initLogger
+            createBucket,
+            initLogger
         })
 
         HttpResponse(res).json({
@@ -101,7 +101,7 @@ module.exports = {
             throw HttpError(FORBIDDEN_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
         }
 
-        await removeProject(project?.id, getLogModel)
+        await removeProject(project?.id, { getLogModel })
 
         HttpResponse(res).json({
             error: SUCCESS_ERR_CODE,
@@ -268,6 +268,6 @@ module.exports = {
             data
         });
     },
-   
+
 };
 
