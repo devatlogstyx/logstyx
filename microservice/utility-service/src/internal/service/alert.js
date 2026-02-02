@@ -2,7 +2,7 @@
 const { INVALID_INPUT_ERR_CODE, NOT_FOUND_ERR_CODE, NOT_FOUND_ERR_MESSAGE, INVALID_ID_ERR_MESSAGE } = require("common/constant");
 const { HttpError, decryptAndDecompress, sanitizeObject, num2Ceil, num2Floor, parseSortBy, num2Int } = require("common/function");
 const { Validator } = require("node-input-validator");
-const { findProjectById, listAllProject } = require("../../shared/provider/core.service");
+const { findProjectById, listAllProject, findBucketById, listAllBucket } = require("../../shared/provider/core.service");
 const { getWebhookFromCache, updateAlertCache, getAlertFromCache } = require("../../shared/cache");
 const { mongoose, isValidObjectId } = require("../../shared/mongoose");
 const { extractMustacheVars, evaluateAlertFilter, parseMustacheTemplate } = require("../utils/helper");
@@ -21,7 +21,7 @@ const moment = require("moment-timezone")
 const createAlert = async (params) => {
     const v = new Validator(params, {
         title: "required|string",
-        project: "required|string",
+        bucket: "required|string",
         webhook: "required|string",
         config: "required|object",
         "config.filter": "required|arrayUnique",
@@ -34,12 +34,12 @@ const createAlert = async (params) => {
         throw HttpError(INVALID_INPUT_ERR_CODE, v.errors);
     }
 
-    const [project, webhook] = await Promise.all([
-        findProjectById(params?.project),
+    const [bucket, webhook] = await Promise.all([
+        findBucketById(params?.bucket),
         getWebhookFromCache(params?.webhook)
     ])
 
-    if (!project || !webhook) {
+    if (!bucket || !webhook) {
         throw HttpError(NOT_FOUND_ERR_CODE, NOT_FOUND_ERR_MESSAGE)
     }
 
@@ -65,7 +65,7 @@ const createAlert = async (params) => {
 
     const payload = sanitizeObject({
         title: striptags(params?.title),
-        project: ObjectId.createFromHexString(project?.id),
+        bucket: ObjectId.createFromHexString(bucket?.id),
         webhook: ObjectId.createFromHexString(webhook?.id),
         config: {
             filter: params?.config?.filter,
@@ -98,7 +98,7 @@ const updateAlert = async (id, params) => {
 
     const v = new Validator(params, {
         title: "required|string",
-        project: "required|string",
+        bucket: "required|string",
         webhook: "required|string",
         config: "required|object",
         "config.filter": "required|arrayUnique",
@@ -111,12 +111,12 @@ const updateAlert = async (id, params) => {
         throw HttpError(INVALID_INPUT_ERR_CODE, v.errors);
     }
 
-    const [project, webhook] = await Promise.all([
-        findProjectById(params?.project),
+    const [bucket, webhook] = await Promise.all([
+        findBucketById(params?.bucket),
         getWebhookFromCache(params?.webhook)
     ])
 
-    if (!project || !webhook) {
+    if (!bucket || !webhook) {
         throw HttpError(NOT_FOUND_ERR_CODE, NOT_FOUND_ERR_MESSAGE)
     }
 
@@ -142,7 +142,7 @@ const updateAlert = async (id, params) => {
 
     const payload = sanitizeObject({
         title: striptags(params?.title),
-        project: ObjectId.createFromHexString(project?.id),
+        bucket: ObjectId.createFromHexString(bucket?.id),
         webhook: ObjectId.createFromHexString(webhook?.id),
         config: {
             filter: params?.config?.filter,
@@ -266,7 +266,7 @@ const paginateAlert = async (query, sortBy = "createdAt:desc", limit = 10, page 
                 id: n?.webhook?._id?.toString(),
                 title: n?.webhook?.title
             },
-            project: n?.project?.toString(),
+            bucket: n?.bucket?.toString(),
             createdAt: n?.createdAt,
             updatedAt: n?.updatedAt,
         })),
@@ -275,16 +275,16 @@ const paginateAlert = async (query, sortBy = "createdAt:desc", limit = 10, page 
         totalPages: res.pages,
     };
 
-    const projects = await listAllProject({
-        ids: [...new Set(list?.results?.map((n) => n?.project).filter(Boolean))]
+    const buckets = await listAllBucket({
+        ids: [...new Set(list?.results?.map((n) => n?.bucket).filter(Boolean))]
     })
-    const projectMap = new Map(projects?.map(s => [s.id, s]));
+    const bucketMap = new Map(buckets?.map(s => [s.id, s]));
 
     list.results = list?.results?.map((r) => {
-        const project = projectMap.get(r?.project)
-        r.project = {
-            id: project?.id,
-            title: project?.title
+        const bucket = bucketMap.get(r?.bucket)
+        r.bucket = {
+            id: bucket?.id,
+            title: bucket?.title
         }
 
         return r
@@ -296,25 +296,25 @@ const paginateAlert = async (query, sortBy = "createdAt:desc", limit = 10, page 
 
 /**
  * 
- * @param {*} projectId 
+ * @param {*} bucketId 
  * @param {*} alertId 
  * @param {*} params 
  * @returns 
  */
-const processLogAlert = async (projectId, alertId, params) => {
+const processLogAlert = async (bucketId, alertId, params) => {
 
-    if (!isValidObjectId(projectId)) {
+    if (!isValidObjectId(bucketId)) {
         return null
     }
 
     if (!alertId) {
         const alerts = alertModel.find({
-            project: ObjectId.createFromHexString(projectId)
+            bucket: ObjectId.createFromHexString(bucketId)
         }).cursor()
 
         for await (const alert of alerts) {
             submitProcessLogAlert({
-                projectId,
+                bucketId,
                 alertId: alert?._id?.toString(),
                 params
             })
@@ -355,7 +355,6 @@ const processLogAlert = async (projectId, alertId, params) => {
         webhookId: alert?.webhook?.toString(),
         payload: webhookPayload
     })
-
 
 }
 
