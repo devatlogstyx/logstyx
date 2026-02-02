@@ -91,11 +91,11 @@ const validateSignature = (project, headers, body) => {
  * @param {*} project 
  * @returns 
  */
-const generateIndexedHashes = (log, project) => {
+const generateIndexedHashes = (log, bucket) => {
     const hashes = {};
 
-    // Loop through project's indexed fields
-    for (const fieldPath of project.settings.indexes) {
+    // Loop through bucket's indexed fields
+    for (const fieldPath of bucket.settings.indexes) {
         // Extract value from log (context.userId, data.errorMessage, etc.)
         const value = getNestedValue(log, fieldPath);
 
@@ -104,7 +104,7 @@ const generateIndexedHashes = (log, project) => {
             // Convert field path to hash key: "context.userId" -> "context_userId"
             const hashKey = fieldPath.replace(/\./g, '_');
 
-            // Hash with salt (project + field for isolation)
+            // Hash with salt (bucket + field for isolation)
             // @ts-ignore
             hashes[hashKey] = hashString(
                 String(value),
@@ -119,18 +119,18 @@ const generateIndexedHashes = (log, project) => {
 /**
  * 
  * @param {*} data 
- * @param {*} project 
+ * @param {*} bucket 
  * @returns 
  */
-const generateRawValues = (data, project) => {
+const generateRawValues = (data, bucket) => {
 
-    if (!project?.settings?.rawIndexes || project.settings.rawIndexes.length === 0) {
+    if (!bucket?.settings?.rawIndexes || bucket.settings.rawIndexes.length === 0) {
         return {};
     }
 
     const rawValues = {};
 
-    for (const field of project.settings.rawIndexes) {
+    for (const field of bucket.settings.rawIndexes) {
         // Search in the original data structure, not flattened
         const value = getNestedValue(data, field);
 
@@ -158,11 +158,11 @@ function isRecent(date, thresholdHours = 24) {
 /**
  * 
  * @param {*} params 
- * @param {*} project 
+ * @param {*} bucket 
  * @returns 
  */
-const generateLogKey = (params, project) => {
-    const strategy = project?.settings?.deduplicationStrategy || FULL_PAYLOAD_DEDUPLICATION_STRATEGY;
+const generateLogKey = (params, bucket) => {
+    const strategy = bucket?.settings?.deduplicationStrategy || FULL_PAYLOAD_DEDUPLICATION_STRATEGY;
 
     switch (strategy) {
         case NONE_DEDUPLICATION_STRATEGY: {
@@ -180,7 +180,7 @@ const generateLogKey = (params, project) => {
             };
 
             // Extract values from indexed fields
-            const indexes = project?.settings?.indexes || [];
+            const indexes = bucket?.settings?.indexes || [];
             for (const fieldPath of indexes) {
                 const value = getNestedValue({
                     context: params?.context,

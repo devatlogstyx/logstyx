@@ -18,7 +18,6 @@ const {
 } = require("common/constant");
 const { submitWriteLog } = require("../../shared/provider/mq-producer");
 const { logTimelineByKey } = require("../service/logger");
-const { findProjectBySlug, findProjectById, canUserReadProject } = require("../service/project");
 const { getBucketFromCache } = require("../../shared/cache");
 
 module.exports = {

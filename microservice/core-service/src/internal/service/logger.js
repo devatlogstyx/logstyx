@@ -1,7 +1,7 @@
 //@ts-check
 
 const { mongoose, isValidObjectId } = require("./../../shared/mongoose");
-const { getProjectFromCache } = require("../../shared/cache");
+const { getProjectFromCache, getBucketFromCache } = require("../../shared/cache");
 const { HttpError, hashString, decryptSecret, createSlug, encrypt, decrypt, num2Ceil, num2Floor } = require("common/function");
 const { NOT_FOUND_ERR_CODE, NOT_FOUND_ERR_MESSAGE, BROWSER_CLIENT_TYPE, INVALID_INPUT_ERR_CODE, INVALID_INPUT_ERR_MESSAGE, INVALID_ID_ERR_MESSAGE } = require("common/constant");
 const { validateOrigin, validateSignature, generateIndexedHashes, validateCustomIndex, generateRawValues, generateLogKey } = require("../utils/helper");
@@ -11,24 +11,26 @@ const { compressAndEncrypt, decryptAndDecompress } = require("common/function");
 const logSchema = require("../model/log.model");
 const logstampSchema = require("../model/logstamp.model");
 const { submitProcessLogAlert } = require("../../shared/provider/mq-producer");
+const bucketModel = require("../model/bucket.model");
 const Registry = {};
+const { ObjectId } = mongoose.schema.Types
 
 /**
  * 
- * @param {object} project 
- * @param {string} project.id 
- * @param {object} project.settings
- * @param {string[]} project.settings.indexes
- * @param {string[]} project.settings.rawIndexes
- * @param {number} project.settings.retentionHours 
+ * @param {object} bucket 
+ * @param {string} bucket.id 
+ * @param {object} bucket.settings
+ * @param {string[]} bucket.settings.indexes
+ * @param {string[]} bucket.settings.rawIndexes
+ * @param {number} bucket.settings.retentionHours 
  */
-const initLogger = async (project) => {
-    if (!isValidObjectId(project.id)) {
+const initLogger = async (bucket) => {
+    if (!isValidObjectId(bucket.id)) {
         throw HttpError(INVALID_INPUT_ERR_CODE, INVALID_ID_ERR_MESSAGE)
     }
 
-    const logModelName = `Log_${project.id}`;
-    const logStampModelName = `Logstamp_${project.id}`;
+    const logModelName = `Log_${bucket.id}`;
+    const logStampModelName = `Logstamp_${bucket.id}`;
 
     // Delete existing models
     if (mongoose.models[logModelName]) {
@@ -50,21 +52,21 @@ const initLogger = async (project) => {
     });
 
     // Add custom indexes
-    for (const field of project.settings.indexes) {
+    for (const field of bucket.settings.indexes) {
         const hashField = `hash.${field.replace(/\./g, '_')}`;
         schema.index({ [hashField]: 1 });
     }
 
     // Add raw indexes (non-hashed, good for numbers)
-    if (project.settings.rawIndexes) {
-        for (const field of project.settings.rawIndexes) {
+    if (bucket.settings.rawIndexes) {
+        for (const field of bucket.settings.rawIndexes) {
             const rawField = `raw.${field.replace(/\./g, '_')}`;
             schema.index({ [rawField]: 1 });
         }
     }
 
     // Add TTL index
-    const retentionHours = project.settings.retentionHours;
+    const retentionHours = bucket.settings.retentionHours;
     if (retentionHours && retentionHours > 0) {
         schema.index(
             { updatedAt: 1 },  // ← Changed from createdAt
@@ -76,7 +78,7 @@ const initLogger = async (project) => {
     }
 
 
-    const logModel = mongoose.model(logModelName, schema, `log_${project.id}`);
+    const logModel = mongoose.model(logModelName, schema, `log_${bucket.id}`);
 
     // Drop the problematic index specifically
     try {
@@ -95,7 +97,7 @@ const initLogger = async (project) => {
     await logModel.syncIndexes();
 
     // === TIMESERIES COLLECTION ===
-    const collectionName = `logstamp_${project.id}`;
+    const collectionName = `logstamp_${bucket.id}`;
 
     try {
         const collections = await mongoose.connection.db
@@ -150,7 +152,7 @@ const initLogger = async (project) => {
         console.log('Note: Could not sync indexes on timeseries:', e.message);
     }
 
-    Registry[project.id] = {
+    Registry[bucket.id] = {
         log: logModel,
         logstamp: logStampModel
     };
@@ -159,34 +161,34 @@ const initLogger = async (project) => {
 }
 /**
  * 
- * @param {string} projectId 
+ * @param {string} bucketId 
  * @returns 
  */
-const getLogModel = async (projectId) => {
-    if (!isValidObjectId(projectId)) {
+const getLogModel = async (bucketId) => {
+    if (!isValidObjectId(bucketId)) {
         throw HttpError(INVALID_INPUT_ERR_CODE, INVALID_ID_ERR_MESSAGE)
     }
 
     // Check in-memory registry first
-    if (Registry[projectId]) return Registry[projectId];
+    if (Registry[bucketId]) return Registry[bucketId];
 
-    const project = await getProjectFromCache(projectId)
-    if (!project) {
+    const bucket = await getBucketFromCache(bucketId)
+    if (!bucket) {
         throw HttpError(NOT_FOUND_ERR_CODE, NOT_FOUND_ERR_MESSAGE)
     }
 
-    const logModelName = `Log_${project.id}`;
-    const logStampModelName = `Logstamp_${project.id}`;
+    const logModelName = `Log_${bucket.id}`;
+    const logStampModelName = `Logstamp_${bucket.id}`;
 
     // Check if models already exist in Mongoose, otherwise create them
     const logModel = mongoose.models[logModelName] ||
-        mongoose.model(logModelName, logSchema.clone(), `log_${project.id}`);
+        mongoose.model(logModelName, logSchema.clone(), `log_${bucket.id}`);
 
     const logStampModel = mongoose.models[logStampModelName] ||
-        mongoose.model(logStampModelName, logstampSchema.clone(), `logstamp_${project.id}`);
+        mongoose.model(logStampModelName, logstampSchema.clone(), `logstamp_${bucket.id}`);
 
     // Cache in registry
-    Registry[project.id] = {
+    Registry[bucket.id] = {
         log: logModel,
         logstamp: logStampModel
     };
@@ -239,21 +241,27 @@ const processWriteLog = async ({ headers, body }) => {
         throw HttpError(INVALID_INPUT_ERR_CODE, INVALID_INPUT_ERR_MESSAGE)
     }
 
-    await createLog(project, {
-        level,
-        device,
-        context,
-        data,
-        timestamp
-    })
+    const buckets = bucketModel.find({
+        projects: ObjectId.createFromHexString(project?.id)
+    }).cursor()
+
+    for await (const bucket of buckets) {
+        await createLog(bucket.toJSON(), {
+            level,
+            device,
+            context,
+            data,
+            timestamp
+        })
+    }
 
     return null
 }
 
 /**
  * 
- * @param {object} project 
- * @param {string} project.id
+ * @param {object} bucket 
+ * @param {string} bucket.id
  * @param {object} params 
  * @param {object} params.device
  * @param {object} params.context
@@ -261,8 +269,8 @@ const processWriteLog = async ({ headers, body }) => {
  * @param {string} params.level
  * @param {string|number|Date} params.timestamp
  */
-const createLog = async (project, params) => {
-    if (!isValidObjectId(project?.id)) {
+const createLog = async (bucket, params) => {
+    if (!isValidObjectId(bucket?.id)) {
         throw HttpError(INVALID_INPUT_ERR_CODE, INVALID_ID_ERR_MESSAGE)
     }
 
@@ -272,24 +280,24 @@ const createLog = async (project, params) => {
     }
 
     submitProcessLogAlert({
-        projectId: project?.id,
+        bucketId: bucket?.id,
         params
     })?.catch(console.error)
 
-    const key = generateLogKey(params, project)
+    const key = generateLogKey(params, bucket)
 
-    const { log, logstamp } = await getLogModel(project?.id)
+    const { log, logstamp } = await getLogModel(bucket?.id)
 
     const hashes = generateIndexedHashes({
         context: params?.context,
         data: params?.data
-    }, project);
+    }, bucket);
 
     // Generate raw values for rawIndexes
     const rawValues = generateRawValues({
         context: params?.context,
         data: params?.data
-    }, project);
+    }, bucket);
 
     const [compressedContext, compressedData] = await Promise.all([
         compressAndEncrypt(params?.context),
@@ -356,7 +364,13 @@ const processCreateSelfLog = async (params) => {
         return null
     }
 
-    await createLog(project?.toJSON(), params)?.catch(console.error)
+    const buckets = bucketModel.find({
+        projects: ObjectId.createFromHexString(project?.id)
+    }).cursor()
+
+    for await (const bucket of buckets) {
+        await createLog(bucket.toJSON(), params)
+    }
 
     return null
 
@@ -368,10 +382,10 @@ const processCreateSelfLog = async (params) => {
  * @param {string[]} [params.filterFields]
  * @param {string[]} [params.filterValues]
  * @param {string[]} [params.filterOperators]
- * @param {object} [project] 
+ * @param {object} [bucket] 
  * @returns 
  */
-const buildLogsSearchQuery = (params = {}, project) => {
+const buildLogsSearchQuery = (params = {}, bucket) => {
     let query = {}
 
     if (params.filterFields && params.filterValues &&
@@ -385,7 +399,7 @@ const buildLogsSearchQuery = (params = {}, project) => {
             if (field && value !== undefined && value !== null) {
 
                 // Check if field is in rawIndexes
-                if (project?.settings?.rawIndexes?.includes(field)) {
+                if (bucket?.settings?.rawIndexes?.includes(field)) {
                     const safeFieldName = field.replace(/\./g, '_')
                     const queryField = `raw.${safeFieldName}`
 
@@ -429,7 +443,7 @@ const buildLogsSearchQuery = (params = {}, project) => {
 /**
  * 
  * @param {object} [query] 
- * @param {string} [query.project]
+ * @param {string} [query.bucket]
  * @param {string} [query.filterField]
  * @param {string} [query.filterValue]
  * @param {string} sortBy 
@@ -439,21 +453,21 @@ const buildLogsSearchQuery = (params = {}, project) => {
  */
 const paginateLogs = async (query, sortBy = "updatedAt:desc", limit = 10, page = 1) => {
 
-    if (!isValidObjectId(query?.project)) {
+    if (!isValidObjectId(query?.bucket)) {
         throw HttpError(INVALID_INPUT_ERR_CODE, INVALID_ID_ERR_MESSAGE)
     }
 
     limit = num2Ceil(num2Floor(limit, 1), 50)
     page = num2Floor(page, 1)
 
-    const project = await getProjectFromCache(query?.project)
-    if (!project) {
-        throw HttpError(NOT_FOUND_ERR_CODE, `Project Not Found`)
+    const bucket = await getBucketFromCache(query?.bucket)
+    if (!bucket) {
+        throw HttpError(NOT_FOUND_ERR_CODE, `Bucket Not Found`)
     }
 
-    let queryParams = buildLogsSearchQuery(query, project)
+    let queryParams = buildLogsSearchQuery(query, bucket)
 
-    const { log: logModel } = await getLogModel(project?.id)
+    const { log: logModel } = await getLogModel(bucket?.id)
 
     const list = await logModel.paginate(queryParams, { sortBy, limit, page })
     list.results = await Promise.all(list?.results?.map(mapLog)) // Changed this line
@@ -463,72 +477,16 @@ const paginateLogs = async (query, sortBy = "updatedAt:desc", limit = 10, page =
 
 /**
  * 
- * @param {*} projectId 
- * @param {object} param1 
- * @param {number} param1.limit
- * @param {number} param1.page
- * @returns 
- */
-async function listProjectTimeline(projectId, { limit = 50, page = 1 }) {
-
-    limit = num2Ceil(num2Floor(limit, 1), 50);
-    page = num2Floor(page, 1)
-    const skip = (page - 1) * limit;
-
-    const { log, logstamp } = await getLogModel(projectId);
-
-    const timeline = await logstamp.find({})
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(limit)
-        .lean();
-
-    const totalResults = await logstamp.countDocuments({})
-    const totalPages = Math.ceil(totalResults / limit)
-
-    if (!timeline.length) return {
-        results: [],
-        page,
-        limit,
-        totalResults,
-        totalPages,
-    };
-
-    const pageKeys = timeline.map(s => s.key);
-    const details = await log.find({ key: { $in: pageKeys } }).lean();
-
-    const detailsLog = await Promise.all(details?.map((n) => mapLog(n)) || []);
-    const detailsMap = new Map(detailsLog.map(d => [d.key, d]));
-
-    const results = timeline.map(stamp => {
-        const detail = detailsMap.get(stamp.key) || {};
-        return {
-            ...detail,
-            createdAt: stamp.createdAt,
-        };
-    });
-
-    return {
-        results,
-        page,
-        limit,
-        totalResults,
-        totalPages,
-    }
-}
-
-/**
- * 
- * @param {string} projectId 
+ * @param {string} bucketId 
  * @param {string} key 
  */
-const logTimelineByKey = async (projectId, key) => {
+const logTimelineByKey = async (bucketId, key) => {
 
-    if (!isValidObjectId(projectId)) {
+    if (!isValidObjectId(bucketId)) {
         throw HttpError(INVALID_INPUT_ERR_CODE, INVALID_ID_ERR_MESSAGE)
     }
 
-    const { logstamp } = await getLogModel(projectId)
+    const { logstamp } = await getLogModel(bucketId)
 
     const hourlyStats = await logstamp.aggregate([
         {
@@ -562,16 +520,16 @@ const logTimelineByKey = async (projectId, key) => {
 
 /**
  * 
- * @param {string} projectId 
+ * @param {string} bucketId 
  * @param {*} field 
  * @returns 
  */
-const getDistinctValue = async (projectId, field) => {
-    if (!isValidObjectId(projectId)) {
+const getDistinctValue = async (bucketId, field) => {
+    if (!isValidObjectId(bucketId)) {
         return null
     }
 
-    const { log } = await getLogModel(projectId);
+    const { log } = await getLogModel(bucketId);
     let distinctValues = [];
 
     if (validateCustomIndex(field)) {
@@ -629,5 +587,4 @@ module.exports = {
     getDistinctValue,
     initLogger,
     getLogModel,
-    listProjectTimeline
 }

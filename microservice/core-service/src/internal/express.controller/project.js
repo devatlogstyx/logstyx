@@ -17,7 +17,7 @@ const {
 
 } = require("common/constant");
 const { createProject, canUserModifyProject, removeProject, paginateProject, addUserToProject, removeUserFromProject, listUserFromProject, updateProject, findProjectBySlug, findProjectById, canUserReadProject, getProjectLogStats } = require("../service/project");
-const { paginateLogs, getDistinctValue, initLogger, getLogModel, listProjectTimeline } = require("../service/logger");
+const { initLogger, getLogModel, listProjectTimeline } = require("../service/logger");
 const { canUserDo } = require("../../shared/provider/auth.service");
 const { createBucket } = require("../service/bucket");
 
@@ -269,38 +269,5 @@ module.exports = {
         });
     },
    
-    /**
-     * 
-     * @param {*} req 
-     * @param {*} res 
-     */
-    async ProjectListTimeline(req, res) {
-        if (!req?.user) {
-            throw HttpError(NO_ACCESS_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
-        }
-
-
-        let project = await findProjectBySlug(req?.params?.id)
-        if (!project) {
-            project = await findProjectById(req?.params?.id)
-        }
-
-        if (!project) {
-            throw HttpError(NOT_FOUND_ERR_CODE, NOT_FOUND_ERR_MESSAGE)
-        }
-
-        const canAccess = await canUserReadProject(req?.user?.id, project?.id)
-        if (!canAccess) {
-            throw HttpError(FORBIDDEN_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
-        }
-
-        const data = await listProjectTimeline(project?.id, req?.query)
-
-        HttpResponse(res).json({
-            error: SUCCESS_ERR_CODE,
-            message: SUCCESS_ERR_MESSAGE,
-            data
-        });
-    },
 };
 
