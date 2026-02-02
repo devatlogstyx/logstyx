@@ -11,6 +11,8 @@ const {
     READ_PROJECT_USER_ROLE,
     WRITE_USER_INVITATION_USER_ROLE,
     READ_USER_INVITATION_USER_ROLE,
+    READ_REPORT_USER_ROLE,
+    WRITE_REPORT_USER_ROLE,
     WRITE_WEBHOOK_USER_ROLE,
     READ_WEBHOOK_USER_ROLE
 
@@ -35,6 +37,8 @@ const userInvitationSchema = new mongoose.Schema(
                     READ_PROJECT_USER_ROLE,
                     WRITE_USER_INVITATION_USER_ROLE,
                     READ_USER_INVITATION_USER_ROLE,
+                    READ_REPORT_USER_ROLE,
+                    WRITE_REPORT_USER_ROLE,
                     WRITE_WEBHOOK_USER_ROLE,
                     READ_WEBHOOK_USER_ROLE
                 ],
