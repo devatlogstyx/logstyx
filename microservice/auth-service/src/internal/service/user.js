@@ -22,7 +22,11 @@ const {
     READ_REPORT_USER_ROLE,
     WRITE_REPORT_USER_ROLE,
     WRITE_WEBHOOK_USER_ROLE,
-    READ_WEBHOOK_USER_ROLE
+    READ_WEBHOOK_USER_ROLE,
+    WRITE_BUCKET_USER_ROLE,
+    WRITE_ALERT_USER_ROLE,
+    READ_ALERT_USER_ROLE,
+    READ_BUCKET_USER_ROLE
 } = require("common/constant")
 
 const { striptags } = require("striptags")
@@ -371,7 +375,11 @@ const seedUser = async () => {
                     READ_REPORT_USER_ROLE,
                     WRITE_REPORT_USER_ROLE,
                     WRITE_WEBHOOK_USER_ROLE,
-                    READ_WEBHOOK_USER_ROLE
+                    READ_WEBHOOK_USER_ROLE,
+                    WRITE_BUCKET_USER_ROLE,
+                    WRITE_ALERT_USER_ROLE,
+                    READ_ALERT_USER_ROLE,
+                    READ_BUCKET_USER_ROLE
                 ],
                 hash: { email: hashedEmail }
             })], { session });

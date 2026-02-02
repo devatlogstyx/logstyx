@@ -12,7 +12,9 @@ const {
     WRITE_USER_INVITATION_USER_ROLE,
     READ_USER_INVITATION_USER_ROLE,
     WRITE_WEBHOOK_USER_ROLE,
-    READ_WEBHOOK_USER_ROLE
+    READ_WEBHOOK_USER_ROLE,
+    WRITE_BUCKET_USER_ROLE,
+    READ_BUCKET_USER_ROLE
 
 } = require("common/constant");
 
@@ -36,7 +38,9 @@ const userInvitationSchema = new mongoose.Schema(
                     WRITE_USER_INVITATION_USER_ROLE,
                     READ_USER_INVITATION_USER_ROLE,
                     WRITE_WEBHOOK_USER_ROLE,
-                    READ_WEBHOOK_USER_ROLE
+                    READ_WEBHOOK_USER_ROLE,
+                    WRITE_BUCKET_USER_ROLE,
+                    READ_BUCKET_USER_ROLE
                 ],
                 message: '{VALUE} is not supported'
             }

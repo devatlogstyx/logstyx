@@ -13,7 +13,9 @@ const {
     READ_REPORT_USER_ROLE,
     WRITE_REPORT_USER_ROLE,
     WRITE_WEBHOOK_USER_ROLE,
-    READ_WEBHOOK_USER_ROLE
+    READ_WEBHOOK_USER_ROLE,
+    WRITE_BUCKET_USER_ROLE,
+    READ_BUCKET_USER_ROLE
 } = require("common/constant");
 
 const userSchema = new mongoose.Schema(
@@ -45,7 +47,9 @@ const userSchema = new mongoose.Schema(
                     READ_REPORT_USER_ROLE,
                     WRITE_REPORT_USER_ROLE,
                     WRITE_WEBHOOK_USER_ROLE,
-                    READ_WEBHOOK_USER_ROLE
+                    READ_WEBHOOK_USER_ROLE,
+                    WRITE_BUCKET_USER_ROLE,
+                    READ_BUCKET_USER_ROLE
                 ],
                 message: '{VALUE} is not supported'
             }

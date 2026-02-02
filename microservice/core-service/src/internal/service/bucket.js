@@ -1,6 +1,6 @@
 //@ts-check
 
-const { INVALID_INPUT_ERR_CODE, NOT_FOUND_ERR_CODE, USER_NOT_FOUND_ERR_MESSAGE, INDEX_ONLY_DEDUPLICATION_STRATEGY, FULL_PAYLOAD_DEDUPLICATION_STRATEGY, INVALID_ID_ERR_MESSAGE, NOT_FOUND_ERR_MESSAGE } = require("common/constant");
+const { INVALID_INPUT_ERR_CODE, NOT_FOUND_ERR_CODE, USER_NOT_FOUND_ERR_MESSAGE, INDEX_ONLY_DEDUPLICATION_STRATEGY, FULL_PAYLOAD_DEDUPLICATION_STRATEGY, INVALID_ID_ERR_MESSAGE, NOT_FOUND_ERR_MESSAGE, FORBIDDEN_ERR_CODE } = require("common/constant");
 const { HttpError, sanitizeObject, num2Ceil, num2Floor, parseSortBy } = require("common/function");
 const { Validator } = require("node-input-validator");
 const { findUserById } = require("../../shared/provider/auth.service");
@@ -22,7 +22,7 @@ const { ObjectId } = mongoose.Types
  * @param {*} param1 
  * @returns 
  */
-const createBucket = async (params, { initLoggerFunc }) => {
+const createBucket = async (params, { initLogger, canUserModifyProject }) => {
 
     const v = new Validator(params, {
         title: "required|string",
@@ -61,6 +61,11 @@ const createBucket = async (params, { initLoggerFunc }) => {
         throw HttpError(INVALID_INPUT_ERR_CODE, `No valid project is provided`)
     }
 
+    const canModify = await Promise.all(projects.map((n) => canUserModifyProject(creator?.id, n?._id?.toString())))
+    if (canModify.some(allowed => !allowed)) {
+        throw HttpError(FORBIDDEN_ERR_CODE, `You don't have permission to modify one or more of the provided projects`)
+    }
+
     const session = await mongoose.startSession();
     session.startTransaction();
 
@@ -85,7 +90,7 @@ const createBucket = async (params, { initLoggerFunc }) => {
 
         const bucket = await updateBucketCache(rawBucket?._id)
 
-        initLoggerFunc(bucket)?.catch(console.error)
+        initLogger(bucket)?.catch(console.error)
 
         return bucket
 
@@ -105,7 +110,7 @@ const createBucket = async (params, { initLoggerFunc }) => {
  * @param {*} param2 
  * @returns 
  */
-const updateBucket = async (id, params, { initLoggerFunc }) => {
+const updateBucket = async (id, params, { initLogger }) => {
 
     if (!isValidObjectId(id)) {
         throw HttpError(INVALID_INPUT_ERR_CODE, INVALID_ID_ERR_MESSAGE)
@@ -155,7 +160,7 @@ const updateBucket = async (id, params, { initLoggerFunc }) => {
 
     const updated = await updateBucketCache(id)
 
-    initLoggerFunc(updated)
+    initLogger(updated)
 
     return updated
 }
@@ -164,7 +169,7 @@ const updateBucket = async (id, params, { initLoggerFunc }) => {
  * 
  * @param {string} id 
  */
-const removeBucket = async (id, { getLogModelFunc }) => {
+const removeBucket = async (id, { getLogModel }) => {
     if (!isValidObjectId(id)) {
         throw HttpError(INVALID_INPUT_ERR_CODE, INVALID_ID_ERR_MESSAGE)
     }
@@ -175,7 +180,7 @@ const removeBucket = async (id, { getLogModelFunc }) => {
     }
 
     const bucketObjectId = ObjectId.createFromHexString(id.toString());
-    const { log, logstamp } = await getLogModelFunc(id)
+    const { log, logstamp } = await getLogModel(id)
 
     await Promise.all([
         bucketModel.findByIdAndDelete(id),
