@@ -192,25 +192,13 @@ const paginateUser = async (query = {}, sortBy = "createdAt:desc", limit = 10, p
                         $limit: 1
                     }
                 ],
-                as: 'lastLogin'
+                as: 'userlogin'
             }
         },
         {
             $unwind: {
-                path: '$lastLogin',
+                path: '$userlogin',
                 preserveNullAndEmptyArrays: true
-            }
-        },
-        {
-            $project: {
-                _id: 1,
-                fullname: 1,
-                email: 1,
-                image: 1,
-                permissions: 1,
-                lastLogin: '$lastLogin.lastLogin',
-                createdAt: 1,
-                updatedAt: 1
             }
         },
         {
@@ -225,7 +213,12 @@ const paginateUser = async (query = {}, sortBy = "createdAt:desc", limit = 10, p
 
     let list = {
         results: res?.docs?.map((doc) => {
-            return mapUser(doc)
+            let n = userModel.hydrate(doc);
+            n.decryptFieldsSync();
+            return {
+                ...mapUser(n.toObject()),
+                lastLogin: doc?.userlogin?.lastLogin
+            }
         }),
         page,
         totalResults: res.total,
