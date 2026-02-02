@@ -11,7 +11,9 @@ import {
     READ_REPORT_USER_ROLE,
     WRITE_REPORT_USER_ROLE,
     WRITE_WEBHOOK_USER_ROLE,
-    READ_WEBHOOK_USER_ROLE
+    READ_WEBHOOK_USER_ROLE,
+    WRITE_BUCKET_USER_ROLE,
+    READ_BUCKET_USER_ROLE
 } from "./../../../utils/constant"
 
 const SelectUserPermissions = ({
@@ -28,7 +30,9 @@ const SelectUserPermissions = ({
         READ_REPORT_USER_ROLE,
         WRITE_REPORT_USER_ROLE,
         WRITE_WEBHOOK_USER_ROLE,
-        READ_WEBHOOK_USER_ROLE
+        READ_WEBHOOK_USER_ROLE,
+        WRITE_BUCKET_USER_ROLE,
+        READ_BUCKET_USER_ROLE
     ]
 
     return (
