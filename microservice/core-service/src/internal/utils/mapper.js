@@ -11,13 +11,11 @@ module.exports = {
     mapProject: (json) => {
         return {
             id: json?.id || json?._id?.toString(),
+            title: json?.title,
             slug: json?.slug,
             secret: json?.secret,
             settings: {
-                indexes: json?.settings?.indexes,
-                rawIndexes: json?.settings?.rawIndexes,
                 allowedOrigin: json?.settings?.allowedOrigin,
-                retentionHours: json?.settings?.retentionHours,
             },
             createdAt: json?.createdAt
         }

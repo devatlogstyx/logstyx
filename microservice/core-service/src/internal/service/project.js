@@ -532,7 +532,7 @@ const getUsersDashboardProjectsStats = async (userId, getLogModelFunc) => {
         }
     });
 
-    // Create a map of projectId to array of bucketIds
+    // Create a map of projectId to array of bucket objects (with id and title)
     const projectToBucketsMap = new Map();
     buckets.forEach(bucket => {
         bucket.projects.forEach(projectId => {
@@ -540,16 +540,23 @@ const getUsersDashboardProjectsStats = async (userId, getLogModelFunc) => {
             if (!projectToBucketsMap.has(projectIdStr)) {
                 projectToBucketsMap.set(projectIdStr, []);
             }
-            projectToBucketsMap.get(projectIdStr).push(bucket._id.toString());
+            projectToBucketsMap.get(projectIdStr).push({
+                id: bucket._id.toString(),
+                title: bucket.title
+            });
         });
     });
 
     // Get all unique log models
     const uniqueBucketIds = [...new Set(buckets.map(b => b._id.toString()))];
+    
     const logModelPromises = uniqueBucketIds.map(bucketId =>
         getLogModelFunc(bucketId)
             .then(logModel => ({ bucketId, logModel }))
-            .catch(() => null)
+            .catch((err) => {
+                console.log('Error getting log model for bucket:', bucketId, err);
+                return null;
+            })
     );
     const logModelsArray = await Promise.all(logModelPromises);
     const logModelsMap = new Map(
@@ -558,12 +565,16 @@ const getUsersDashboardProjectsStats = async (userId, getLogModelFunc) => {
             .map(({ bucketId, logModel }) => [bucketId, logModel])
     );
 
+
     // Process all log aggregations in parallel
     const projectsWithStats = await Promise.allSettled(
         usersProjects.map(async (userProject) => {
             const project = userProject.project;
             const projectId = project._id.toString();
-            const bucketIds = projectToBucketsMap.get(projectId);
+            const projectBuckets = projectToBucketsMap.get(projectId) || [];
+            const bucketIds = projectBuckets.map(b => b.id);
+
+            console.log(`Project ${project.title}: ${bucketIds.length} buckets`);
 
             if (!bucketIds || bucketIds.length === 0) {
                 // Return empty stats if no buckets found
@@ -571,6 +582,7 @@ const getUsersDashboardProjectsStats = async (userId, getLogModelFunc) => {
                     id: projectId,
                     title: project.title,
                     slug: project.slug,
+                    buckets: [],
                     status: 'inactive',
                     lastLog: 'Never',
                     totalLogs: 0,
@@ -585,6 +597,7 @@ const getUsersDashboardProjectsStats = async (userId, getLogModelFunc) => {
                 bucketIds.map(async (bucketId) => {
                     const logModelData = logModelsMap.get(bucketId);
                     if (!logModelData) {
+                        console.log(`No log model for bucket: ${bucketId}`);
                         return null;
                     }
 
@@ -633,8 +646,10 @@ const getUsersDashboardProjectsStats = async (userId, getLogModelFunc) => {
                                 }
                             }
                         ]);
+                        
                         return result;
                     } catch (error) {
+
                         return null;
                     }
                 })
@@ -648,6 +663,7 @@ const getUsersDashboardProjectsStats = async (userId, getLogModelFunc) => {
                     id: projectId,
                     title: project.title,
                     slug: project.slug,
+                    buckets: projectBuckets,
                     status: 'inactive',
                     lastLog: 'Never',
                     totalLogs: 0,
@@ -694,6 +710,7 @@ const getUsersDashboardProjectsStats = async (userId, getLogModelFunc) => {
                 id: projectId,
                 title: project.title,
                 slug: project.slug,
+                buckets: projectBuckets,
                 status: lastLogDate && isRecent(lastLogDate) ? 'active' : 'inactive',
                 lastLog: lastLogDate ? moment(lastLogDate).fromNow() : 'Never',
                 totalLogs,
@@ -704,6 +721,7 @@ const getUsersDashboardProjectsStats = async (userId, getLogModelFunc) => {
         })
     );
 
+    
     return projectsWithStats
         .filter(result => result.status === 'fulfilled')
         .map(result => result.value);

@@ -5,10 +5,14 @@ const {
     GET_USER_DASHBOARD_PROJECT_STATS_WSROUTE,
     LIST_USER_PROJECT_WSROUTE,
     FIND_PROJECT_BY_ID_WSROUTE,
-    PAGINATE_PROJECT_WSROUTE
+    PAGINATE_PROJECT_WSROUTE,
+    PAGINATE_BUCKET_WSROUTE,
+    FIND_BUCKET_BY_ID_WSROUTE
 } = require("common/routes/rpc-websockets");
 const { processCreateSelfLog, getLogModel } = require("../internal/service/logger");
-const { getUsersDashboardProjectsStats, findProjectById, paginateProject } = require("../internal/service/project");
+const { getUsersDashboardProjectsStats, findProjectById, paginateProject, listUserProject } = require("../internal/service/project");
+const { paginateBucket } = require("../internal/service/bucket");
+const { getBucketFromCache } = require("../shared/cache");
 
 /**
  * 
@@ -25,7 +29,7 @@ exports.init = (rpc) => {
     });
 
     rpc.use(LIST_USER_PROJECT_WSROUTE, async ({ userId }) => {
-        return getUsersDashboardProjectsStats(userId, getLogModel)
+        return listUserProject(userId)
     });
 
     rpc.use(FIND_PROJECT_BY_ID_WSROUTE, async ({ projectId }) => {
@@ -34,5 +38,13 @@ exports.init = (rpc) => {
 
     rpc.use(PAGINATE_PROJECT_WSROUTE, async ({ query, sortBy, limit, page }) => {
         return paginateProject(query, sortBy, limit, page)
+    });
+
+    rpc.use(FIND_BUCKET_BY_ID_WSROUTE, async ({ bucketId }) => {
+        return getBucketFromCache(bucketId)
+    });
+
+    rpc.use(PAGINATE_BUCKET_WSROUTE, async ({ query, sortBy, limit, page }) => {
+        return paginateBucket(query, sortBy, limit, page)
     });
 };

@@ -10,13 +10,14 @@ import { Link } from 'react-router-dom';
 import useProjectViews from "./hooks";
 import { numify } from "numify";
 import { sumInt } from "../../../utils/function";
-import { Loader } from "@mantine/core";
+import { Loader, Menu } from "@mantine/core";
 import EmptyProjectViews from "../EmptyProjectViews";
 import PrimaryButton from "../../../component/button/PrimaryButton";
 import CreateProject from "../CreateProject";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import SecondaryButton from "../../../component/button/SecondaryButton";
 import { GoGear } from "react-icons/go"
+import { FaChevronDown } from "react-icons/fa";
 const ProjectViews = () => {
 
     const { projects, isLoading, refetchData } = useProjectViews()
@@ -158,14 +159,33 @@ const ProjectViews = () => {
 
                             {/* Action Buttons */}
                             <div className="flex gap-2 justify-end items-center">
-                                <Link
-                                    to={`/dashboard/projects/${project.slug}?tab=logs`}
-                                    className="flex w-full"
-                                >
-                                    <PrimaryButton leftSection={<IoEyeOutline size={16} />} className="w-full px-3 py-2 text-sm">
-                                        View Logs
-                                    </PrimaryButton>
-                                </Link>
+                                <Menu shadow="md" width="target" position="bottom-start">
+                                    <Menu.Target>
+                                        <PrimaryButton leftSection={<IoEyeOutline size={16} />} className="w-full px-3 py-2 text-sm">
+                                            View Logs
+                                        </PrimaryButton>
+                                    </Menu.Target>
+
+                                    <Menu.Dropdown>
+                                        {project?.buckets?.length > 0 ? (
+                                            project.buckets.map((n, i) => (
+                                                <Menu.Item
+                                                    key={n.id || i}
+                                                    component={Link}
+                                                    to={`/dashboard/buckets/${n.id}`}
+                                                    className="text-sm hover:bg-gray-50"
+                                                >
+                                                    {n?.title}
+                                                </Menu.Item>
+                                            ))
+                                        ) : (
+                                            <Menu.Item disabled>
+                                                No buckets available
+                                            </Menu.Item>
+                                        )}
+                                    </Menu.Dropdown>
+                                </Menu>
+
                                 <Link
                                     to={`/dashboard/projects/${project.slug}?tab=overview`}
                                 >

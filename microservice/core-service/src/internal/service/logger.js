@@ -13,7 +13,7 @@ const logstampSchema = require("../model/logstamp.model");
 const { submitProcessLogAlert } = require("../../shared/provider/mq-producer");
 const bucketModel = require("../model/bucket.model");
 const Registry = {};
-const { ObjectId } = mongoose.schema.Types
+const { ObjectId } = mongoose.Types
 
 /**
  * 
