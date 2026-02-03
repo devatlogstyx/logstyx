@@ -5,6 +5,7 @@ import {
     IoTimeOutline,
     IoEyeOutline,
     IoTrendingUpOutline,
+    IoBriefcaseOutline,
 } from "react-icons/io5";
 import { Link } from 'react-router-dom';
 import useProjectViews from "./hooks";
@@ -16,6 +17,7 @@ import PrimaryButton from "../../../component/button/PrimaryButton";
 import CreateProject from "../CreateProject";
 import SecondaryButton from "../../../component/button/SecondaryButton";
 import { GoGear } from "react-icons/go"
+import { TbBucket } from "react-icons/tb";
 const ProjectViews = () => {
 
     const { projects, isLoading, refetchData } = useProjectViews()
@@ -91,18 +93,19 @@ const ProjectCard = ({ project }) => {
                     </div>
 
                     <div className="grid grid-cols-3 gap-2 mb-4">
-                        <div className="text-center p-2 bg-gray-50 rounded">
-                            <p className="text-xs text-gray-600">Logs</p>
-                            <p className="text-sm font-semibold text-gray-800">{numify(project.totalLogs)}</p>
+                        <div className="text-center p-2 bg-violet-50 rounded">
+                            <p className="text-xs text-violet-600">Buckets</p>
+                            <p className="text-sm font-semibold text-violet-600">{numify(project.buckets?.length)}</p>
                         </div>
-                        <div className="text-center p-2 bg-orange-50 rounded">
-                            <p className="text-xs text-orange-600">Errors</p>
-                            <p className="text-sm font-semibold text-orange-600">{numify(project.errorCount)}</p>
+                        <div className="text-center p-2 bg-blue-50 rounded">
+                            <p className="text-xs text-blue-600">Logs</p>
+                            <p className="text-sm font-semibold text-blue-600">{numify(project.totalLogs)}</p>
                         </div>
-                        <div className="text-center p-2 bg-red-50 rounded">
-                            <p className="text-xs text-red-600">Critical</p>
-                            <p className="text-sm font-semibold text-red-600">{numify(project.criticalCount)}</p>
+                        <div className="text-center p-2 bg-amber-50 rounded">
+                            <p className="text-xs text-amber-600">Errors</p>
+                            <p className="text-sm font-semibold text-amber-600">{numify(project.errorCount)}</p>
                         </div>
+
                     </div>
 
                     {/* Action Buttons */}
@@ -161,10 +164,15 @@ const ProjectCard = ({ project }) => {
 }
 
 const OverviewSection = ({ projects }) => {
+
+    const uniqueBuckets = new Set(
+        projects.flatMap(project => project.buckets.map(b => b.id))
+    );
+
     return (
         <>
-            {/* Stats Overview */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                 <div className="bg-white rounded-lg p-4 border border-gray-200">
                     <div className="flex items-center justify-between">
                         <div>
@@ -172,7 +180,7 @@ const OverviewSection = ({ projects }) => {
                             <p className="text-2xl font-bold text-gray-800">{projects.length}</p>
                         </div>
                         <div className="bg-blue-100 p-3 rounded-lg">
-                            <IoTrendingUpOutline size={24} className="text-blue-600" />
+                            <IoBriefcaseOutline size={24} className="text-blue-600" />
                         </div>
                     </div>
                 </div>
@@ -180,44 +188,31 @@ const OverviewSection = ({ projects }) => {
                 <div className="bg-white rounded-lg p-4 border border-gray-200">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-sm text-gray-600">Logs Today</p>
+                            <p className="text-sm text-gray-600">Total Bucket</p>
+                            <p className="text-2xl font-bold text-gray-800">
+                                {numify(uniqueBuckets?.size)}
+                            </p>
+                        </div>
+                        <div className="bg-violet-100 p-3 rounded-lg">
+                            <TbBucket size={24} className="text-violet-600" />
+                        </div>
+                    </div>
+                </div>
+
+                <div className="bg-white rounded-lg p-4 border rounded-lg border-gray-200">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <p className="text-sm text-gray-600">Total Logs</p>
                             <p className="text-2xl font-bold text-gray-800">
                                 {numify(sumInt(projects?.map((p) => p.totalLogs)))}
                             </p>
                         </div>
-                        <div className="bg-green-100 p-3 rounded-lg">
-                            <IoTimeOutline size={24} className="text-green-600" />
+                        <div className="bg-amber-100 p-3 rounded-lg">
+                            <IoTimeOutline size={24} className="text-amber-600" />
                         </div>
                     </div>
                 </div>
 
-                <div className="bg-white rounded-lg p-4 border border-gray-200">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-sm text-gray-600">Total Errors</p>
-                            <p className="text-2xl font-bold text-orange-600">
-                                {numify(sumInt(projects?.map((p) => p.errorCount)))}
-                            </p>
-                        </div>
-                        <div className="bg-orange-100 p-3 rounded-lg">
-                            <IoWarning size={24} className="text-orange-600" />
-                        </div>
-                    </div>
-                </div>
-
-                <div className="bg-white rounded-lg p-4 border border-gray-200">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-sm text-gray-600">Critical Issues</p>
-                            <p className="text-2xl font-bold text-red-600">
-                                {numify(sumInt(projects?.map((p) => p.criticalCount)))}
-                            </p>
-                        </div>
-                        <div className="bg-red-100 p-3 rounded-lg">
-                            <IoAlertCircle size={24} className="text-red-600" />
-                        </div>
-                    </div>
-                </div>
             </div>
         </>
     )
