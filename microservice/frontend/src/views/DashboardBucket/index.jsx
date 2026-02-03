@@ -3,9 +3,9 @@
 import { Container, Loader, Text, Title } from "@mantine/core";
 import { useUser } from "../../context/useUser";
 import { Navigate } from "react-router-dom";
-import ProjectViews from "./ProjectViews";
+import BucketViews from "./BucketViews";
 
-const DashboardPage = () => {
+const DashboardBucket = () => {
     const { user, isLoading } = useUser();
 
     if (isLoading) {
@@ -25,12 +25,12 @@ const DashboardPage = () => {
     return (
         <Container className="py-8 flex flex-col gap-2" >
             <div>
-                <Title className="text-3xl font-bold">Projects</Title>
-                <Text className="text-gray-600">Manage credentials</Text>
+                <Title className="text-3xl font-bold">Buckets</Title>
+                <Text className="text-gray-600">Manage logs</Text>
             </div>
-            <ProjectViews />
+            <BucketViews />
         </Container>
     );
 };
 
-export default DashboardPage;
+export default DashboardBucket;

@@ -2,12 +2,12 @@
 
 import React from "react";
 import { useErrorMessage } from "../../../hooks/useMessage";
-import { getUserProjectStats } from "../../../api/user";
+import { getUserBucketStats } from "../../../api/user";
 import { generateColor } from "../../../utils/function";
 
-const useProjectViews = () => {
+const useBucketViews = () => {
 
-    const [projects, setProjects] = React.useState([])
+    const [buckets, setBuckets] = React.useState([])
     const [isLoading, setIsLoading] = React.useState(true)
 
     const ErrorMessage = useErrorMessage()
@@ -17,8 +17,8 @@ const useProjectViews = () => {
     const fetchData = React.useCallback(async () => {
         try {
             setIsLoading(true)
-            const r = await getUserProjectStats(controller.signal)
-            setProjects(r?.map((n) => {
+            const r = await getUserBucketStats(controller.signal)
+            setBuckets(r?.map((n) => {
                 return {
                     ...n,
                     color: generateColor(n?.title)
@@ -39,10 +39,10 @@ const useProjectViews = () => {
 
     return {
         isLoading,
-        projects,
+        buckets,
         refetchData: fetchData
     }
 
 }
 
-export default useProjectViews
+export default useBucketViews

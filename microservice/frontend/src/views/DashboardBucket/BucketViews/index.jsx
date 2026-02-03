@@ -7,18 +7,16 @@ import {
     IoTrendingUpOutline,
 } from "react-icons/io5";
 import { Link } from 'react-router-dom';
-import useProjectViews from "./hooks";
+import useBucketViews from "./hooks";
 import { numify } from "numify";
 import { sumInt } from "../../../utils/function";
-import { Badge, Loader, Menu } from "@mantine/core";
-import EmptyProjectViews from "../EmptyProjectViews";
+import { Loader } from "@mantine/core";
 import PrimaryButton from "../../../component/button/PrimaryButton";
-import CreateProject from "../CreateProject";
-import SecondaryButton from "../../../component/button/SecondaryButton";
-import { GoGear } from "react-icons/go"
-const ProjectViews = () => {
+import { Bar, BarChart, ResponsiveContainer } from "recharts";
 
-    const { projects, isLoading, refetchData } = useProjectViews()
+const BucketViews = () => {
+
+    const { buckets, isLoading, refetchData } = useBucketViews()
 
     if (isLoading) {
         return <div className="flex justify-center items-center h-screen">
@@ -28,55 +26,45 @@ const ProjectViews = () => {
         </div>
     }
 
-    if (projects?.length < 1) {
-        return <EmptyProjectViews />
-    }
 
     return (
         <>
 
-            <OverviewSection projects={projects} />
+            <OverviewSection buckets={buckets} />
 
             {/* Projects Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {projects.map((project, i) => (
-                    <ProjectCard project={project} key={i} />
+                {buckets.map((bucket, i) => (
+                    <BucketCard bucket={bucket} key={i} />
                 ))}
-            </div>
-
-            {/* Create New Project Button */}
-            <div className="fixed bottom-8 right-8">
-                <CreateProject
-                    onUpdate={refetchData}
-                />
             </div>
 
         </>
     )
 }
 
-const ProjectCard = ({ project }) => {
+const BucketCard = ({ bucket }) => {
     return (
         <>
             <div
-                key={project.id}
+                key={bucket.id}
                 className="bg-white rounded-lg border border-gray-200 hover:shadow-lg transition-shadow"
             >
                 {/* Project Header */}
                 <div className="p-4 border-b border-gray-200">
                     <div className="flex items-start justify-between mb-2">
                         <div className="flex items-center gap-3">
-                            <div className={`w-10 h-10 ${project.color} rounded-lg flex items-center justify-center text-white font-bold`}>
-                                {project.title.charAt(0)}
+                            <div className={`w-10 h-10 ${bucket.color} rounded-lg flex items-center justify-center text-white font-bold`}>
+                                {bucket.title.charAt(0)}
                             </div>
                             <div>
-                                <h3 className="font-semibold text-gray-800 line-clamp-1">{project.title}</h3>
+                                <h3 className="font-semibold text-gray-800 line-clamp-1">{bucket.title}</h3>
                                 <div className="flex items-center gap-2 mt-1">
                                     <span
-                                        className={`w-2 h-2 rounded-full ${project.status === "active" ? "bg-green-500" : "bg-gray-400"
+                                        className={`w-2 h-2 rounded-full ${bucket.status === "active" ? "bg-green-500" : "bg-gray-400"
                                             }`}
                                     ></span>
-                                    <span className="text-xs text-gray-500 capitalize">{project.status}</span>
+                                    <span className="text-xs text-gray-500 capitalize">{bucket.status}</span>
                                 </div>
                             </div>
                         </div>
@@ -87,70 +75,54 @@ const ProjectCard = ({ project }) => {
                 <div className="p-4">
                     <div className="flex items-center gap-2 text-sm text-gray-600 mb-3">
                         <IoTimeOutline size={16} />
-                        <span>Last log: {project.lastLog}</span>
+                        <span>Last log: {bucket.lastLog}</span>
                     </div>
 
                     <div className="grid grid-cols-3 gap-2 mb-4">
                         <div className="text-center p-2 bg-gray-50 rounded">
                             <p className="text-xs text-gray-600">Logs</p>
-                            <p className="text-sm font-semibold text-gray-800">{numify(project.totalLogs)}</p>
+                            <p className="text-sm font-semibold text-gray-800">{numify(bucket.totalLogs)}</p>
                         </div>
                         <div className="text-center p-2 bg-orange-50 rounded">
                             <p className="text-xs text-orange-600">Errors</p>
-                            <p className="text-sm font-semibold text-orange-600">{numify(project.errorCount)}</p>
+                            <p className="text-sm font-semibold text-orange-600">{numify(bucket.errorCount)}</p>
                         </div>
                         <div className="text-center p-2 bg-red-50 rounded">
                             <p className="text-xs text-red-600">Critical</p>
-                            <p className="text-sm font-semibold text-red-600">{numify(project.criticalCount)}</p>
+                            <p className="text-sm font-semibold text-red-600">{numify(bucket.criticalCount)}</p>
                         </div>
+                    </div>
+
+                    <div className="flex items-end gap-1 h-[180px] mb-4">
+                        <ResponsiveContainer width="100%" height={200}>
+                            <BarChart
+                                data={bucket.activity.map((val, idx) => ({ val }))}
+                                margin={{ top: 10, right: 10, left: 10, bottom: 10 }}
+                            >
+                                <Bar dataKey="val" fill="#228be6" />
+                            </BarChart>
+                        </ResponsiveContainer>
+
                     </div>
 
                     {/* Action Buttons */}
                     <div className="flex gap-2 justify-end items-center">
-                        <Menu shadow="md" width="target" position="bottom-start">
-                            <Menu.Target>
-                                <PrimaryButton leftSection={<IoEyeOutline size={16} />} className="w-full px-3 py-2 text-sm">
-                                    View Logs
-                                </PrimaryButton>
-                            </Menu.Target>
-
-                            <Menu.Dropdown>
-                                {project?.buckets?.length > 0 ? (
-                                    project.buckets.map((n, i) => (
-                                        <Menu.Item
-                                            key={n.id || i}
-                                            component={Link}
-                                            to={`/dashboard/buckets/${n.id}`}
-                                            className="text-sm hover:bg-gray-50"
-                                        >
-                                            {n?.title}
-                                        </Menu.Item>
-                                    ))
-                                ) : (
-                                    <Menu.Item disabled>
-                                        No buckets available
-                                    </Menu.Item>
-                                )}
-                            </Menu.Dropdown>
-                        </Menu>
-
-                        <Link
-                            to={`/dashboard/projects/${project.slug}?tab=overview`}
-                        >
-                            <SecondaryButton className="px-3 py-2 text-sm">
-                                <GoGear size={16} />
-                            </SecondaryButton>
+                        <Link to={`/dashboard/buckets/${bucket.id}`} className="w-full">
+                            <PrimaryButton  leftSection={<IoEyeOutline size={16} />} className="w-full px-3 py-2 text-sm">
+                                View Logs
+                            </PrimaryButton>
                         </Link>
+
                     </div>
                 </div>
 
                 {/* Alert Banner for Critical Issues */}
-                {project.criticalCount > 0 && (
+                {bucket.criticalCount > 0 && (
                     <div className="px-4 pb-4">
                         <div className="bg-red-50 border border-red-200 rounded-lg p-2 flex items-center gap-2">
                             <IoAlertCircle size={16} className="text-red-600" />
                             <span className="text-xs text-red-600 font-medium">
-                                {project.criticalCount} critical issue{project.criticalCount > 1 ? "s" : ""} detected
+                                {bucket.criticalCount} critical issue{bucket.criticalCount > 1 ? "s" : ""} detected
                             </span>
                         </div>
                     </div>
@@ -160,7 +132,7 @@ const ProjectCard = ({ project }) => {
     )
 }
 
-const OverviewSection = ({ projects }) => {
+const OverviewSection = ({ buckets }) => {
     return (
         <>
             {/* Stats Overview */}
@@ -168,8 +140,8 @@ const OverviewSection = ({ projects }) => {
                 <div className="bg-white rounded-lg p-4 border border-gray-200">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-sm text-gray-600">Total Projects</p>
-                            <p className="text-2xl font-bold text-gray-800">{projects.length}</p>
+                            <p className="text-sm text-gray-600">Total Buckets</p>
+                            <p className="text-2xl font-bold text-gray-800">{buckets.length}</p>
                         </div>
                         <div className="bg-blue-100 p-3 rounded-lg">
                             <IoTrendingUpOutline size={24} className="text-blue-600" />
@@ -182,7 +154,7 @@ const OverviewSection = ({ projects }) => {
                         <div>
                             <p className="text-sm text-gray-600">Logs Today</p>
                             <p className="text-2xl font-bold text-gray-800">
-                                {numify(sumInt(projects?.map((p) => p.totalLogs)))}
+                                {numify(sumInt(buckets?.map((p) => p.totalLogs)))}
                             </p>
                         </div>
                         <div className="bg-green-100 p-3 rounded-lg">
@@ -196,7 +168,7 @@ const OverviewSection = ({ projects }) => {
                         <div>
                             <p className="text-sm text-gray-600">Total Errors</p>
                             <p className="text-2xl font-bold text-orange-600">
-                                {numify(sumInt(projects?.map((p) => p.errorCount)))}
+                                {numify(sumInt(buckets?.map((p) => p.errorCount)))}
                             </p>
                         </div>
                         <div className="bg-orange-100 p-3 rounded-lg">
@@ -210,7 +182,7 @@ const OverviewSection = ({ projects }) => {
                         <div>
                             <p className="text-sm text-gray-600">Critical Issues</p>
                             <p className="text-2xl font-bold text-red-600">
-                                {numify(sumInt(projects?.map((p) => p.criticalCount)))}
+                                {numify(sumInt(buckets?.map((p) => p.criticalCount)))}
                             </p>
                         </div>
                         <div className="bg-red-100 p-3 rounded-lg">
@@ -222,4 +194,4 @@ const OverviewSection = ({ projects }) => {
         </>
     )
 }
-export default ProjectViews
+export default BucketViews

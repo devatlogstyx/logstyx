@@ -1,13 +1,13 @@
 //@ts-check
 
-const { INVALID_INPUT_ERR_CODE, NOT_FOUND_ERR_CODE, USER_NOT_FOUND_ERR_MESSAGE, INDEX_ONLY_DEDUPLICATION_STRATEGY, FULL_PAYLOAD_DEDUPLICATION_STRATEGY, INVALID_ID_ERR_MESSAGE, NOT_FOUND_ERR_MESSAGE, FORBIDDEN_ERR_CODE } = require("common/constant");
+const { INVALID_INPUT_ERR_CODE, NOT_FOUND_ERR_CODE, USER_NOT_FOUND_ERR_MESSAGE, INDEX_ONLY_DEDUPLICATION_STRATEGY, FULL_PAYLOAD_DEDUPLICATION_STRATEGY, INVALID_ID_ERR_MESSAGE, NOT_FOUND_ERR_MESSAGE, FORBIDDEN_ERR_CODE, ERROR_LOG_LEVEL, CRITICAL_LOG_LEVEL } = require("common/constant");
 const { HttpError, sanitizeObject, num2Ceil, num2Floor, parseSortBy } = require("common/function");
 const { Validator } = require("node-input-validator");
 const { findUserById } = require("../../shared/provider/auth.service");
 const { mongoose, isValidObjectId } = require("./../../shared/mongoose");
 const { striptags } = require("striptags");
 const projectModel = require("../model/project.model");
-const { validateCustomIndex } = require("../utils/helper");
+const { validateCustomIndex, isRecent } = require("../utils/helper");
 const bucketModel = require("../model/bucket.model");
 const { updateBucketCache, getBucketFromCache } = require("../../shared/cache");
 const probeModel = require("../model/probe.model");
@@ -15,7 +15,7 @@ const widgetModel = require("../model/widget.model");
 const projectUserModel = require("../model/project.user.model");
 const { mapBucket } = require("../utils/mapper");
 const { ObjectId } = mongoose.Types
-
+const moment = require("moment-timezone")
 
 /**
  * 
@@ -334,10 +334,188 @@ const listUserBucket = async (userId) => {
     return bucket?.map(mapBucket)
 }
 
+const generateHourlyActivity = (activityMap, hoursToTrack) => {
+    return Array.from({ length: hoursToTrack }, (_, i) => {
+        const date = new Date(Date.now() - (hoursToTrack - 1 - i) * 60 * 60 * 1000);
+        const key = date.toISOString().slice(0, 13).replace('T', '-');
+        return activityMap.get(key) || 0;
+    });
+};
+
+const getUsersBucketStats = async (userId, getLogModel) => {
+    if (!isValidObjectId(userId)) {
+        throw HttpError(INVALID_INPUT_ERR_CODE, INVALID_ID_ERR_MESSAGE);
+    }
+
+    const HOURS_TO_TRACK = 7;
+    const MILLISECONDS_PER_HOUR = 60 * 60 * 1000;
+    const activityCutoff = new Date(Date.now() - HOURS_TO_TRACK * MILLISECONDS_PER_HOUR);
+
+    // Get all user buckets with bucket details in one query
+    const usersBuckets = await projectUserModel.aggregate([
+        {
+            $match: {
+                'user.userId': ObjectId.createFromHexString(userId)
+            }
+        },
+        {
+            $lookup: {
+                from: "buckets",
+                localField: "project",
+                foreignField: "projects",
+                as: "bucket"
+            }
+        },
+        { $unwind: "$bucket" },
+        {
+            $group: {
+                _id: "$bucket._id",
+                title: { $first: "$bucket.title" }
+            }
+        },
+        {
+            $project: {
+                _id: 0,
+                id: "$_id",
+                title: "$title"
+            }
+        }
+    ]);
+
+    if (!usersBuckets.length) {
+        return [];
+    }
+
+    const logModelPromises = usersBuckets.map(bucket =>
+        getLogModel(bucket.id)
+            .then(logModel => ({ bucketId: bucket.id, logModel }))
+            .catch((err) => {
+                console.log('Error getting log model for bucket:', bucket.id, err);
+                return null;
+            })
+    );
+
+    const logModelsArray = await Promise.all(logModelPromises);
+    const logModelsMap = new Map(
+        logModelsArray
+            .filter(item => item !== null)
+            .map(({ bucketId, logModel }) => [bucketId, logModel])
+    );
+
+    // Process all bucket aggregations in parallel
+    const bucketsWithStats = await Promise.allSettled(
+        usersBuckets.map(async (bucket) => {
+            const bucketId = bucket.id.toString();
+
+            const logModelData = logModelsMap.get(bucket.id);
+            if (!logModelData) {
+                console.log(`No log model for bucket: ${bucketId}`);
+                return {
+                    id: bucketId,
+                    title: bucket.title,
+                    status: 'inactive',
+                    lastLog: 'Never',
+                    totalLogs: 0,
+                    errorCount: 0,
+                    criticalCount: 0,
+                    activity: generateHourlyActivity(new Map(), HOURS_TO_TRACK)
+                };
+            }
+
+            const { log } = logModelData;
+
+            try {
+                const [result] = await log.aggregate([
+                    {
+                        $facet: {
+                            totalLogs: [
+                                { $group: { _id: null, total: { $sum: "$count" } } }
+                            ],
+                            lastLog: [
+                                { $sort: { updatedAt: -1 } },
+                                { $limit: 1 },
+                                { $project: { updatedAt: 1 } }
+                            ],
+                            activity: [
+                                { $match: { updatedAt: { $gte: activityCutoff } } },
+                                {
+                                    $group: {
+                                        _id: {
+                                            $dateToString: {
+                                                format: "%Y-%m-%d-%H",
+                                                date: "$updatedAt"
+                                            }
+                                        },
+                                        count: { $sum: "$count" }
+                                    }
+                                },
+                                { $sort: { _id: 1 } }
+                            ],
+                            errorStats: [
+                                {
+                                    $match: {
+                                        level: { $in: [ERROR_LOG_LEVEL, CRITICAL_LOG_LEVEL] }
+                                    }
+                                },
+                                {
+                                    $group: {
+                                        _id: "$level",
+                                        total: { $sum: "$count" }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                ]);
+
+                const lastLogDate = result.lastLog[0]
+                    ? new Date(result.lastLog[0].updatedAt)
+                    : null;
+
+                const activityMap = new Map(
+                    result.activity.map(item => [item._id, item.count])
+                );
+
+                const errorStats = new Map(
+                    result.errorStats.map(item => [item._id, item.total])
+                );
+
+                return {
+                    id: bucketId,
+                    title: bucket.title,
+                    status: lastLogDate && isRecent(lastLogDate) ? 'active' : 'inactive',
+                    lastLog: lastLogDate ? moment(lastLogDate).fromNow() : 'Never',
+                    totalLogs: result.totalLogs[0]?.total || 0,
+                    errorCount: errorStats.get(ERROR_LOG_LEVEL) || 0,
+                    criticalCount: errorStats.get(CRITICAL_LOG_LEVEL) || 0,
+                    activity: generateHourlyActivity(activityMap, HOURS_TO_TRACK)
+                };
+            } catch (error) {
+                console.log(`Error aggregating logs for bucket: ${bucketId}`, error);
+                return {
+                    id: bucketId,
+                    title: bucket.title,
+                    status: 'inactive',
+                    lastLog: 'Never',
+                    totalLogs: 0,
+                    errorCount: 0,
+                    criticalCount: 0,
+                    activity: generateHourlyActivity(new Map(), HOURS_TO_TRACK)
+                };
+            }
+        })
+    );
+
+    return bucketsWithStats
+        .filter(result => result.status === 'fulfilled')
+        .map(result => result.value);
+};
+
 module.exports = {
     createBucket,
     updateBucket,
     removeBucket,
     paginateBucket,
-    listUserBucket
+    listUserBucket,
+    getUsersBucketStats
 }

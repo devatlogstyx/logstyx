@@ -2,17 +2,18 @@
 
 const {
     CREATE_LOG_WSROUTE,
-    GET_USER_DASHBOARD_PROJECT_STATS_WSROUTE,
+    GET_USER_PROJECT_STATS_WSROUTE,
     LIST_USER_PROJECT_WSROUTE,
     FIND_PROJECT_BY_ID_WSROUTE,
     PAGINATE_PROJECT_WSROUTE,
     PAGINATE_BUCKET_WSROUTE,
     FIND_BUCKET_BY_ID_WSROUTE,
-    LIST_USER_BUCKET_WSROUTE
+    LIST_USER_BUCKET_WSROUTE,
+    GET_USER_BUCKET_STATS_WSROUTE
 } = require("common/routes/rpc-websockets");
 const { processCreateSelfLog, getLogModel } = require("../internal/service/logger");
-const { getUsersDashboardProjectsStats, findProjectById, paginateProject, listUserProject } = require("../internal/service/project");
-const { paginateBucket, listUserBucket } = require("../internal/service/bucket");
+const { findProjectById, paginateProject, listUserProject, getUsersProjectsStats } = require("../internal/service/project");
+const { paginateBucket, listUserBucket, getUsersBucketStats } = require("../internal/service/bucket");
 const { getBucketFromCache } = require("../shared/cache");
 
 /**
@@ -25,8 +26,12 @@ exports.init = (rpc) => {
         return processCreateSelfLog(params)
     });
     // @ts-ignore
-    rpc.use(GET_USER_DASHBOARD_PROJECT_STATS_WSROUTE, async ({ userId }) => {
-        return getUsersDashboardProjectsStats(userId, getLogModel)
+    rpc.use(GET_USER_PROJECT_STATS_WSROUTE, async ({ userId }) => {
+        return getUsersProjectsStats(userId, getLogModel)
+    });
+
+    rpc.use(GET_USER_BUCKET_STATS_WSROUTE, async ({ userId }) => {
+        return getUsersBucketStats(userId, getLogModel)
     });
 
     rpc.use(LIST_USER_PROJECT_WSROUTE, async ({ userId }) => {

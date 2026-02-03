@@ -478,28 +478,19 @@ const listUserFromProject = async (projectId) => {
     return list?.map(mapProjectUser);
 };
 
-const generateHourlyActivity = (activityMap, hoursToTrack) => {
-    return Array.from({ length: hoursToTrack }, (_, i) => {
-        const date = new Date(Date.now() - (hoursToTrack - 1 - i) * 60 * 60 * 1000);
-        const key = date.toISOString().slice(0, 13).replace('T', '-');
-        return activityMap.get(key) || 0;
-    });
-};
-
 /**
  * 
  * @param {string} userId 
  * @param {Function} getLogModelFunc 
  * @returns 
  */
-const getUsersDashboardProjectsStats = async (userId, getLogModelFunc) => {
+const getUsersProjectsStats = async (userId, getLogModelFunc) => {
     if (!isValidObjectId(userId)) {
         throw HttpError(INVALID_INPUT_ERR_CODE, INVALID_ID_ERR_MESSAGE);
     }
 
     const HOURS_TO_TRACK = 7;
     const MILLISECONDS_PER_HOUR = 60 * 60 * 1000;
-    const activityCutoff = new Date(Date.now() - HOURS_TO_TRACK * MILLISECONDS_PER_HOUR);
 
     // Get all user projects with project details in one query
     const usersProjects = await projectUserModel.aggregate([
@@ -525,6 +516,7 @@ const getUsersDashboardProjectsStats = async (userId, getLogModelFunc) => {
             }
         }
     ]);
+
 
     if (!usersProjects.length) {
         return [];
@@ -581,8 +573,6 @@ const getUsersDashboardProjectsStats = async (userId, getLogModelFunc) => {
             const projectBuckets = projectToBucketsMap.get(projectId) || [];
             const bucketIds = projectBuckets.map(b => b.id);
 
-            console.log(`Project ${project.title}: ${bucketIds.length} buckets`);
-
             if (!bucketIds || bucketIds.length === 0) {
                 // Return empty stats if no buckets found
                 return {
@@ -595,7 +585,6 @@ const getUsersDashboardProjectsStats = async (userId, getLogModelFunc) => {
                     totalLogs: 0,
                     errorCount: 0,
                     criticalCount: 0,
-                    activity: generateHourlyActivity(new Map(), HOURS_TO_TRACK)
                 };
             }
 
@@ -622,21 +611,7 @@ const getUsersDashboardProjectsStats = async (userId, getLogModelFunc) => {
                                         { $limit: 1 },
                                         { $project: { updatedAt: 1 } }
                                     ],
-                                    activity: [
-                                        { $match: { updatedAt: { $gte: activityCutoff } } },
-                                        {
-                                            $group: {
-                                                _id: {
-                                                    $dateToString: {
-                                                        format: "%Y-%m-%d-%H",
-                                                        date: "$updatedAt"
-                                                    }
-                                                },
-                                                count: { $sum: "$count" }
-                                            }
-                                        },
-                                        { $sort: { _id: 1 } }
-                                    ],
+                                    
                                     errorStats: [
                                         {
                                             $match: {
@@ -676,14 +651,12 @@ const getUsersDashboardProjectsStats = async (userId, getLogModelFunc) => {
                     totalLogs: 0,
                     errorCount: 0,
                     criticalCount: 0,
-                    activity: generateHourlyActivity(new Map(), HOURS_TO_TRACK)
                 };
             }
 
             // Combine results from all buckets
             let totalLogs = 0;
             let lastLogDate = null;
-            const combinedActivityMap = new Map();
             const combinedErrorStats = new Map();
 
             validResults.forEach(result => {
@@ -698,20 +671,12 @@ const getUsersDashboardProjectsStats = async (userId, getLogModelFunc) => {
                     }
                 }
 
-                // Combine activity
-                result.activity.forEach(item => {
-                    const existing = combinedActivityMap.get(item._id) || 0;
-                    combinedActivityMap.set(item._id, existing + item.count);
-                });
-
                 // Combine error stats
                 result.errorStats.forEach(item => {
                     const existing = combinedErrorStats.get(item._id) || 0;
                     combinedErrorStats.set(item._id, existing + item.total);
                 });
             });
-
-            const activity = generateHourlyActivity(combinedActivityMap, HOURS_TO_TRACK);
 
             return {
                 id: projectId,
@@ -723,7 +688,6 @@ const getUsersDashboardProjectsStats = async (userId, getLogModelFunc) => {
                 totalLogs,
                 errorCount: combinedErrorStats.get(ERROR_LOG_LEVEL) || 0,
                 criticalCount: combinedErrorStats.get(CRITICAL_LOG_LEVEL) || 0,
-                activity
             };
         })
     );
@@ -907,7 +871,7 @@ module.exports = {
     addUserToProject,
     removeUserFromProject,
     listUserFromProject,
-    getUsersDashboardProjectsStats,
+    getUsersProjectsStats,
     findProjectById,
     findProjectBySlug,
     canUserReadProject,
