@@ -18,7 +18,6 @@ import { sumInt } from '../../utils/function';
 import { IoAlert, IoAlertCircle, IoTrendingDownOutline, IoWarning } from 'react-icons/io5';
 import useDashboardProjectDetail from './hooks';
 import TabOverview from './TabOverview';
-import TabLogs from './TabLogs';
 import TabUser from './TabUser';
 import UpdateSettings from './UpdateSettings';
 import { CRITICAL_LOG_LEVEL, ERROR_LOG_LEVEL, WARNING_LOG_LEVEL } from '../../utils/constant';

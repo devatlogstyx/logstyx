@@ -139,7 +139,7 @@ const createProject = async (params, {
     updateAllowedOriginCache()?.catch(console.error)
 
     await createBucket({
-        title: `${project?.title} - Default Bucket`,
+        title: `${project?.title}'s Default Bucket`,
         projects: [project?.id],
         settings: {
             filter: params?.settings?.filter,
@@ -488,10 +488,6 @@ const getUsersProjectsStats = async (userId, getLogModelFunc) => {
     if (!isValidObjectId(userId)) {
         throw HttpError(INVALID_INPUT_ERR_CODE, INVALID_ID_ERR_MESSAGE);
     }
-
-    const HOURS_TO_TRACK = 7;
-    const MILLISECONDS_PER_HOUR = 60 * 60 * 1000;
-
     // Get all user projects with project details in one query
     const usersProjects = await projectUserModel.aggregate([
         {
@@ -611,7 +607,7 @@ const getUsersProjectsStats = async (userId, getLogModelFunc) => {
                                         { $limit: 1 },
                                         { $project: { updatedAt: 1 } }
                                     ],
-                                    
+
                                     errorStats: [
                                         {
                                             $match: {

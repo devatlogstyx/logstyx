@@ -70,59 +70,6 @@ export const getProjectLogStats = async (signal, projectId) => {
     return data?.data;
 }
 
-/**
- * 
- * @param {*} signal 
- * @param {string} projectId 
- * @param {object} params 
- * @returns 
- */
-export const paginateProjectLogs = async (signal, projectId, params) => {
-    let { data } = await Axios.get(`/v1/projects/${projectId}/logs`, {
-        signal,
-        params
-    });
-    return data?.data;
-}
-
-/**
- * 
- * @param {*} signal 
- * @param {string} projectId 
- * @param {string} field 
- * @returns 
- */
-export const listProjectDistinctValues = async (signal, projectId, field) => {
-    let { data } = await Axios.get(`/v1/projects/${projectId}/logs/field-values`, {
-        signal,
-        params: {
-            field
-        }
-    });
-    return data?.data;
-}
-
-/**
- * 
- * @param {*} signal 
- * @param {string} projectId 
- * @param {string} logKey 
- * @returns 
- */
-export const getLogTimeline = async (signal, projectId, logKey) => {
-    let { data } = await Axios.get(`/v1/projects/${projectId}/logs/${logKey}/timeline`, {
-        signal
-    });
-    return data?.data;
-}
-
-export const listProjectTimeline = async (signal, projectId, params) => {
-    let { data } = await Axios.get(`/v1/projects/${projectId}/logs/timeline`, {
-        signal,
-        params
-    });
-    return data?.data;
-}
 
 /**
  * 

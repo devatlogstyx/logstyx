@@ -1,3 +1,6 @@
+//@ts-check
+
+
 import Axios from "./AxiosClient";
 
 /**
@@ -12,3 +15,86 @@ export const listMyBucket = async (signal) => {
     });
     return data?.data;
 }
+
+
+/**
+ * 
+ * @param {*} signal 
+ * @param {*} bucketId 
+ * @returns 
+ */
+export const findBucketById = async (signal, bucketId) => {
+    let { data } = await Axios.get(`/v1/buckets/${bucketId}`, {
+        signal
+    });
+    return data?.data;
+}
+
+/**
+ * 
+ * @param {*} signal 
+ * @param {*} bucketId 
+ * @returns 
+ */
+export const getBucketLogStats = async (signal, bucketId) => {
+    let { data } = await Axios.get(`/v1/buckets/${bucketId}/logs-statistic`, {
+        signal
+    });
+    return data?.data;
+}
+
+/**
+ * 
+ * @param {*} signal 
+ * @param {string} projectId 
+ * @param {string} logKey 
+ * @returns 
+ */
+export const getLogTimeline = async (signal, bucketId, logKey) => {
+    let { data } = await Axios.get(`/v1/buckets/${bucketId}/logs/${logKey}/timeline`, {
+        signal
+    });
+    return data?.data;
+}
+
+export const listBucketTimeline = async (signal, bucketId, params) => {
+    let { data } = await Axios.get(`/v1/buckets/${bucketId}/logs/timeline`, {
+        signal,
+        params
+    });
+    return data?.data;
+}
+
+/**
+ * 
+ * @param {*} signal 
+ * @param {string} bucketId 
+ * @param {object} params 
+ * @returns 
+ */
+export const paginateBucketLogs = async (signal, bucketId, params) => {
+    let { data } = await Axios.get(`/v1/buckets/${bucketId}/logs`, {
+        signal,
+        params
+    });
+    return data?.data;
+}
+
+/**
+ * 
+ * @param {*} signal 
+ * @param {string} bucketId 
+ * @param {string} field 
+ * @returns 
+ */
+export const listBucketDistinctValues = async (signal, bucketId, field) => {
+    let { data } = await Axios.get(`/v1/buckets/${bucketId}/logs/field-values`, {
+        signal,
+        params: {
+            field
+        }
+    });
+    return data?.data;
+}
+
+

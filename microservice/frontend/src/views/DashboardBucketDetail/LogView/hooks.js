@@ -1,25 +1,26 @@
 //@ts-check
 
-import React from "react"
+import React, { useCallback, useMemo } from "react"
 import { useErrorMessage } from "../../../hooks/useMessage"
-import { listProjectDistinctValues, paginateProjectLogs } from "../../../api/project"
 import ModalLogDetail from "../ModalLogDetail"
 import ModalTimeline from "../ModalTimeline"
+import { listBucketDistinctValues, paginateBucketLogs } from "../../../api/bucket"
 import { sanitizeObject } from "../../../utils/function"
 
-const useTabLogs = ({ project }) => {
+
+const useBucketLogs = ({ bucket }) => {
 
     // ✅ Include both indexes and rawIndexes
     const fields = [...new Set([
-        ...project?.settings?.indexes || [],
-        ...project?.settings?.rawIndexes || [],
+        ...bucket?.settings?.indexes || [],
+        ...bucket?.settings?.rawIndexes || [],
         "level",
     ])]
 
     // Helper to check if field is a raw index
-    const isRawIndex = (field) => {
-        return project?.settings?.rawIndexes?.includes(field)
-    }
+    const isRawIndex = useCallback((field) => {
+        return bucket?.settings?.rawIndexes?.includes(field)
+    }, [bucket])
 
     const [isLoading, setIsLoading] = React.useState(true)
     const [isFieldLoading, setIsFieldLoading] = React.useState({})
@@ -71,7 +72,7 @@ const useTabLogs = ({ project }) => {
     const [timelineModalProps, setTimelineModalProps] = React.useState({
         opened: false,
         logKey: "",
-        projectId: project?.id,
+        bucketId: bucket?.id,
     });
 
     const closeTimelineModal = () => {
@@ -85,7 +86,7 @@ const useTabLogs = ({ project }) => {
         setTimelineModalProps({
             opened: true,
             logKey,
-            projectId: project?.id,
+            bucketId: bucket?.id,
         });
     };
 
@@ -96,6 +97,7 @@ const useTabLogs = ({ project }) => {
 
     // ✅ Add filter with default operator
     const addFilter = () => {
+        // @ts-ignore
         setFilters(prev => [...prev, {
             id: Date.now(),
             field: "",
@@ -172,9 +174,9 @@ const useTabLogs = ({ project }) => {
                 }
             })
 
-            const l = await paginateProjectLogs(
+            const l = await paginateBucketLogs(
                 logsControllerRef.current.signal,
-                project?.id,
+                bucket?.id,
                 sanitizeObject({
                     filterField: filterFields.length > 0 ? filterFields : undefined,
                     filterValue: filterValues.length > 0 ? filterValues : undefined,
@@ -192,7 +194,7 @@ const useTabLogs = ({ project }) => {
         } finally {
             setIsLoading(false)
         }
-    }, [ErrorMessage, page, project, filters, sortConfig])
+    }, [ErrorMessage, page, bucket, filters, sortConfig])
 
     // Fetch field values for each filter
     React.useEffect(() => {
@@ -227,9 +229,9 @@ const useTabLogs = ({ project }) => {
 
                     fieldValuesControllersRef.current[filter.id] = new AbortController()
 
-                    const f = await listProjectDistinctValues(
+                    const f = await listBucketDistinctValues(
                         fieldValuesControllersRef.current[filter.id].signal,
-                        project?.id,
+                        bucket?.id,
                         filter.field
                     )
                     setFieldValues(prev => ({
@@ -252,7 +254,7 @@ const useTabLogs = ({ project }) => {
         }
 
         fetchAllFieldValues()
-    }, [filters, project?.id])
+    }, [filters, bucket?.id, isRawIndex])
 
     React.useEffect(() => {
         fetchData()
@@ -307,4 +309,4 @@ const useTabLogs = ({ project }) => {
     }
 }
 
-export default useTabLogs
+export default useBucketLogs

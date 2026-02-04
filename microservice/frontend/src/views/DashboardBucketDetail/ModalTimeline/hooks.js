@@ -2,7 +2,7 @@
 
 import React from "react";
 import { useErrorMessage } from "../../../hooks/useMessage";
-import { getLogTimeline } from "../../../api/project";
+import { getLogTimeline } from "../../../api/bucket";
 
 const useModalTimeline = ({
     projectId,

@@ -13,7 +13,7 @@ const { updateBucketCache, getBucketFromCache } = require("../../shared/cache");
 const probeModel = require("../model/probe.model");
 const widgetModel = require("../model/widget.model");
 const projectUserModel = require("../model/project.user.model");
-const { mapBucket } = require("../utils/mapper");
+const { mapBucket, mapLog } = require("../utils/mapper");
 const { ObjectId } = mongoose.Types
 const moment = require("moment-timezone")
 
@@ -511,11 +511,104 @@ const getUsersBucketStats = async (userId, getLogModel) => {
         .map(result => result.value);
 };
 
+const getBucketLogStats = async (bucketId, { getLogModel }) => {
+
+    if (!isValidObjectId(bucketId)) {
+        throw HttpError(INVALID_INPUT_ERR_CODE, `invalid id`)
+    }
+
+
+    const bucket = await getBucketFromCache(bucketId);
+    if (!bucket) {
+        throw HttpError(NOT_FOUND_ERR_CODE, NOT_FOUND_ERR_MESSAGE)
+    }
+
+    const { log } = await getLogModel(bucketId)
+
+    const stats = await log.aggregate([
+        {
+            $group: {
+                _id: "$level",
+                count: { $sum: "$count" }
+            }
+        },
+        {
+            $project: {
+                level: "$_id",
+                count: 1,
+                _id: 0
+            }
+        }
+    ]);
+
+    // Sort by count descending
+    stats.sort((a, b) => b.count - a.count);
+
+    return stats;
+}
+
+/**
+ * 
+ * @param {*} bucketId 
+ * @param {*} param1 
+ * @param {*} param2 
+ * @returns 
+ */
+async function listBucketTimeline(bucketId, { limit = 50, page = 1 }, { getLogModel }) {
+
+    limit = num2Ceil(num2Floor(limit, 1), 50);
+    page = num2Floor(page, 1)
+    const skip = (page - 1) * limit;
+
+    const { log, logstamp } = await getLogModel(bucketId);
+
+    const timeline = await logstamp.find({})
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean();
+
+    const totalResults = await logstamp.countDocuments({})
+    const totalPages = Math.ceil(totalResults / limit)
+
+    if (!timeline.length) return {
+        results: [],
+        page,
+        limit,
+        totalResults,
+        totalPages,
+    };
+
+    const pageKeys = timeline.map(s => s.key);
+    const details = await log.find({ key: { $in: pageKeys } }).lean();
+
+    const detailsLog = await Promise.all(details?.map((n) => mapLog(n)) || []);
+    const detailsMap = new Map(detailsLog.map(d => [d.key, d]));
+
+    const results = timeline.map(stamp => {
+        const detail = detailsMap.get(stamp.key) || {};
+        return {
+            ...detail,
+            createdAt: stamp.createdAt,
+        };
+    });
+
+    return {
+        results,
+        page,
+        limit,
+        totalResults,
+        totalPages,
+    }
+}
+
 module.exports = {
     createBucket,
     updateBucket,
     removeBucket,
     paginateBucket,
     listUserBucket,
-    getUsersBucketStats
+    getUsersBucketStats,
+    getBucketLogStats,
+    listBucketTimeline
 }

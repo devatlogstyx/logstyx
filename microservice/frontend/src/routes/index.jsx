@@ -20,6 +20,7 @@ import PublicReportView from "../views/PublicReportView";
 import DashboardWebhook from "../views/DashboardWebhook";
 import DashboardAlert from "../views/DashboardAlert";
 import DashboardBucket from "../views/DashboardBucket";
+import DashboardBucketDetail from "../views/DashboardBucketDetail";
 
 export default function Router() {
     return (
@@ -39,6 +40,7 @@ export default function Router() {
                         <Route path="/dashboard/webhooks" element={<DashboardWebhook />} />
                         <Route path="/dashboard/alerts" element={<DashboardAlert />} />
                         <Route path="/dashboard/buckets" element={<DashboardBucket />} />
+                        <Route path="/dashboard/buckets/:id" element={<DashboardBucketDetail />} />
                     </Route>
                     <Route path="/invitations/:id" element={<InvitationPage />} />
                     <Route path="/logout" element={<Logout />} />
