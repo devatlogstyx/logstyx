@@ -98,3 +98,17 @@ export const listBucketDistinctValues = async (signal, bucketId, field) => {
 }
 
 
+
+/**
+ * 
+ * @param {*} signal 
+ * @param {string} bucketId 
+ * @param {object} payload 
+ * @returns 
+ */
+export const updateBucket = async (signal, bucketId, payload) => {
+    let { data } = await Axios.put(`/v1/buckets/${bucketId}`, payload, {
+        signal
+    });
+    return data?.data;
+}

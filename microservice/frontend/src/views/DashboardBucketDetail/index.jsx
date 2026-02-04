@@ -10,7 +10,8 @@ const DashboardBucketDetail = () => {
 
     const {
         bucket,
-        isLoading
+        isLoading,
+        refetchData
     } = useDashboardBucketDetail()
 
     if (isLoading) {
@@ -26,19 +27,22 @@ const DashboardBucketDetail = () => {
             <Container className="py-8">
                 {/* Header */}
                 <div className="space-y-4 mb-8">
-                    <div className="flex justify-between items-start">
-                        <div>
-                            <Title className="text-3xl font-bold">{bucket?.title}</Title>
-                            <div className="flex gap-2 mt-2">
-                            </div>
-                        </div>
-                        <UpdateBucket />
-                    </div>
+
                     {
                         bucket &&
-                        <LogView
-                            bucket={bucket}
-                        />
+                        <>
+                            <div className="flex justify-between items-start">
+                                <div>
+                                    <Title className="text-3xl font-bold">{bucket?.title}</Title>
+                                    <div className="flex gap-2 mt-2">
+                                    </div>
+                                </div>
+                                <UpdateBucket bucket={bucket} onUpdate={refetchData} />
+                            </div>
+                            <LogView
+                                bucket={bucket}
+                            />
+                        </>
                     }
 
                 </div>

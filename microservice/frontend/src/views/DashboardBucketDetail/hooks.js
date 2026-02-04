@@ -1,6 +1,6 @@
 //@ts-check
 
-import { useCallback,  useEffect,  useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useErrorMessage } from "../../hooks/useMessage";
 import { findBucketById } from "../../api/bucket";
@@ -32,7 +32,8 @@ const useDashboardBucketDetail = () => {
 
     return {
         bucket,
-        isLoading
+        isLoading,
+        refetchData: fetchData
     }
 }
 
