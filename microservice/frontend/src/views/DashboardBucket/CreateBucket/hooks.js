@@ -1,38 +1,33 @@
 //@ts-check
-import { useForm } from "@mantine/form";
-import React from "react"
-import { useErrorMessage } from "../../../hooks/useMessage";
-import { updateBucket } from "../../../api/bucket";
 
-const useUpdateBucket = ({
-    bucket,
+import { useForm } from "@mantine/form";
+import React from "react";
+import { useErrorMessage } from "../../../hooks/useMessage";
+import { createProject } from "../../../api/project";
+import { FULL_PAYLOAD_DEDUPLICATION_STRATEGY } from "../../../utils/constant";
+import { createBucket } from "../../../api/bucket";
+
+const useCreateBucket = ({
     onUpdate
 }) => {
 
-    const [isModalVisible, setIsModalVisible] = React.useState(false)
-    const [isSubmitting, setIsSubmitting] = React.useState(false)
-
     const controller = React.useMemo(() => new AbortController(), []);
 
-    const ErrorMessage = useErrorMessage()
-    const initialHours = bucket?.settings?.retentionHours
+    const [isSubmitting, setIsSubmitting] = React.useState(false)
+    const [isModalVisible, setIsModalVisible] = React.useState(false)
+    const [step, setStep] = React.useState(0)
 
-    const isDays = initialHours > 0 && initialHours % 24 === 0;
+    const ErrorMessage = useErrorMessage()
 
     const form = useForm({
         mode: 'uncontrolled',
         initialValues: {
-            title: bucket?.title,
-            projects: bucket?.projects ?? [],
-            filter: bucket?.settings?.filter ?? [],
-            indexes: bucket?.settings?.indexes,
-            rawIndexes: bucket?.settings?.rawIndexes,
-            deduplicationStrategy: bucket?.settings?.deduplicationStrategy,
-            retentionHours: initialHours,
-            // The display value (e.g., 168 becomes 7)
-            retentionValue: isDays ? initialHours / 24 : initialHours,
-            // The unit toggle state
-            retentionUnit: isDays ? 'days' : 'hours',
+            title: "",
+            projects: [],
+            filter: [],
+            indexes: [],
+            rawIndexes: [],
+            deduplicationStrategy: FULL_PAYLOAD_DEDUPLICATION_STRATEGY
         },
         validate: {
             projects: (value) => {
@@ -51,16 +46,6 @@ const useUpdateBucket = ({
                 // Check if it's an array
                 if (!Array.isArray(value)) {
                     return 'Indexes must be an array';
-                }
-
-                // Get initial indexes for comparison
-                const initialIndexes = bucket?.settings?.indexes || [];
-
-                // Check if all initial values are still present
-                for (const initialIndex of initialIndexes) {
-                    if (!value.includes(initialIndex)) {
-                        return `Cannot remove initial index: "${initialIndex}"`;
-                    }
                 }
 
                 // Validate each index
@@ -94,16 +79,6 @@ const useUpdateBucket = ({
                 // Check if it's an array
                 if (!Array.isArray(value)) {
                     return 'RawIndexes must be an array';
-                }
-
-                // Get initial indexes for comparison
-                const initialIndexes = bucket?.settings?.rawIndexes || [];
-
-                // Check if all initial values are still present
-                for (const initialIndex of initialIndexes) {
-                    if (!value.includes(initialIndex)) {
-                        return `Cannot remove initial index: "${initialIndex}"`;
-                    }
                 }
 
                 // Validate each index
@@ -140,26 +115,39 @@ const useUpdateBucket = ({
     const handleSubmit = React.useCallback(async (values) => {
         try {
             setIsSubmitting(true)
-            await updateBucket(controller.signal, bucket?.id, values)
+            const payload = {
+                title: values?.title,
+                projects: values?.projects,
+                settings: {
+                    filter: values?.filter,
+                    indexes: values?.indexes,
+                    rawIndexes: values?.rawIndexes,
+                    retentionHours: values?.retentionUnit === "days" ? values.retentionValue * 24 : values.retentionValue,
+                    deduplicationStrategy: values?.deduplicationStrategy
+                }
+            }
+            await createBucket(controller.signal, payload)
             onUpdate()
         } catch (e) {
             ErrorMessage(e)
         } finally {
             setIsSubmitting(false)
         }
-    }, [ErrorMessage, controller, bucket, onUpdate])
+    }, [ErrorMessage, controller, onUpdate])
 
     return {
         form,
-        isModalVisible,
         isSubmitting,
-        handleSubmit,
+        isModalVisible,
         openModal: () => setIsModalVisible(true),
         closeModal: () => {
-            setIsModalVisible(false);
-            form.reset()
+            setIsModalVisible(false)
+            setStep(0)
         },
+        handleSubmit,
+        step,
+        setStep
     }
 }
 
-export default useUpdateBucket
+export default useCreateBucket

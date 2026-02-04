@@ -29,6 +29,8 @@ const DashboardBucket = () => {
                 <Text className="text-gray-600">Manage logs</Text>
             </div>
             <BucketViews />
+            
+
         </Container>
     );
 };

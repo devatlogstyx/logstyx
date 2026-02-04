@@ -13,6 +13,7 @@ import { sumInt } from "../../../utils/function";
 import { Loader } from "@mantine/core";
 import PrimaryButton from "../../../component/button/PrimaryButton";
 import { Bar, BarChart, ResponsiveContainer } from "recharts";
+import CreateBucket from "../CreateBucket";
 
 const BucketViews = () => {
 
@@ -38,7 +39,12 @@ const BucketViews = () => {
                     <BucketCard bucket={bucket} key={i} />
                 ))}
             </div>
-
+            {/* Create New Project Button */}
+            <div className="fixed bottom-8 right-8">
+                <CreateBucket
+                    onUpdate={refetchData}
+                />
+            </div>
         </>
     )
 }
@@ -108,7 +114,7 @@ const BucketCard = ({ bucket }) => {
                     {/* Action Buttons */}
                     <div className="flex gap-2 justify-end items-center">
                         <Link to={`/dashboard/buckets/${bucket.id}`} className="w-full">
-                            <PrimaryButton  leftSection={<IoEyeOutline size={16} />} className="w-full px-3 py-2 text-sm">
+                            <PrimaryButton leftSection={<IoEyeOutline size={16} />} className="w-full px-3 py-2 text-sm">
                                 View Logs
                             </PrimaryButton>
                         </Link>

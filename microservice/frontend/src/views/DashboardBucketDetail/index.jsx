@@ -4,6 +4,8 @@ import { Container, Loader, Title } from "@mantine/core"
 import useDashboardBucketDetail from "./hooks"
 import UpdateBucket from "./UpdateBucket"
 import LogView from "./LogView"
+import DangerButton from "../../component/button/DangerButton"
+import { FiTrash } from "react-icons/fi"
 
 
 const DashboardBucketDetail = () => {
@@ -11,7 +13,9 @@ const DashboardBucketDetail = () => {
     const {
         bucket,
         isLoading,
-        refetchData
+        refetchData,
+        handleDelete,
+        ConfirmDialogComponent
     } = useDashboardBucketDetail()
 
     if (isLoading) {
@@ -31,22 +35,29 @@ const DashboardBucketDetail = () => {
                     {
                         bucket &&
                         <>
-                            <div className="flex justify-between items-start">
-                                <div>
-                                    <Title className="text-3xl font-bold">{bucket?.title}</Title>
-                                    <div className="flex gap-2 mt-2">
-                                    </div>
+                            <div className="flex flex-col gap-2">
+                                <div className="flex-1">
+                                    <Title className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+                                        {bucket?.title}
+                                    </Title>
+                                    <p className="text-sm text-gray-600 mt-1">
+                                        Manage and track your bucket activities
+                                    </p>
                                 </div>
-                                <UpdateBucket bucket={bucket} onUpdate={refetchData} />
+                                <div className="flex justify-end gap-2">
+                                    <UpdateBucket bucket={bucket} onUpdate={refetchData} />
+                                    <DangerButton leftSection={<FiTrash />} onClick={handleDelete}>Delete</DangerButton>
+                                </div>
+                                <LogView
+                                    bucket={bucket}
+                                />
                             </div>
-                            <LogView
-                                bucket={bucket}
-                            />
                         </>
                     }
 
                 </div>
             </Container>
+            <ConfirmDialogComponent />
         </>
     )
 }

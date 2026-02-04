@@ -510,6 +510,11 @@ const getUsersProjectsStats = async (userId, getLogModelFunc) => {
                 'project.title': 1,
                 'project.slug': 1
             }
+        },
+        {
+            $sort: {
+                "project.title": 1
+            }
         }
     ]);
 

@@ -379,6 +379,11 @@ const getUsersBucketStats = async (userId, getLogModel) => {
                 id: "$_id",
                 title: "$title"
             }
+        },
+        {
+            $sort: {
+                title: 1
+            }
         }
     ]);
 

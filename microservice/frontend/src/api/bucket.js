@@ -112,3 +112,27 @@ export const updateBucket = async (signal, bucketId, payload) => {
     });
     return data?.data;
 }
+
+/**
+ * 
+ * @param {*} signal 
+ * @param {*} id 
+ * @returns 
+ */
+export const deleteBucket = async (signal, id) => {
+    const { data } = await Axios.delete(`/v1/buckets/${id}`, { signal });
+    return data?.data;
+};
+
+/**
+ * 
+ * @param {*} signal 
+ * @param {*} payload 
+ * @returns 
+ */
+export const createBucket = async (signal, payload) => {
+    let { data } = await Axios.post(`/v1/buckets`, payload, {
+        signal
+    });
+    return data?.data;
+}
