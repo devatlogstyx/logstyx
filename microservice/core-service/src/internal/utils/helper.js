@@ -279,7 +279,7 @@ const sanitizeFieldName = (field) => {
     if (!/^[a-zA-Z0-9_.]+$/.test(field)) {
         throw HttpError(INVALID_INPUT_ERR_CODE, 'Invalid field name');
     }
-    return sanitizeFieldName(field);
+    return field.replace(/\./g, '_');
 };
 
 const HToMs = (num) => num2Int(num) * 60 * 60 * 1000;

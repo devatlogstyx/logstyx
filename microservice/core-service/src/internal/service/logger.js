@@ -4,7 +4,7 @@ const { mongoose, isValidObjectId } = require("./../../shared/mongoose");
 const { getProjectFromCache, getBucketFromCache } = require("../../shared/cache");
 const { HttpError, hashString, decryptSecret, createSlug, num2Ceil, num2Floor } = require("common/function");
 const { NOT_FOUND_ERR_CODE, NOT_FOUND_ERR_MESSAGE, BROWSER_CLIENT_TYPE, INVALID_INPUT_ERR_CODE, INVALID_INPUT_ERR_MESSAGE, INVALID_ID_ERR_MESSAGE } = require("common/constant");
-const { validateOrigin, validateSignature, generateIndexedHashes, validateCustomIndex, generateRawValues, generateLogKey, evaluateBucketFilter,  HToMs, sanitizeFieldName } = require("../utils/helper");
+const { validateOrigin, validateSignature, generateIndexedHashes, validateCustomIndex, generateRawValues, generateLogKey, evaluateBucketFilter, HToMs, sanitizeFieldName } = require("../utils/helper");
 const projectModel = require("../model/project.model");
 const { mapLog } = require("../utils/mapper");
 const { compressAndEncrypt, decryptAndDecompress } = require("common/function");
@@ -246,6 +246,8 @@ const processWriteLog = async ({ headers, body }) => {
     }).cursor()
 
     for await (const bucket of buckets) {
+        console.log(bucket)
+
         try {
             await createLog(bucket.toJSON(), {
                 project_id: projectId,

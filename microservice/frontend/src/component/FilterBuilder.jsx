@@ -17,7 +17,9 @@ export default function FilterBuilder({ value = [], onChange }) {
 
   const update = (next) => {
     setFilters(next);
-    onChange && onChange(next);
+    // Only send valid filters (those with both field and value)
+    const validFilters = next.filter(f => f.field && f.value);
+    onChange && onChange(validFilters);
   }
 
   const add = () => update([...filters, { field: '', operator: 'eq', value: '' }]);

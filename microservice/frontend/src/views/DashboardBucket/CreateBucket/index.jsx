@@ -20,8 +20,6 @@ const CreateBucket = ({
         handleSubmit,
         openModal,
         closeModal,
-        step,
-        setStep
     } = useCreateBucket({
         onUpdate
     })
@@ -57,9 +55,7 @@ const CreateBucket = ({
                             <FilterBuilder
                                 value={form.values.filter || []}
                                 onChange={(v) => {
-                                    if (v.field && v.value) {
-                                        form.setFieldValue('filter', v)
-                                    }
+                                    form.setFieldValue('filter', v)
                                 }}
                             />
                             <TagsInput

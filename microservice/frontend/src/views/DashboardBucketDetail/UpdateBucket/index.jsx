@@ -41,10 +41,9 @@ const UpdateBucket = ({ bucket, onUpdate }) => {
                     <FilterBuilder
                         value={form.values.filter || []}
                         onChange={(v) => {
-                            if (v.field && v.value) {
-                                form.setFieldValue('filter', v)
-                            }
+                            form.setFieldValue('filter', v)
                         }}
+                        
                     />
                     <TagsInput
                         label="Indexed Fields (Hashed)"

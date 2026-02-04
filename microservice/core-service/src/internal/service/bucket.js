@@ -77,7 +77,7 @@ const createBucket = async (params, { initLogger, canUserModifyProject }) => {
             title: striptags(params?.title),
             projects: projects.map((n) => n?._id),
             settings: {
-                filter: params?.config?.filter,
+                filter: params?.settings?.filter,
                 indexes: params?.settings?.indexes?.filter((n) => validateCustomIndex(n)),
                 rawIndexes: params?.settings?.rawIndexes?.filter((n) => validateCustomIndex(n)),
                 deduplicationStrategy: params?.settings?.deduplicationStrategy || FULL_PAYLOAD_DEDUPLICATION_STRATEGY,
@@ -157,7 +157,7 @@ const updateBucket = async (id, params, { initLogger }) => {
         {
             $set: sanitizeObject({
                 title: striptags(params?.title),
-                "settings.filter": params?.config?.filter,
+                "settings.filter": params?.filter,
                 "settings.indexes": params?.indexes?.filter((n) => validateCustomIndex(n)),
                 "settings.rawIndexes": params?.rawIndexes?.filter((n) => validateCustomIndex(n)),
                 "settings.deduplicationStrategy": params?.deduplicationStrategy || FULL_PAYLOAD_DEDUPLICATION_STRATEGY,
