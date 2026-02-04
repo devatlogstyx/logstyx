@@ -6,7 +6,7 @@ import PrimaryButton from "../../../component/button/PrimaryButton"
 import SecondaryButton from "../../../component/button/SecondaryButton"
 import SelectUserPermissions from "../../../component/select/SelectUserPermissions"
 import SelectUserProject from "../../../component/select/SelectUserProject"
-import { READ_PROJECT_ROLE } from "../../../utils/constant"
+import { READ_BUCKET_USER_ROLE, READ_PROJECT_ROLE } from "../../../utils/constant"
 
 const FormInviteUser = ({
     form,
@@ -47,6 +47,9 @@ const FormInviteUser = ({
                         // Ensure READ_PROJECT_ROLE is always included
                         if (!value.includes(READ_PROJECT_ROLE)) {
                             value.push(READ_PROJECT_ROLE);
+                        }
+                        if (!value.includes(READ_BUCKET_USER_ROLE)) {
+                            value.push(READ_BUCKET_USER_ROLE);
                         }
                         form.setFieldValue('permissions', value);
                     }}

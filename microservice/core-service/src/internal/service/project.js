@@ -13,9 +13,8 @@ const { updateProjectCache, getProjectFromCache, updateAllowedOriginCache } = re
 const { mapProjectUser, mapProject } = require("../utils/mapper");
 const { validateCustomIndex, isRecent } = require("../utils/helper");
 const moment = require("moment-timezone");
-const probeModel = require("../model/probe.model");
-const widgetModel = require("../model/widget.model");
 const { isValidObjectId } = require("../../shared/mongoose");
+const bucketModel = require("../model/bucket.model");
 
 /**
  * 
@@ -47,14 +46,18 @@ const generateUniqueSlug = async (baseSlug) => {
  * @param {string[]} [params.settings.allowedOrigin]
  * @param {string} [params.settings.deduplicationStrategy]
  * @param {number | string} [params.settings.retentionHours]
- * @param {Function} initLoggerFunc
+ * @param {*} params1
  */
-const createProject = async (params, initLoggerFunc) => {
+const createProject = async (params, {
+    createBucket,
+    initLogger
+}) => {
 
     const v = new Validator(params, {
         title: "required|string",
         slug: "string",
         creator: "required|string",
+        "settings.filter": "arrayUnique",
         "settings.indexes": "arrayUnique",
         "settings.rawIndexes": "arrayUnique",
         "settings.allowedOrigin": "arrayUnique",
@@ -92,6 +95,8 @@ const createProject = async (params, initLoggerFunc) => {
     const session = await mongoose.startSession();
     session.startTransaction();
 
+    let createdProject = null
+
     try {
 
         const secret = randomstring.generate(32)
@@ -100,21 +105,17 @@ const createProject = async (params, initLoggerFunc) => {
             slug: await generateUniqueSlug(createSlug(params?.slug || params?.title)),
             secret,
             settings: {
-                indexes: params?.settings?.indexes?.filter((n) => validateCustomIndex(n)),
-                rawIndexes: params?.settings?.rawIndexes?.filter((n) => validateCustomIndex(n)),
                 allowedOrigin: params?.settings?.allowedOrigin?.map((n) => striptags(n)),
-                deduplicationStrategy: params?.settings?.deduplicationStrategy || FULL_PAYLOAD_DEDUPLICATION_STRATEGY,
-                retentionHours: params?.settings?.retentionHours || 1
             }
         })
 
-        const projects = await projectModel.create([
+        const [newProject] = await projectModel.create([
             payload
         ], { session })
 
         await projectUserModel.create([
             {
-                project: projects?.[0]?._id,
+                project: newProject?._id,
                 user: {
                     userId: ObjectId.createFromHexString(creator?.id),
                     fullname: creator?.fullname,
@@ -122,15 +123,9 @@ const createProject = async (params, initLoggerFunc) => {
             }
         ])
 
+        createdProject = newProject;
+
         await session.commitTransaction()
-
-        const project = await updateProjectCache(projects?.[0]?._id?.toString())
-
-        updateAllowedOriginCache()?.catch(console.error)
-
-        initLoggerFunc(project)?.catch(console.error)
-
-        return project
 
     } catch (e) {
         await session.abortTransaction();
@@ -138,6 +133,25 @@ const createProject = async (params, initLoggerFunc) => {
     } finally {
         session.endSession()
     }
+
+    const project = await updateProjectCache(createdProject?._id?.toString())
+
+    updateAllowedOriginCache()?.catch(console.error)
+
+    await createBucket({
+        title: `${project?.title}'s Default Bucket`,
+        projects: [project?.id],
+        settings: {
+            filter: params?.settings?.filter,
+            indexes: params?.settings?.indexes?.filter((n) => validateCustomIndex(n)),
+            rawIndexes: params?.settings?.rawIndexes?.filter((n) => validateCustomIndex(n)),
+            deduplicationStrategy: params?.settings?.deduplicationStrategy || FULL_PAYLOAD_DEDUPLICATION_STRATEGY,
+            retentionHours: params?.settings?.retentionHours || 1
+        },
+        creator: creator?.id
+    }, { initLogger, canUserModifyProject })
+
+    return project
 
 }
 
@@ -147,14 +161,9 @@ const createProject = async (params, initLoggerFunc) => {
  * @param {object} params 
  * @param {string} params.title
  * @param {string} [params.slug]
- * @param {string[]} [params.indexes] 
- * @param {string[]} [params.rawIndexes] 
  * @param {string[]} [params.allowedOrigin]
- * @param {string} [params.deduplicationStrategy]
- * @param {string} [params.retentionHours]
- * @param {Function} initLoggerFunc
  */
-const updateProject = async (id, params, initLoggerFunc) => {
+const updateProject = async (id, params) => {
 
     if (!isValidObjectId(id)) {
         throw HttpError(INVALID_INPUT_ERR_CODE, INVALID_ID_ERR_MESSAGE)
@@ -167,25 +176,13 @@ const updateProject = async (id, params, initLoggerFunc) => {
 
     const v = new Validator(params, {
         title: "required|string",
-        indexes: "arrayUnique",
-        rawIndexes: "arrayUnique",
         allowedOrigin: "arrayUnique",
-        deduplicationStrategy: "string",
-        retentionHours: "numeric"
+
     });
 
     let match = await v.check();
     if (!match) {
         throw HttpError(INVALID_INPUT_ERR_CODE, v.errors);
-    }
-
-    if (params?.deduplicationStrategy === INDEX_ONLY_DEDUPLICATION_STRATEGY) {
-        const hasIndexes = params?.indexes && params.indexes.length > 0;
-        if (!hasIndexes) {
-            throw HttpError(INVALID_INPUT_ERR_CODE,
-                `Project "${project.title}" uses INDEX_ONLY deduplication but has no indexes defined. `
-            );
-        }
     }
 
     const session = await mongoose.startSession();
@@ -195,11 +192,7 @@ const updateProject = async (id, params, initLoggerFunc) => {
         {
             $set: sanitizeObject({
                 title: striptags(params?.title),
-                "settings.indexes": params?.indexes?.filter((n) => validateCustomIndex(n)),
-                "settings.rawIndexes": params?.rawIndexes?.filter((n) => validateCustomIndex(n)),
                 "settings.allowedOrigin": params?.allowedOrigin?.map((n) => striptags(n)),
-                "settings.deduplicationStrategy": params?.deduplicationStrategy || FULL_PAYLOAD_DEDUPLICATION_STRATEGY,
-                "settings.retentionHours": params?.retentionHours || 1
             })
         }
     )
@@ -207,7 +200,6 @@ const updateProject = async (id, params, initLoggerFunc) => {
     const updated = await updateProjectCache(id)
 
     updateAllowedOriginCache()?.catch(console.error)
-    initLoggerFunc(updated)
 
     return updated
 
@@ -260,29 +252,43 @@ const canUserReadProject = async (userId, projectId) => {
 /**
  * 
  * @param {string} id 
- * @param {Function}  getLogModelFunc
+ * @param {*} param1 
+ * @returns 
  */
-const removeProject = async (id, getLogModelFunc) => {
+const removeProject = async (id, { getLogModel }) => {
     const project = await getProjectFromCache(id)
     if (!project) {
         throw HttpError(NOT_FOUND_ERR_CODE, PROJECT_NOT_FOUND_ERR_MESSAGE)
     }
 
     const projectObjId = ObjectId.createFromHexString(id.toString());
-    const { log, logstamp } = await getLogModelFunc(id)
 
     await Promise.all([
         projectModel.findByIdAndDelete(id),
         projectUserModel.deleteMany({ project: projectObjId, }),
-        log.collection.drop(),
-        logstamp.collection.drop(),
-        probeModel.deleteMany({ project: projectObjId }),
-        widgetModel.deleteMany({ project: projectObjId })
-
+        bucketModel.updateMany({
+            projects: projectObjId
+        }, {
+            $pull: {
+                projects: projectObjId
+            }
+        })
     ])
 
-    return null
+    const emptyBuckets = bucketModel.find({
+        projects: { $size: 0 }
+    }).cursor();
 
+    for await (const bucket of emptyBuckets) {
+        const { log, logstamp } = await getLogModel(bucket._id.toString())
+        await Promise.all([
+            log.collection.drop(),
+            logstamp.collection.drop(),
+            bucketModel.findByIdAndDelete(bucket._id)
+        ])
+    }
+
+    return null
 }
 
 /**
@@ -472,29 +478,16 @@ const listUserFromProject = async (projectId) => {
     return list?.map(mapProjectUser);
 };
 
-const generateHourlyActivity = (activityMap, hoursToTrack) => {
-    return Array.from({ length: hoursToTrack }, (_, i) => {
-        const date = new Date(Date.now() - (hoursToTrack - 1 - i) * 60 * 60 * 1000);
-        const key = date.toISOString().slice(0, 13).replace('T', '-');
-        return activityMap.get(key) || 0;
-    });
-};
-
 /**
  * 
  * @param {string} userId 
  * @param {Function} getLogModelFunc 
  * @returns 
  */
-const getUsersDashboardProjectsStats = async (userId, getLogModelFunc) => {
+const getUsersProjectsStats = async (userId, getLogModelFunc) => {
     if (!isValidObjectId(userId)) {
         throw HttpError(INVALID_INPUT_ERR_CODE, INVALID_ID_ERR_MESSAGE);
     }
-
-    const HOURS_TO_TRACK = 7;
-    const MILLISECONDS_PER_HOUR = 60 * 60 * 1000;
-    const activityCutoff = new Date(Date.now() - HOURS_TO_TRACK * MILLISECONDS_PER_HOUR);
-
     // Get all user projects with project details in one query
     const usersProjects = await projectUserModel.aggregate([
         {
@@ -517,97 +510,194 @@ const getUsersDashboardProjectsStats = async (userId, getLogModelFunc) => {
                 'project.title': 1,
                 'project.slug': 1
             }
+        },
+        {
+            $sort: {
+                "project.title": 1
+            }
         }
     ]);
+
 
     if (!usersProjects.length) {
         return [];
     }
 
-    // Get all log models in parallel
-    const logModels = await Promise.all(
-        usersProjects.map(up => getLogModelFunc(up.project._id.toString()))
+    const projectIds = usersProjects.map((n) => n?.project?._id);
+
+    // Get buckets for all projects
+    const buckets = await bucketModel.find({
+        projects: {
+            $in: projectIds
+        }
+    });
+
+    // Create a map of projectId to array of bucket objects (with id and title)
+    const projectToBucketsMap = new Map();
+    buckets.forEach(bucket => {
+        bucket.projects.forEach(projectId => {
+            const projectIdStr = projectId.toString();
+            if (!projectToBucketsMap.has(projectIdStr)) {
+                projectToBucketsMap.set(projectIdStr, []);
+            }
+            projectToBucketsMap.get(projectIdStr).push({
+                id: bucket._id.toString(),
+                title: bucket.title
+            });
+        });
+    });
+
+    // Get all unique log models
+    const uniqueBucketIds = [...new Set(buckets.map(b => b._id.toString()))];
+
+    const logModelPromises = uniqueBucketIds.map(bucketId =>
+        getLogModelFunc(bucketId)
+            .then(logModel => ({ bucketId, logModel }))
+            .catch((err) => {
+                console.log('Error getting log model for bucket:', bucketId, err);
+                return null;
+            })
     );
+    const logModelsArray = await Promise.all(logModelPromises);
+    const logModelsMap = new Map(
+        logModelsArray
+            .filter(item => item !== null)
+            .map(({ bucketId, logModel }) => [bucketId, logModel])
+    );
+
 
     // Process all log aggregations in parallel
     const projectsWithStats = await Promise.allSettled(
-        usersProjects.map(async (userProject, index) => {
-            const { log } = logModels[index];
+        usersProjects.map(async (userProject) => {
             const project = userProject.project;
+            const projectId = project._id.toString();
+            const projectBuckets = projectToBucketsMap.get(projectId) || [];
+            const bucketIds = projectBuckets.map(b => b.id);
 
-            const [result] = await log.aggregate([
-                {
-                    $facet: {
-                        totalLogs: [
-                            { $group: { _id: null, total: { $sum: "$count" } } }
-                        ],
-                        lastLog: [
-                            { $sort: { updatedAt: -1 } },
-                            { $limit: 1 },
-                            { $project: { updatedAt: 1 } }
-                        ],
-                        activity: [
-                            { $match: { updatedAt: { $gte: activityCutoff } } },
+            if (!bucketIds || bucketIds.length === 0) {
+                // Return empty stats if no buckets found
+                return {
+                    id: projectId,
+                    title: project.title,
+                    slug: project.slug,
+                    buckets: [],
+                    status: 'inactive',
+                    lastLog: 'Never',
+                    totalLogs: 0,
+                    errorCount: 0,
+                    criticalCount: 0,
+                };
+            }
+
+            // Aggregate data from all buckets for this project
+            const allResults = await Promise.all(
+                bucketIds.map(async (bucketId) => {
+                    const logModelData = logModelsMap.get(bucketId);
+                    if (!logModelData) {
+                        console.log(`No log model for bucket: ${bucketId}`);
+                        return null;
+                    }
+
+                    const { log } = logModelData;
+
+                    try {
+                        const [result] = await log.aggregate([
                             {
-                                $group: {
-                                    _id: {
-                                        $dateToString: {
-                                            format: "%Y-%m-%d-%H",
-                                            date: "$updatedAt"
+                                $facet: {
+                                    totalLogs: [
+                                        { $group: { _id: null, total: { $sum: "$count" } } }
+                                    ],
+                                    lastLog: [
+                                        { $sort: { updatedAt: -1 } },
+                                        { $limit: 1 },
+                                        { $project: { updatedAt: 1 } }
+                                    ],
+
+                                    errorStats: [
+                                        {
+                                            $match: {
+                                                level: { $in: [ERROR_LOG_LEVEL, CRITICAL_LOG_LEVEL] }
+                                            }
+                                        },
+                                        {
+                                            $group: {
+                                                _id: "$level",
+                                                total: { $sum: "$count" }
+                                            }
                                         }
-                                    },
-                                    count: { $sum: "$count" }
-                                }
-                            },
-                            { $sort: { _id: 1 } }
-                        ],
-                        errorStats: [
-                            {
-                                $match: {
-                                    level: { $in: [ERROR_LOG_LEVEL, CRITICAL_LOG_LEVEL] }
-                                }
-                            },
-                            {
-                                $group: {
-                                    _id: "$level",
-                                    total: { $sum: "$count" }
+                                    ]
                                 }
                             }
-                        ]
+                        ]);
+
+                        return result;
+                    } catch (error) {
+
+                        return null;
+                    }
+                })
+            );
+
+            // Filter out null results and combine all data
+            const validResults = allResults.filter(r => r !== null);
+
+            if (validResults.length === 0) {
+                return {
+                    id: projectId,
+                    title: project.title,
+                    slug: project.slug,
+                    buckets: projectBuckets,
+                    status: 'inactive',
+                    lastLog: 'Never',
+                    totalLogs: 0,
+                    errorCount: 0,
+                    criticalCount: 0,
+                };
+            }
+
+            // Combine results from all buckets
+            let totalLogs = 0;
+            let lastLogDate = null;
+            const combinedErrorStats = new Map();
+
+            validResults.forEach(result => {
+                // Sum total logs
+                totalLogs += result.totalLogs[0]?.total || 0;
+
+                // Find most recent last log
+                if (result.lastLog[0]) {
+                    const currentLastLog = new Date(result.lastLog[0].updatedAt);
+                    if (!lastLogDate || currentLastLog > lastLogDate) {
+                        lastLogDate = currentLastLog;
                     }
                 }
-            ]);
 
-            const errorStatsMap = new Map(
-                result.errorStats.map(item => [item._id, item.total])
-            );
-
-            const activityMap = new Map(
-                result.activity.map(item => [item._id, item.count])
-            );
-
-            const activity = generateHourlyActivity(activityMap, HOURS_TO_TRACK);
-            const lastLogData = result.lastLog[0];
+                // Combine error stats
+                result.errorStats.forEach(item => {
+                    const existing = combinedErrorStats.get(item._id) || 0;
+                    combinedErrorStats.set(item._id, existing + item.total);
+                });
+            });
 
             return {
-                id: project._id?.toString(),
+                id: projectId,
                 title: project.title,
                 slug: project.slug,
-                status: lastLogData && isRecent(lastLogData.updatedAt) ? 'active' : 'inactive',
-                lastLog: lastLogData ? moment(lastLogData.updatedAt).fromNow() : 'Never',
-                totalLogs: result.totalLogs[0]?.total || 0,
-                errorCount: errorStatsMap.get(ERROR_LOG_LEVEL) || 0,
-                criticalCount: errorStatsMap.get(CRITICAL_LOG_LEVEL) || 0,
-                activity
+                buckets: projectBuckets,
+                status: lastLogDate && isRecent(lastLogDate) ? 'active' : 'inactive',
+                lastLog: lastLogDate ? moment(lastLogDate).fromNow() : 'Never',
+                totalLogs,
+                errorCount: combinedErrorStats.get(ERROR_LOG_LEVEL) || 0,
+                criticalCount: combinedErrorStats.get(CRITICAL_LOG_LEVEL) || 0,
             };
         })
     );
+
 
     return projectsWithStats
         .filter(result => result.status === 'fulfilled')
         .map(result => result.value);
 };
-
 
 /**
  * 
@@ -702,29 +792,73 @@ const getProjectLogStats = async (projectId, getLogModelFunc) => {
         throw HttpError(INVALID_INPUT_ERR_CODE, `invalid id`)
     }
 
-    const { log: logModel } = await getLogModelFunc(projectId)
+    // Find all buckets that contain this project
+    const buckets = await bucketModel.find({
+        projects: ObjectId.createFromHexString(projectId)
+    });
 
-    const logsStats = await logModel.aggregate([
-        {
-            $group: {
-                _id: "$level",
-                count: { $sum: "$count" }
+    if (!buckets || buckets.length === 0) {
+        return [];
+    }
+
+    // Get log models for all buckets
+    const logModelPromises = buckets.map(bucket =>
+        getLogModelFunc(bucket._id.toString())
+            .then(logModel => ({ bucketId: bucket._id.toString(), logModel }))
+            .catch(() => null)
+    );
+    const logModelsArray = await Promise.all(logModelPromises);
+    const validLogModels = logModelsArray.filter(item => item !== null);
+
+    if (validLogModels.length === 0) {
+        return [];
+    }
+
+    // Aggregate stats from all buckets
+    const allStats = await Promise.all(
+        validLogModels.map(async ({ logModel }) => {
+            try {
+                const { log } = logModel;
+                const stats = await log.aggregate([
+                    {
+                        $group: {
+                            _id: "$level",
+                            count: { $sum: "$count" }
+                        }
+                    },
+                    {
+                        $project: {
+                            level: "$_id",
+                            count: 1,
+                            _id: 0
+                        }
+                    }
+                ]);
+                return stats;
+            } catch (error) {
+                return [];
             }
-        },
-        {
-            $project: {
-                level: "$_id",
-                count: 1,
-                _id: 0
-            }
-        },
-        {
-            $sort: { count: -1 } // Optional: sort by count descending
-        }
-    ]);
+        })
+    );
 
+    // Combine stats from all buckets by level
+    const combinedStatsMap = new Map();
 
-    return logsStats
+    allStats.flat().forEach(stat => {
+        const existing = combinedStatsMap.get(stat.level) || 0;
+        combinedStatsMap.set(stat.level, existing + stat.count);
+    });
+
+    // Convert map back to array format
+    const logsStats = Array.from(combinedStatsMap.entries()).map(([level, count]) => ({
+        level,
+        count
+    }));
+
+    // Sort by count descending
+    logsStats.sort((a, b) => b.count - a.count);
+
+    return logsStats;
 }
 
 
@@ -738,7 +872,7 @@ module.exports = {
     addUserToProject,
     removeUserFromProject,
     listUserFromProject,
-    getUsersDashboardProjectsStats,
+    getUsersProjectsStats,
     findProjectById,
     findProjectBySlug,
     canUserReadProject,

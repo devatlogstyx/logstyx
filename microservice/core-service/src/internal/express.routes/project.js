@@ -4,8 +4,7 @@ const express = require("express");
 
 const router = express.Router();
 const { asyncHandler } = require("common/function");
-const { ProjectCreate, ProjectRemove, ProjectPaginate, ProjectAddUser, ProjectRemoveUser, ProjectListUser, ProjectUpdate, ProjectGet, ProjectGetLogStatistic, ProjectPaginateLogs, ProjectListDistinctValues, ProjectListTimeline } = require("../express.controller/project");
-const { LogGetTimelineByKey } = require("../express.controller/log");
+const { ProjectCreate, ProjectRemove, ProjectPaginate, ProjectAddUser, ProjectRemoveUser, ProjectListUser, ProjectUpdate, ProjectGet, ProjectGetLogStatistic } = require("../express.controller/project");
 
 
 router.post("/", asyncHandler(ProjectCreate));
@@ -18,10 +17,6 @@ router.patch("/:id/users/:userId", asyncHandler(ProjectAddUser));
 router.delete("/:id/users/:userId", asyncHandler(ProjectRemoveUser));
 router.get("/:id/users", asyncHandler(ProjectListUser));
 router.get("/:id/logs-statistic", asyncHandler(ProjectGetLogStatistic));
-router.get("/:id/logs/field-values", asyncHandler(ProjectListDistinctValues));
-router.get("/:id/logs", asyncHandler(ProjectPaginateLogs));
-router.get("/:id/logs/timeline", asyncHandler(ProjectListTimeline));
-router.get("/:id/logs/:key/timeline", asyncHandler(LogGetTimelineByKey));
 
 
 module.exports = router;

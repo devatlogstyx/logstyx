@@ -6,35 +6,12 @@ const { FULL_PAYLOAD_DEDUPLICATION_STRATEGY, INDEX_ONLY_DEDUPLICATION_STRATEGY, 
 
 const SettingSchema = new mongoose.Schema(
     {
-        indexes: { // indexed field but hashed,
-            type: [String],
-            index: true,
-        },
-        rawIndexes: { // indexed field without being hashed
-            type: [String],
-            index: true,
-        },
+       
         allowedOrigin: {
             type: [String],
             index: true,
         },
-        retentionHours: {
-            type: Number,
-            index: true,
-        },
-        deduplicationStrategy: {
-            type: String,
-            index: true,
-            enum: {
-                values: [
-                    FULL_PAYLOAD_DEDUPLICATION_STRATEGY,
-                    INDEX_ONLY_DEDUPLICATION_STRATEGY,
-                    NONE_DEDUPLICATION_STRATEGY
-                ],
-                message: '{VALUE} is not supported'
-            },
-            default: FULL_PAYLOAD_DEDUPLICATION_STRATEGY
-        },
+       
     }
 )
 const projectSchema = new mongoose.Schema(

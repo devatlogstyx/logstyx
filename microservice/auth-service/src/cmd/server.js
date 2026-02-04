@@ -1,17 +1,17 @@
 //@ts-check
 
 require("dotenv").config()
-const { connectToDB } = require("./../shared/mongoose");
-const { logger } = require("../shared/logger/index.js");
+const { connectToDB } = require("../shared/mongoose/index.js");
 const { Server } = require("jsonrpc-ws");
 const { useRPCWebsocket } = require("common/hooks");
-
+const { logger } = require("../shared/logger/index.js");
+const { seedUser } = require("../internal/service/user.js");
 
 (async () => {
     await connectToDB();
-    const { seedUser } = require("../internal/service/user.js");
+
     const { num2Floor } = require("common/function")
-    const app = require("./../shared/express/app.js");
+    const app = require("../shared/express/app.js");
     const http = require('http');
 
     /**
@@ -35,13 +35,14 @@ const { useRPCWebsocket } = require("common/hooks");
     server.on('error', logger.error);
     server.on('listening', () => console.log("server up", port));
 
-    seedUser().catch(logger.error)
-
     // @ts-ignore
     const { server: rpc } = useRPCWebsocket({
         Server,
         Log: logger
     });
 
-    require("./rpc-websockets").init(rpc({ server, path: "/rpc" }));
+    require("./rpc-websockets.js").init(rpc({ server, path: "/rpc" }));
+
+    await seedUser()
+
 })();

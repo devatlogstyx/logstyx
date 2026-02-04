@@ -2,7 +2,7 @@
 
 import { ActionIcon, Badge, Button, Code, Loader, Menu, NumberInput, Pagination, Select, Table, Tooltip } from "@mantine/core"
 import { getLevelColor, getNestedValue } from "../../../utils/function"
-import { FiActivity, FiCheck, FiColumns, FiInfo, FiLoader, FiMoreVertical, FiPlus, FiX } from "react-icons/fi"
+import { FiActivity, FiCheck, FiColumns, FiInfo,  FiPlus, FiX } from "react-icons/fi"
 import { LuLoaderCircle } from "react-icons/lu"
 const {
     Thead,
@@ -12,13 +12,11 @@ const {
     Th
 } = Table
 import moment from "moment-timezone"
-import useTabLogs from "./hooks"
-import SecondaryButton from "../../../component/button/SecondaryButton"
+import useLogView from "./hooks"
 import ExportLogs from "../ExportLog"
 
-const TabLogs = ({
-    project,
-    logStatistic = []
+const LogView = ({
+    bucket,
 }) => {
     const {
         list,
@@ -44,8 +42,8 @@ const TabLogs = ({
         fieldValues,
         refetchData,
         isRawIndex
-    } = useTabLogs({
-        project
+    } = useLogView({
+        bucket
     })
 
     if (isLoading) {
@@ -60,7 +58,7 @@ const TabLogs = ({
             <div className="p-6 rounded-md border shadow-sm bg-white flex flex-col gap-4 overflow-x-auto">
                 <div className="flex justify-between items-center mb-4">
                     <h3 className="text-xl font-semibold">Recent Logs</h3>
-                    <ExportLogs projectId={project?.id} />
+                    <ExportLogs bucketId={bucket?.id} />
                 </div>
                 <div className="flex justify-end">
                     <div className="flex flex-col gap-3">
@@ -75,7 +73,7 @@ const TabLogs = ({
                                 </Menu.Target>
                                 <Menu.Dropdown>
                                     <Menu.Label>Toggle Columns</Menu.Label>
-                                    {project?.settings?.indexes?.map((col) => (
+                                    {bucket?.settings?.indexes?.map((col) => (
                                         <Menu.Item
                                             key={col}
                                             onClick={() => toggleColumn(col)}
@@ -189,7 +187,7 @@ const TabLogs = ({
                             <Th onClick={() => handleSort('count')} style={{ cursor: 'pointer' }}>
                                 Count<SortIcon column="count" />
                             </Th>
-                            {project?.settings?.indexes?.map((n) =>
+                            {bucket?.settings?.indexes?.map((n) =>
                                 visibleColumns[n] && (
                                     <Th
                                         key={n}
@@ -220,7 +218,7 @@ const TabLogs = ({
                                 <Td>
                                     <span className="font-medium">{log.count}</span>
                                 </Td>
-                                {project?.settings?.indexes?.map((n) =>
+                                {bucket?.settings?.indexes?.map((n) =>
                                     visibleColumns[n] && (
                                         <Td key={n} className="max-w-xs truncate">
                                             {getNestedValue(log, n)}
@@ -263,4 +261,4 @@ const TabLogs = ({
     )
 }
 
-export default TabLogs
+export default LogView

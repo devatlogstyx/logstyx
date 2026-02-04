@@ -10,7 +10,7 @@ const alertSchema = new mongoose.Schema({
         maxLength: 128,
         index: true
     },
-    project: {
+    bucket: {
         type: ObjectId,
         required: true,
         index: true

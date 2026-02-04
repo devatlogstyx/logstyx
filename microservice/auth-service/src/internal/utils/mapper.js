@@ -8,7 +8,6 @@ module.exports = {
             fullname: json?.fullname,
             image: json?.image,
             permissions: json?.permissions,
-            lastLogin: json?.lastLogin
         }
     },
     mapUserInvitation: (json) => {

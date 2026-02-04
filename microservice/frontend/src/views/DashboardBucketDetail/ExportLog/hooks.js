@@ -1,9 +1,9 @@
 //@ts-check
 
-import React, { useState } from "react";
-import { listProjectTimeline } from "../../../api/project";
+import React, { useCallback, useState } from "react";
+import { listBucketTimeline } from "../../../api/bucket";
 
-const useExportLog = ({ projectId }) => {
+const useExportLog = ({ bucketId }) => {
 
     const [opened, setOpened] = useState(false);
     const [isExporting, setIsExporting] = useState(false);
@@ -14,10 +14,10 @@ const useExportLog = ({ projectId }) => {
 
     const controller = React.useMemo(() => new AbortController(), []);
 
-    const fetchPage = async (page) => {
-        const response = await listProjectTimeline(controller.signal, projectId, { limit: 50, page });
+    const fetchPage = useCallback(async (page) => {
+        const response = await listBucketTimeline(controller.signal, bucketId, { limit: 50, page });
         return response;
-    };
+    }, [])
 
     const exportLogs = async () => {
         setOpened(true);
@@ -53,7 +53,7 @@ const useExportLog = ({ projectId }) => {
             const url = URL.createObjectURL(blob);
             const link = document.createElement('a');
             link.href = url;
-            link.download = `logstyx-${projectId}-${new Date().toISOString().split('T')[0]}.jsonl`;
+            link.download = `logstyx-${bucketId}-${new Date().toISOString().split('T')[0]}.jsonl`;
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);

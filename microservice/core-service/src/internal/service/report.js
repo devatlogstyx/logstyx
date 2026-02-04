@@ -2,15 +2,15 @@
 const mongoose = require("mongoose");
 const { Validator } = require("node-input-validator");
 const { HttpError, createSlug, parseSortBy, num2Ceil, num2Floor, hashString } = require("common/function");
-const { getProjectFromCache, getWidgetFromCache, getReportFromCache, updateWidgetDataCache, updateWidgetCache, updateReportCache } = require("../../shared/cache");
+const { getWidgetFromCache, getReportFromCache, updateWidgetDataCache, updateWidgetCache, updateReportCache, getBucketFromCache } = require("../../shared/cache");
 const reportModel = require("../model/report.model");
 const widgetModel = require("../model/widget.model");
-const projectModel = require("../model/project.model");
 const { buildMongoFilterQuery } = require("../utils/helper");
 const { decryptAndDecompress } = require("common/function");
 const { NOT_FOUND_ERR_CODE, NOT_FOUND_ERR_MESSAGE, INVALID_INPUT_ERR_CODE, FORBIDDEN_ERR_CODE, WIDGET_TEMPLATES, PRIVATE_REPORT_VISIBILITY, WIDGET_CACHE_KEY, INVALID_ID_ERR_MESSAGE } = require("common/constant");
 const { isValidObjectId } = require("../../shared/mongoose");
 const { submitRemoveCache } = require("../../shared/provider/mq-producer");
+const bucketModel = require("../model/bucket.model");
 
 const { ObjectId } = mongoose.Types;
 
@@ -303,7 +303,7 @@ const createWidget = async (reportId, payload) => {
 
 
   const v = new Validator(payload, {
-    project: "required|string",
+    bucket: "required|string",
     template: "required|string|in:total_value,line_chart,bar_chart,table,pie_chart",
     title: "required|string|minLength:1|maxLength:128",
     description: "string",
@@ -312,8 +312,8 @@ const createWidget = async (reportId, payload) => {
   const ok = await v.check();
   if (!ok) throw HttpError(INVALID_INPUT_ERR_CODE, v.errors);
 
-  const proj = await projectModel.findById(payload.project);
-  if (!proj) throw HttpError(NOT_FOUND_ERR_CODE, NOT_FOUND_ERR_MESSAGE);
+  const bucket = await bucketModel.findById(payload.bucket);
+  if (!bucket) throw HttpError(NOT_FOUND_ERR_CODE, NOT_FOUND_ERR_MESSAGE);
 
   if (!validateWidgetConfig(payload.template, payload.config)) {
     throw HttpError(INVALID_INPUT_ERR_CODE, "Invalid widget config");
@@ -321,7 +321,7 @@ const createWidget = async (reportId, payload) => {
 
   const created = await widgetModel.create({
     report: ObjectId.createFromHexString(reportId),
-    project: ObjectId.createFromHexString(payload.project),
+    bucket: ObjectId.createFromHexString(payload.bucket),
     template: payload.template,
     title: payload.title,
     description: payload?.description,
@@ -351,28 +351,27 @@ const findWidgetById = async (id) => {
 /**
  * 
  * @param {*} report 
- * @param {*} includeProjectInfo 
+ * @param {*} includeBucketInfo 
  * @returns 
  */
-const listWidgets = async (report, includeProjectInfo = false) => {
+const listWidgets = async (report, includeBucketInfo = false) => {
 
   if (!isValidObjectId(report.id) && !isValidObjectId(report._id)) {
     throw HttpError(INVALID_INPUT_ERR_CODE, INVALID_ID_ERR_MESSAGE)
   }
 
   const q = widgetModel.find({ report: ObjectId.createFromHexString(report.id || report._id.toString()) });
-  if (includeProjectInfo) {
-    q.populate('project');
+  if (includeBucketInfo) {
+    q.populate('bucket');
   }
   const list = await q;
   return list.map(w => {
     const json = w.toJSON();
-    if (includeProjectInfo && json.project) {
-      json.project = {
-        id: json.project.id?.toString(),
-        title: json.project.title,
-        slug: json.project.slug,
-        settings: json.project.settings
+    if (includeBucketInfo && json.bucket) {
+      json.bucket = {
+        id: json.bucket.id?.toString(),
+        title: json.bucket.title,
+        settings: json.bucket.settings
       };
     }
 
@@ -412,7 +411,7 @@ const updateWidget = async (widgetId, payload, getLogModelFunc) => {
   if (payload.description !== undefined) update.description = payload.description;
   if (payload.template !== undefined) update.template = payload.template;
   if (payload.config !== undefined) update.config = payload.config;
-  if (payload.project) update.project = ObjectId.createFromHexString(payload.project);
+  if (payload.bucket) update.bucket = ObjectId.createFromHexString(payload.bucket);
   if (payload?.position) update.position = payload?.position
 
   await widgetModel.findByIdAndUpdate(widgetId, { $set: update });
@@ -483,13 +482,13 @@ const buildTimeRangeFilter = (timeRange) => {
 /**
  * 
  * @param {*} widget 
- * @param {*} project 
+ * @param {*} bucket 
  * @param {*} getLogModelFunc 
  * @returns 
  */
-const executeTotalValueQuery = async (widget, project, getLogModelFunc) => {
-  const { log } = await getLogModelFunc(project.id);
-  const filters = buildMongoFilterQuery(widget.config?.filters || {}, project);
+const executeTotalValueQuery = async (widget, bucket, getLogModelFunc) => {
+  const { log } = await getLogModelFunc(bucket.id);
+  const filters = buildMongoFilterQuery(widget.config?.filters || {}, bucket);
   const timeFilter = widget.config?.timeRange ? { updatedAt: buildTimeRangeFilter(widget.config.timeRange) } : {};
   const query = { ...filters, ...timeFilter };
   const op = widget.config.operation;
@@ -505,7 +504,7 @@ const executeTotalValueQuery = async (widget, project, getLogModelFunc) => {
 
   const fieldPath = widget.config.field;
   if (!fieldPath) throw HttpError(INVALID_INPUT_ERR_CODE, 'Field is required for operation');
-  const isRaw = project?.settings?.rawIndexes?.includes(fieldPath);
+  const isRaw = bucket?.settings?.rawIndexes?.includes(fieldPath);
   const field = isRaw ? `$raw.${fieldPath.replace(/\./g, '_')}` : `$raw.${fieldPath.replace(/\./g, '_')}`;
 
   // NEW: Latest operation
@@ -612,22 +611,22 @@ const formatTimeLabel = (isoString, interval) => {
 /**
  * 
  * @param {*} widget 
- * @param {*} project 
+ * @param {*} bucket 
  * @param {*} getLogModelFunc 
  * @returns 
  */
-const executeLineChartQuery = async (widget, project, getLogModelFunc) => {
-  const { logstamp } = await getLogModelFunc(project.id);
+const executeLineChartQuery = async (widget, bucket, getLogModelFunc) => {
+  const { logstamp } = await getLogModelFunc(bucket.id);
   const timeRange = widget.config?.timeRange || 'last_24h';
   const timeMatch = { createdAt: buildTimeRangeFilter(timeRange) };
-  const filters = buildMongoFilterQuery(widget.config?.filters || {}, project);
+  const filters = buildMongoFilterQuery(widget.config?.filters || {}, bucket);
   const match = { ...timeMatch, ...filters };
   const interval = widget.config?.groupByTime || '1h';
 
   // Check if grouping is disabled
   const noGrouping = widget.config?.groupByTime === 'none';
 
-  const bucket = noGrouping ? '$createdAt' : bucketForInterval('$createdAt', interval);
+  const groupingId = noGrouping ? '$createdAt' : bucketForInterval('$createdAt', interval);
 
   const metric = widget.config?.metric;
 
@@ -649,7 +648,7 @@ const executeLineChartQuery = async (widget, project, getLogModelFunc) => {
     // Original grouped count logic
     const pipeline = [
       { $match: match },
-      { $group: { _id: bucket, value: { $sum: 1 } } },
+      { $group: { _id: groupingId, value: { $sum: 1 } } },
       { $sort: { _id: 1 } },
       { $project: { label: '$_id', value: 1, _id: 0 } }
     ];
@@ -667,12 +666,12 @@ const executeLineChartQuery = async (widget, project, getLogModelFunc) => {
     throw HttpError(INVALID_INPUT_ERR_CODE, 'Metric must be "count" or "operation:field"');
   }
 
-  const isRaw = project?.settings?.rawIndexes?.includes(fieldPath);
+  const isRaw = bucket?.settings?.rawIndexes?.includes(fieldPath);
   if (!isRaw) {
-    throw HttpError(INVALID_INPUT_ERR_CODE, `Field "${fieldPath}" must be in project rawIndexes`);
+    throw HttpError(INVALID_INPUT_ERR_CODE, `Field "${fieldPath}" must be in bucket rawIndexes`);
   }
 
-  const { log } = await getLogModelFunc(project.id);
+  const { log } = await getLogModelFunc(bucket.id);
   const rawKey = `raw.${fieldPath.replace(/\./g, '_')}`;
 
   if (noGrouping) {
@@ -741,13 +740,13 @@ const resolveGroupByField = (groupBy) => {
 /**
  * 
  * @param {*} widget 
- * @param {*} project 
+ * @param {*} bucket 
  * @param {*} getLogModelFunc 
  * @returns 
  */
-const executeBarChartQuery = async (widget, project, getLogModelFunc) => {
-  const { log } = await getLogModelFunc(project.id);
-  const filters = buildMongoFilterQuery(widget.config?.filters || {}, project);
+const executeBarChartQuery = async (widget, bucket, getLogModelFunc) => {
+  const { log } = await getLogModelFunc(bucket.id);
+  const filters = buildMongoFilterQuery(widget.config?.filters || {}, bucket);
   const timeFilter = widget.config?.timeRange ? { updatedAt: buildTimeRangeFilter(widget.config.timeRange) } : {};
   const match = { ...filters, ...timeFilter };
 
@@ -773,9 +772,9 @@ const executeBarChartQuery = async (widget, project, getLogModelFunc) => {
     }
 
     // Check if field is in rawIndexes
-    const isRaw = project?.settings?.rawIndexes?.includes(fieldPath);
+    const isRaw = bucket?.settings?.rawIndexes?.includes(fieldPath);
     if (!isRaw) {
-      throw HttpError(INVALID_INPUT_ERR_CODE, `Field "${fieldPath}" must be in project rawIndexes for aggregation`);
+      throw HttpError(INVALID_INPUT_ERR_CODE, `Field "${fieldPath}" must be in bucket rawIndexes for aggregation`);
     }
 
     const rawKey = `$raw.${fieldPath.replace(/\./g, '_')}`;
@@ -819,13 +818,13 @@ const executeBarChartQuery = async (widget, project, getLogModelFunc) => {
 /**
  * 
  * @param {*} widget 
- * @param {*} project 
+ * @param {*} bucket 
  * @param {*} getLogModelFunc 
  * @returns 
  */
-const executeTableQuery = async (widget, project, getLogModelFunc) => {
-  const { log } = await getLogModelFunc(project.id);
-  const filters = buildMongoFilterQuery(widget.config?.filters || {}, project);
+const executeTableQuery = async (widget, bucket, getLogModelFunc) => {
+  const { log } = await getLogModelFunc(bucket.id);
+  const filters = buildMongoFilterQuery(widget.config?.filters || {}, bucket);
   const sortBy = widget.config?.sortBy || 'updatedAt:desc';
   const limit = Math.min(Number(widget.config?.limit || 50), 200);
   const [field, order] = (sortBy || 'updatedAt:desc').split(':');
@@ -856,13 +855,13 @@ const executeTableQuery = async (widget, project, getLogModelFunc) => {
 /**
  * 
  * @param {*} widget 
- * @param {*} project 
+ * @param {*} bucket 
  * @param {*} getLogModelFunc 
  * @returns 
  */
-const executePieChartQuery = async (widget, project, getLogModelFunc) => {
-  const { log } = await getLogModelFunc(project.id);
-  const filters = buildMongoFilterQuery(widget.config?.filters || {}, project);
+const executePieChartQuery = async (widget, bucket, getLogModelFunc) => {
+  const { log } = await getLogModelFunc(bucket.id);
+  const filters = buildMongoFilterQuery(widget.config?.filters || {}, bucket);
   const timeFilter = widget.config?.timeRange ? { updatedAt: buildTimeRangeFilter(widget.config.timeRange) } : {};
   const match = { ...filters, ...timeFilter };
 
@@ -885,9 +884,9 @@ const executePieChartQuery = async (widget, project, getLogModelFunc) => {
       throw HttpError(INVALID_INPUT_ERR_CODE, 'Metric must be "count" or "operation:field"');
     }
 
-    const isRaw = project?.settings?.rawIndexes?.includes(fieldPath);
+    const isRaw = bucket?.settings?.rawIndexes?.includes(fieldPath);
     if (!isRaw) {
-      throw HttpError(INVALID_INPUT_ERR_CODE, `Field "${fieldPath}" must be in project rawIndexes`);
+      throw HttpError(INVALID_INPUT_ERR_CODE, `Field "${fieldPath}" must be in bucket rawIndexes`);
     }
 
     const rawKey = `$raw.${fieldPath.replace(/\./g, '_')}`;
@@ -929,19 +928,19 @@ const executePieChartQuery = async (widget, project, getLogModelFunc) => {
  * @returns 
  */
 const executeWidgetQuery = async (widget, getLogModelFunc) => {
-  const project = await getProjectFromCache(widget.project?.toString?.() || widget.project);
-  if (!project) throw HttpError(NOT_FOUND_ERR_CODE, NOT_FOUND_ERR_MESSAGE);
+  const bucket = await getBucketFromCache(widget.bucket?.toString?.() || widget.bucket);
+  if (!bucket) throw HttpError(NOT_FOUND_ERR_CODE, NOT_FOUND_ERR_MESSAGE);
   switch (widget.template) {
     case 'total_value':
-      return await executeTotalValueQuery(widget, project, getLogModelFunc);
+      return await executeTotalValueQuery(widget, bucket, getLogModelFunc);
     case 'line_chart':
-      return await executeLineChartQuery(widget, project, getLogModelFunc);
+      return await executeLineChartQuery(widget, bucket, getLogModelFunc);
     case 'bar_chart':
-      return await executeBarChartQuery(widget, project, getLogModelFunc);
+      return await executeBarChartQuery(widget, bucket, getLogModelFunc);
     case 'table':
-      return await executeTableQuery(widget, project, getLogModelFunc);
+      return await executeTableQuery(widget, bucket, getLogModelFunc);
     case 'pie_chart':
-      return await executePieChartQuery(widget, project, getLogModelFunc);
+      return await executePieChartQuery(widget, bucket, getLogModelFunc);
     default:
       throw HttpError(INVALID_INPUT_ERR_CODE, `Unknown template: ${widget.template}`);
   }

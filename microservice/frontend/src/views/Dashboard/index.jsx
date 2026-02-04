@@ -26,7 +26,7 @@ const DashboardPage = () => {
         <Container className="py-8 flex flex-col gap-2" >
             <div>
                 <Title className="text-3xl font-bold">Projects</Title>
-                <Text className="text-gray-600">Manage logs and credentials</Text>
+                <Text className="text-gray-600">Manage credentials</Text>
             </div>
             <ProjectViews />
         </Container>

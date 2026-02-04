@@ -4,7 +4,7 @@ import { useForm } from "@mantine/form";
 import React, { useCallback, useEffect, useState } from "react";
 import { useErrorMessage } from "../../hooks/useMessage";
 import { createProbe, paginateProbe, removeProbe, updateProbe } from "../../api/probes";
-import { listAllMyProject } from "../../api/project";
+import { listMyProject } from "../../api/project";
 import { useConfirmDialog } from "../../hooks/useConfirmDialog";
 
 
@@ -52,7 +52,7 @@ const useDashboardProbes = () => {
 
     const fetchProjects = useCallback(async () => {
         try {
-            const data = await listAllMyProject(controller.signal);
+            const data = await listMyProject(controller.signal);
 
             // @ts-ignore
             setProjects(data?.map((n) => {

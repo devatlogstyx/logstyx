@@ -3,7 +3,7 @@ import { Button, Progress, Text, Stack, Group, Modal } from '@mantine/core';
 import { IoAlertCircle, IoCheckmark, IoDownload } from 'react-icons/io5';
 import useExportLog from './hooks';
 
-const ExportLogs = ({ projectId }) => {
+const ExportLogs = ({ bucketId }) => {
 
     const {
         totalPages,
@@ -14,7 +14,7 @@ const ExportLogs = ({ projectId }) => {
         setOpened,
         success,
         error
-    } = useExportLog({ projectId })
+    } = useExportLog({ bucketId })
 
     // Calculate percentage for the progress bar
     const progressPercentage = totalPages > 0 ? (progress / totalPages) * 100 : 0;
@@ -31,7 +31,7 @@ const ExportLogs = ({ projectId }) => {
             <Modal
                 opened={opened}
                 onClose={() => !isExporting && setOpened(false)}
-                title="Exporting Project Logs"
+                title="Exporting Logs"
                 closeOnClickOutside={false}
                 closeOnEscape={false}
                 withCloseButton={!isExporting}

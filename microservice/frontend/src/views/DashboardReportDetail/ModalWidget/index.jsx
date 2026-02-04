@@ -16,10 +16,11 @@ const ModalWidget = ({
     onClose,
     onAddWidget,
     form,
-    projects,
+    buckets,
+    isSubmitting
 }) => {
 
-    const selectedProject = projects?.find(p => String(p.id) === form.values.project);
+    const selectedBucket = buckets?.find(p => String(p.id) === form.values.bucket);
 
     return (
         <>
@@ -57,14 +58,12 @@ const ModalWidget = ({
                         placeholder="Description"
                     />
 
-                    {/* Project Selection */}
                     <Select
-                        label="Data Source (Project)"
-                        description="Which project's logs to query"
-                        {...form.getInputProps('project')}
+                        label="Data Source (Bucket)"
+                        description="Which Bucket's logs to query"
+                        {...form.getInputProps('bucket')}
                         data={[
-                            { value: '', label: 'Select Project' },
-                            ...(projects || []).map(p => ({ value: String(p.id), label: p.title }))
+                            ...(buckets || []).map(p => ({ value: String(p.id), label: p.title }))
                         ]}
                         searchable
                         required
@@ -91,10 +90,10 @@ const ModalWidget = ({
                             {['sum', 'avg', 'min', 'max', 'latest', 'first'].includes(form.values.config.operation) && (
                                 <Select
                                     label="Field"
-                                    description="Numeric field from project's rawIndexes"
+                                    description="Numeric field from bucket's rawIndexes"
                                     placeholder="Select field"
                                     {...form.getInputProps('config.field')}
-                                    data={selectedProject?.settings?.rawIndexes?.map(idx => ({
+                                    data={selectedBucket?.settings?.rawIndexes?.map(idx => ({
                                         value: idx,
                                         label: idx
                                     })) || []}
@@ -138,7 +137,7 @@ const ModalWidget = ({
                                                 metricField: v,
                                                 metric: `${form.values.config.metricOp}:${v}`
                                             })}
-                                            data={selectedProject?.settings?.rawIndexes?.map(idx => ({
+                                            data={selectedBucket?.settings?.rawIndexes?.map(idx => ({
                                                 value: idx,
                                                 label: idx
                                             })) || []}
@@ -205,7 +204,7 @@ const ModalWidget = ({
                                                 };
                                                 form.setFieldValue('config', newConfig);
                                             }}
-                                            data={selectedProject?.settings?.rawIndexes?.map(idx => ({
+                                            data={selectedBucket?.settings?.rawIndexes?.map(idx => ({
                                                 value: idx,
                                                 label: idx
                                             })) || []}
@@ -217,13 +216,13 @@ const ModalWidget = ({
 
                             <Select
                                 label="Group By"
-                                description="Field to group by (from project indexes)"
+                                description="Field to group by (from bucket indexes)"
                                 placeholder="Select field"
                                 value={form.values.config.groupBy || ''}
                                 onChange={(v) => form.setFieldValue('config', { ...form.values.config, groupBy: v })}
                                 data={[
                                     { value: 'level', label: 'level (Log Level)' },
-                                    ...(selectedProject?.settings?.indexes?.map(idx => ({
+                                    ...(selectedBucket?.settings?.indexes?.map(idx => ({
                                         value: idx,
                                         label: idx
                                     })) || [])
@@ -274,7 +273,7 @@ const ModalWidget = ({
                                                 metricField: v,
                                                 metric: `${form.values.config.metricOp}:${v}`
                                             })}
-                                            data={selectedProject?.settings?.rawIndexes?.map(idx => ({
+                                            data={selectedBucket?.settings?.rawIndexes?.map(idx => ({
                                                 value: idx,
                                                 label: idx
                                             })) || []}
@@ -293,7 +292,7 @@ const ModalWidget = ({
                                 onChange={(v) => form.setFieldValue('config', { ...form.values.config, groupBy: v })}
                                 data={[
                                     { value: 'level', label: 'level (Log Level)' },
-                                    ...(selectedProject?.settings?.indexes?.map(idx => ({
+                                    ...(selectedBucket?.settings?.indexes?.map(idx => ({
                                         value: idx,
                                         label: idx
                                     })) || [])
@@ -327,7 +326,7 @@ const ModalWidget = ({
                                     { value: 'updatedAt', label: 'Updated At' },
                                     { value: 'level', label: 'Level' },
                                     { value: 'count', label: 'Count' },
-                                    ...(selectedProject?.settings?.indexes?.map(idx => ({
+                                    ...(selectedBucket?.settings?.indexes?.map(idx => ({
                                         value: idx,
                                         label: idx
                                     })) || [])
@@ -372,7 +371,7 @@ const ModalWidget = ({
                     {/* Actions */}
                     <div className="flex justify-end gap-2 pt-4">
                         <SecondaryButton variant="outline" onClick={onClose}>Cancel</SecondaryButton>
-                        <PrimaryButton type="submit">Create Widget</PrimaryButton>
+                        <PrimaryButton type="submit" disabled={isSubmitting} loading={isSubmitting}>Submit</PrimaryButton>
                     </div>
                 </form>
             </Modal>

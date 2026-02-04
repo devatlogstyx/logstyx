@@ -18,7 +18,6 @@ import { sumInt } from '../../utils/function';
 import { IoAlert, IoAlertCircle, IoTrendingDownOutline, IoWarning } from 'react-icons/io5';
 import useDashboardProjectDetail from './hooks';
 import TabOverview from './TabOverview';
-import TabLogs from './TabLogs';
 import TabUser from './TabUser';
 import UpdateSettings from './UpdateSettings';
 import { CRITICAL_LOG_LEVEL, ERROR_LOG_LEVEL, WARNING_LOG_LEVEL } from '../../utils/constant';
@@ -129,9 +128,6 @@ const DashboardProjectDetail = () => {
           <Tabs.Tab value="overview" leftSection={<FiInfo className="w-3.5 h-3.5" />}>
             Overview
           </Tabs.Tab>
-          <Tabs.Tab value="logs" leftSection={<FiActivity className="w-3.5 h-3.5" />}>
-            Logs
-          </Tabs.Tab>
           {
             canSeeUserTab &&
             <Tabs.Tab value="users" leftSection={<FiUsers className="w-3.5 h-3.5" />}>
@@ -146,15 +142,6 @@ const DashboardProjectDetail = () => {
             project={project}
           />
         </Tabs.Panel>
-
-        {/* Logs Tab */}
-        <Tabs.Panel value="logs" className="pt-8">
-          <TabLogs
-            project={project}
-            logStatistic={logStatistic}
-          />
-        </Tabs.Panel>
-
         {
           canSeeUserTab &&
           <Tabs.Panel value="users" className="pt-8">

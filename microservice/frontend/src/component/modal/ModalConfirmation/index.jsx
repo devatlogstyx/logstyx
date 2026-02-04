@@ -48,7 +48,7 @@ export default function ModalConfirm({
                 <SecondaryButton onClick={handleCancel} >
                     {cancelLabel}
                 </SecondaryButton>
-                <DangerButton disabled={loading} onClick={handleConfirm}>
+                <DangerButton disabled={loading} loading={loading} onClick={handleConfirm}>
                     {confirmLabel}
                 </DangerButton>
             </div>

@@ -2,7 +2,7 @@
 
 import React from "react";
 import { useErrorMessage } from "../../../hooks/useMessage";
-import { getUserDashboardProjectStats } from "../../../api/user";
+import { getUserProjectStats } from "../../../api/user";
 import { generateColor } from "../../../utils/function";
 
 const useProjectViews = () => {
@@ -17,7 +17,7 @@ const useProjectViews = () => {
     const fetchData = React.useCallback(async () => {
         try {
             setIsLoading(true)
-            const r = await getUserDashboardProjectStats(controller.signal)
+            const r = await getUserProjectStats(controller.signal)
             setProjects(r?.map((n) => {
                 return {
                     ...n,

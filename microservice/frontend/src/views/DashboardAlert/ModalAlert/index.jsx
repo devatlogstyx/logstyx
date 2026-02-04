@@ -6,7 +6,7 @@ import SecondaryButton from "../../../component/button/SecondaryButton"
 import PrimaryButton from "../../../component/button/PrimaryButton"
 import FilterBuilder from "../../../component/FilterBuilder"
 import SelectWebhook from "../../../component/select/SelectWebhook"
-import SelectUserProject from "../../../component/select/SelectUserProject"
+import SelectUserBucket from "../../../component/select/SelectUserBucket"
 
 const ModalAlert = ({
     modalOpened,
@@ -41,9 +41,9 @@ const ModalAlert = ({
                                     required
                                     {...form.getInputProps('title')}
                                 />
-                                <SelectUserProject
+                                <SelectUserBucket
                                     mode={`single`}
-                                    {...form.getInputProps('project')}
+                                    {...form.getInputProps('bucket')}
                                     required
                                 />
 
