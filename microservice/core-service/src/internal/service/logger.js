@@ -2,7 +2,7 @@
 
 const { mongoose, isValidObjectId } = require("./../../shared/mongoose");
 const { getProjectFromCache, getBucketFromCache } = require("../../shared/cache");
-const { HttpError, hashString, decryptSecret, createSlug, encrypt, decrypt, num2Ceil, num2Floor } = require("common/function");
+const { HttpError, hashString, decryptSecret, createSlug, num2Ceil, num2Floor } = require("common/function");
 const { NOT_FOUND_ERR_CODE, NOT_FOUND_ERR_MESSAGE, BROWSER_CLIENT_TYPE, INVALID_INPUT_ERR_CODE, INVALID_INPUT_ERR_MESSAGE, INVALID_ID_ERR_MESSAGE } = require("common/constant");
 const { validateOrigin, validateSignature, generateIndexedHashes, validateCustomIndex, generateRawValues, generateLogKey, evaluateBucketFilter } = require("../utils/helper");
 const projectModel = require("../model/project.model");
@@ -247,6 +247,8 @@ const processWriteLog = async ({ headers, body }) => {
 
     for await (const bucket of buckets) {
         await createLog(bucket.toJSON(), {
+            project_id: projectId,
+            project_title: project?.title,
             level,
             device,
             context,
@@ -266,6 +268,8 @@ const processWriteLog = async ({ headers, body }) => {
  * @param {object} params 
  * @param {object} params.device
  * @param {object} params.context
+ * @param {string} params.project_id
+ * @param {string} params.project_title
  * @param {object} params.data
  * @param {string} params.level
  * @param {string|number|Date} params.timestamp
@@ -291,22 +295,27 @@ const createLog = async (bucket, params) => {
     }
 
     const key = generateLogKey(params, bucket)
+    const context = {
+        ...params?.context ?? {},
+        project_id: params?.project_id,
+        project_title: params?.project_title
+    }
 
     const { log, logstamp } = await getLogModel(bucket?.id)
 
     const hashes = generateIndexedHashes({
-        context: params?.context,
+        context,
         data: params?.data
     }, bucket);
 
     // Generate raw values for rawIndexes
     const rawValues = generateRawValues({
-        context: params?.context,
+        context,
         data: params?.data
     }, bucket);
 
     const [compressedContext, compressedData] = await Promise.all([
-        compressAndEncrypt(params?.context),
+        compressAndEncrypt(context),
         compressAndEncrypt(params?.data)
     ])
 
@@ -375,7 +384,11 @@ const processCreateSelfLog = async (params) => {
     }).cursor()
 
     for await (const bucket of buckets) {
-        await createLog(bucket.toJSON(), params)
+        await createLog(bucket.toJSON(), {
+            ...params,
+            project_id: project?.id,
+            project_title: project?.title
+        })
     }
 
     return null
