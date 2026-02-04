@@ -4,7 +4,7 @@ const { mongoose, isValidObjectId } = require("./../../shared/mongoose");
 const { getProjectFromCache, getBucketFromCache } = require("../../shared/cache");
 const { HttpError, hashString, decryptSecret, createSlug, num2Ceil, num2Floor } = require("common/function");
 const { NOT_FOUND_ERR_CODE, NOT_FOUND_ERR_MESSAGE, BROWSER_CLIENT_TYPE, INVALID_INPUT_ERR_CODE, INVALID_INPUT_ERR_MESSAGE, INVALID_ID_ERR_MESSAGE } = require("common/constant");
-const { validateOrigin, validateSignature, generateIndexedHashes, validateCustomIndex, generateRawValues, generateLogKey, evaluateBucketFilter } = require("../utils/helper");
+const { validateOrigin, validateSignature, generateIndexedHashes, validateCustomIndex, generateRawValues, generateLogKey, evaluateBucketFilter,  HToMs, sanitizeFieldName } = require("../utils/helper");
 const projectModel = require("../model/project.model");
 const { mapLog } = require("../utils/mapper");
 const { compressAndEncrypt, decryptAndDecompress } = require("common/function");
@@ -53,14 +53,14 @@ const initLogger = async (bucket) => {
 
     // Add custom indexes
     for (const field of bucket.settings.indexes) {
-        const hashField = `hash.${field.replace(/\./g, '_')}`;
+        const hashField = `hash.${sanitizeFieldName(field)}`;
         schema.index({ [hashField]: 1 });
     }
 
     // Add raw indexes (non-hashed, good for numbers)
     if (bucket.settings.rawIndexes) {
         for (const field of bucket.settings.rawIndexes) {
-            const rawField = `raw.${field.replace(/\./g, '_')}`;
+            const rawField = `raw.${sanitizeFieldName(field)}`;
             schema.index({ [rawField]: 1 });
         }
     }
@@ -105,7 +105,7 @@ const initLogger = async (bucket) => {
             .toArray();
 
         const collectionExists = collections.length > 0;
-        const desiredTTL = retentionHours ? retentionHours * 60 * 60 : null;
+        const desiredTTL = retentionHours ? retentionHours * 60 * 60 : 1;
 
         if (collectionExists) {
             // Collection exists - check if TTL matches
@@ -246,15 +246,19 @@ const processWriteLog = async ({ headers, body }) => {
     }).cursor()
 
     for await (const bucket of buckets) {
-        await createLog(bucket.toJSON(), {
-            project_id: projectId,
-            project_title: project?.title,
-            level,
-            device,
-            context,
-            data,
-            timestamp
-        })
+        try {
+            await createLog(bucket.toJSON(), {
+                project_id: projectId,
+                project_title: project?.title,
+                level,
+                device,
+                context,
+                data,
+                timestamp
+            })
+        } catch (e) {
+            console.error(`Failed to create log for bucket ${bucket.id}:`, e);
+        }
     }
 
     return null
@@ -384,11 +388,16 @@ const processCreateSelfLog = async (params) => {
     }).cursor()
 
     for await (const bucket of buckets) {
-        await createLog(bucket.toJSON(), {
-            ...params,
-            project_id: project?.id,
-            project_title: project?.title
-        })
+        try {
+            await createLog(bucket.toJSON(), {
+                ...params,
+                project_id: project?.id,
+                project_title: project?.title
+            })
+        } catch (err) {
+            console.error(`Failed to create log for bucket ${bucket.id}:`, err);
+        }
+
     }
 
     return null
@@ -419,7 +428,7 @@ const buildLogsSearchQuery = (params = {}, bucket) => {
 
                 // Check if field is in rawIndexes
                 if (bucket?.settings?.rawIndexes?.includes(field)) {
-                    const safeFieldName = field.replace(/\./g, '_')
+                    const safeFieldName = sanitizeFieldName(field)
                     const queryField = `raw.${safeFieldName}`
 
                     // Support range operators for numeric fields
@@ -443,7 +452,7 @@ const buildLogsSearchQuery = (params = {}, bucket) => {
 
                 } else if (validateCustomIndex(field)) {
                     // Hashed fields only support exact match
-                    query[`hash.${field.replace(/\./g, '_')}`] = hashString(
+                    query[`hash.${sanitizeFieldName(field)}`] = hashString(
                         String(value),
                         field
                     )
@@ -512,7 +521,7 @@ const logTimelineByKey = async (bucketId, key) => {
             $match: {
                 key,
                 createdAt: {
-                    $gte: new Date(Date.now() - 24 * 60 * 60 * 1000) // Last 24 hours
+                    $gte: new Date(Date.now() - HToMs(24)) // Last 24 hours
                 }
             }
         },
@@ -552,7 +561,7 @@ const getDistinctValue = async (bucketId, field) => {
     let distinctValues = [];
 
     if (validateCustomIndex(field)) {
-        const hashField = `hash.${field.replace(/\./g, '_')}`;
+        const hashField = `hash.${sanitizeFieldName(field)}`;
         const [fieldType, fieldName] = field.split('.'); // 'context' or 'data', and the field name
 
         // Aggregate to get unique hash values with their encrypted context/data 

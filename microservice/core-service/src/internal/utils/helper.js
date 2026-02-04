@@ -1,6 +1,6 @@
 //@ts-check
 
-const { NO_ACCESS_ERR_CODE, NO_ACCESS_ERR_MESSAGE, FULL_PAYLOAD_DEDUPLICATION_STRATEGY, NONE_DEDUPLICATION_STRATEGY, INDEX_ONLY_DEDUPLICATION_STRATEGY } = require("common/constant");
+const { NO_ACCESS_ERR_CODE, NO_ACCESS_ERR_MESSAGE, FULL_PAYLOAD_DEDUPLICATION_STRATEGY, NONE_DEDUPLICATION_STRATEGY, INDEX_ONLY_DEDUPLICATION_STRATEGY, INVALID_INPUT_ERR_CODE } = require("common/constant");
 const { HttpError, num2Int, getNestedValue, hashString, evaluateCondition } = require("common/function");
 const { default: striptags } = require("striptags")
 const crypto = require("crypto");
@@ -102,7 +102,7 @@ const generateIndexedHashes = (log, bucket) => {
         // Only hash if value exists
         if (value !== undefined && value !== null) {
             // Convert field path to hash key: "context.userId" -> "context_userId"
-            const hashKey = fieldPath.replace(/\./g, '_');
+            const hashKey = sanitizeFieldName(fieldPath);
 
             // Hash with salt (bucket + field for isolation)
             // @ts-ignore
@@ -135,7 +135,7 @@ const generateRawValues = (data, bucket) => {
         const value = getNestedValue(data, field);
 
         if (value !== undefined && value !== null) {
-            const safeFieldName = field.replace(/\./g, '_');
+            const safeFieldName = sanitizeFieldName(field);
             rawValues[safeFieldName] = value;
         }
     }
@@ -226,7 +226,7 @@ const buildMongoFilterQuery = (filters = {}, project = null) => {
             if (operator === 'contains' && typeof val === 'string') return { level: { $regex: String(val), $options: 'i' } };
             return { level: val };
         }
-        const path = field.replace(/\./g, '_');
+        const path = sanitizeFieldName(field);
         const hashKey = `hash.${path}`;
         const rawKey = `raw.${path}`;
         const isRaw = project?.settings?.rawIndexes?.includes(field);
@@ -275,6 +275,14 @@ const evaluateBucketFilter = (data, filters) => {
 };
 
 
+const sanitizeFieldName = (field) => {
+    if (!/^[a-zA-Z0-9_.]+$/.test(field)) {
+        throw HttpError(INVALID_INPUT_ERR_CODE, 'Invalid field name');
+    }
+    return sanitizeFieldName(field);
+};
+
+const HToMs = (num) => num2Int(num) * 60 * 60 * 1000;
 module.exports = {
     validateCustomIndex,
     validateOrigin,
@@ -284,5 +292,7 @@ module.exports = {
     generateRawValues,
     generateLogKey,
     buildMongoFilterQuery,
-    evaluateBucketFilter
+    evaluateBucketFilter,
+    sanitizeFieldName,
+    HToMs
 }

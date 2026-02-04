@@ -1,11 +1,11 @@
 //@ts-check
 const mongoose = require("mongoose");
 const { Validator } = require("node-input-validator");
-const { HttpError, createSlug, parseSortBy, num2Ceil, num2Floor, hashString } = require("common/function");
+const { HttpError, createSlug, parseSortBy, num2Ceil, num2Floor } = require("common/function");
 const { getWidgetFromCache, getReportFromCache, updateWidgetDataCache, updateWidgetCache, updateReportCache, getBucketFromCache } = require("../../shared/cache");
 const reportModel = require("../model/report.model");
 const widgetModel = require("../model/widget.model");
-const { buildMongoFilterQuery } = require("../utils/helper");
+const { buildMongoFilterQuery, sanitizeFieldName, HToMs } = require("../utils/helper");
 const { decryptAndDecompress } = require("common/function");
 const { NOT_FOUND_ERR_CODE, NOT_FOUND_ERR_MESSAGE, INVALID_INPUT_ERR_CODE, FORBIDDEN_ERR_CODE, WIDGET_TEMPLATES, PRIVATE_REPORT_VISIBILITY, WIDGET_CACHE_KEY, INVALID_ID_ERR_MESSAGE } = require("common/constant");
 const { isValidObjectId } = require("../../shared/mongoose");
@@ -460,21 +460,21 @@ const buildTimeRangeFilter = (timeRange) => {
   let ms = 0;
   switch (timeRange) {
     case 'last_1h':
-      ms = 60 * 60 * 1000; break;
+      ms = HToMs(1); break;
     case 'last_6h':
-      ms = 6 * 60 * 60 * 1000; break;
+      ms = HToMs(6); break;
     case 'last_12h':
-      ms = 12 * 60 * 60 * 1000; break;
+      ms = HToMs(12); break;
     case 'last_24h':
-      ms = 24 * 60 * 60 * 1000; break;
+      ms = HToMs(24); break;
     case 'last_3d':
-      ms = 3 * 24 * 60 * 60 * 1000; break;
+      ms = HToMs(3 * 24); break;
     case 'last_7d':
-      ms = 7 * 24 * 60 * 60 * 1000; break;
+      ms = HToMs(7 * 24); break;
     case 'last_30d':
-      ms = 30 * 24 * 60 * 60 * 1000; break;
+      ms = HToMs(30 * 24); break;
     default:
-      ms = 24 * 60 * 60 * 1000;
+      ms = HToMs(24);
   }
   return { $gte: new Date(now - ms) };
 }
@@ -505,30 +505,30 @@ const executeTotalValueQuery = async (widget, bucket, getLogModelFunc) => {
   const fieldPath = widget.config.field;
   if (!fieldPath) throw HttpError(INVALID_INPUT_ERR_CODE, 'Field is required for operation');
   const isRaw = bucket?.settings?.rawIndexes?.includes(fieldPath);
-  const field = isRaw ? `$raw.${fieldPath.replace(/\./g, '_')}` : `$raw.${fieldPath.replace(/\./g, '_')}`;
+  const field = isRaw ? `$raw.${sanitizeFieldName(fieldPath)}` : `$raw.${sanitizeFieldName(fieldPath)}`;
 
   // NEW: Latest operation
   if (op === 'latest') {
     const doc = await log.findOne(query)
       .sort({ updatedAt: -1 }) // Most recent first
-      .select(`raw.${fieldPath.replace(/\./g, '_')}`)
+      .select(`raw.${sanitizeFieldName(fieldPath)}`)
       .lean();
 
     if (!doc) return { value: null };
 
-    const rawKey = fieldPath.replace(/\./g, '_');
+    const rawKey = sanitizeFieldName(fieldPath);
     return { value: doc.raw?.[rawKey] || null };
   }
 
   if (op === 'first') {
     const doc = await log.findOne(query)
       .sort({ updatedAt: 1 }) // Oldest first
-      .select(`raw.${fieldPath.replace(/\./g, '_')}`)
+      .select(`raw.${sanitizeFieldName(fieldPath)}`)
       .lean();
 
     if (!doc) return { value: null };
 
-    const rawKey = fieldPath.replace(/\./g, '_');
+    const rawKey = sanitizeFieldName(fieldPath);
     return { value: doc.raw?.[rawKey] || null };
   }
   // Existing aggregations
@@ -672,7 +672,7 @@ const executeLineChartQuery = async (widget, bucket, getLogModelFunc) => {
   }
 
   const { log } = await getLogModelFunc(bucket.id);
-  const rawKey = `raw.${fieldPath.replace(/\./g, '_')}`;
+  const rawKey = `raw.${sanitizeFieldName(fieldPath)}`;
 
   if (noGrouping) {
     // Return individual field values without grouping
@@ -732,7 +732,7 @@ const resolveGroupByField = (groupBy) => {
   if (!groupBy) return null;
   if (groupBy.startsWith('hash.') || groupBy.startsWith('raw.')) return `$${groupBy}`;
   if (groupBy.includes('.')) {
-    return `$hash.${groupBy.replace(/\./g, '_')}`;
+    return `$hash.${sanitizeFieldName(groupBy)}`;
   }
   return `$${groupBy}`;
 }
@@ -777,7 +777,7 @@ const executeBarChartQuery = async (widget, bucket, getLogModelFunc) => {
       throw HttpError(INVALID_INPUT_ERR_CODE, `Field "${fieldPath}" must be in bucket rawIndexes for aggregation`);
     }
 
-    const rawKey = `$raw.${fieldPath.replace(/\./g, '_')}`;
+    const rawKey = `$raw.${sanitizeFieldName(fieldPath)}`;
 
     switch (operation) {
       case 'sum':
@@ -889,7 +889,7 @@ const executePieChartQuery = async (widget, bucket, getLogModelFunc) => {
       throw HttpError(INVALID_INPUT_ERR_CODE, `Field "${fieldPath}" must be in bucket rawIndexes`);
     }
 
-    const rawKey = `$raw.${fieldPath.replace(/\./g, '_')}`;
+    const rawKey = `$raw.${sanitizeFieldName(fieldPath)}`;
 
     switch (operation) {
       case 'sum':
