@@ -182,3 +182,16 @@ export const updateMyPassword = async (signal, payload) => {
     });
     return data?.data;
 }
+
+/**
+ * 
+ * @param {*} signal 
+ * @param {*} payload 
+ * @returns 
+ */
+export const setupUser = async (signal, payload) => {
+    let { data } = await Axios.post(`/v1/users/seed`, payload, {
+        signal
+    });
+    return data?.data;
+}

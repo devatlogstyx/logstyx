@@ -1,6 +1,6 @@
 //@ts-check
 
-const { HttpError, hashString, num2Ceil, num2Floor, sanitizeObject, encrypt, decryptSecret, createSlug, parseSortBy } = require("common/function")
+const { HttpError, hashString, num2Ceil, num2Floor, sanitizeObject, encrypt, decryptSecret, createSlug, parseSortBy, sanitizeEmail } = require("common/function")
 const { getUserFromCache, updateUserCache } = require("../../shared/cache")
 const { mapUser, } = require("../utils/mapper")
 const { Validator } = require("node-input-validator")
@@ -26,7 +26,9 @@ const {
     WRITE_BUCKET_USER_ROLE,
     WRITE_ALERT_USER_ROLE,
     READ_ALERT_USER_ROLE,
-    READ_BUCKET_USER_ROLE
+    READ_BUCKET_USER_ROLE,
+    FORBIDDEN_ERR_CODE,
+    NO_ACCESS_ERR_MESSAGE
 } = require("common/constant")
 
 const { striptags } = require("striptags")
@@ -334,125 +336,126 @@ const createUserToken = async (user, refreshToken) => {
     return token;
 };
 
-
-const seedUser = async () => {
-
-    await new Promise(resolve => setTimeout(resolve, 5000));
-
-    if (!USER_NAME || !USER_EMAIL || !USER_PASSWORD) {
-        console.warn("Skipping user seed: USER_NAME, USER_EMAIL, or USER_PASSWORD not set");
-        return null;
-    }
-
-    const hashedEmail = hashString(USER_EMAIL);
-
-    // Check if user already exists
-    let user = await userModel.findOne({ 'hash.email': hashedEmail });
-
-    if (!user) {
-        // Create user if doesn't exist
-        const session = await mongoose.startSession();
-        session.startTransaction();
-
-        try {
-            const [newUser] = await userModel.create([sanitizeObject({
-                fullname: USER_NAME,
-                email: USER_EMAIL,
-                permissions: [
-                    WRITE_USER_USER_ROLE,
-                    READ_USER_USER_ROLE,
-                    WRITE_PROJECT_USER_ROLE,
-                    READ_PROJECT_USER_ROLE,
-                    WRITE_USER_INVITATION_USER_ROLE,
-                    READ_USER_INVITATION_USER_ROLE,
-                    READ_REPORT_USER_ROLE,
-                    WRITE_REPORT_USER_ROLE,
-                    WRITE_WEBHOOK_USER_ROLE,
-                    READ_WEBHOOK_USER_ROLE,
-                    WRITE_BUCKET_USER_ROLE,
-                    WRITE_ALERT_USER_ROLE,
-                    READ_ALERT_USER_ROLE,
-                    READ_BUCKET_USER_ROLE
-                ],
-                hash: { email: hashedEmail }
-            })], { session });
-
-            const salt = bcrypt.genSaltSync(10);
-            const hash = bcrypt.hashSync(USER_PASSWORD, salt);
-
-            await userLoginModel.create([{
-                user: newUser._id,
-                key: USER_EMAIL,
-                type: EMAIL_PASSWORD_LOGIN_TYPE,
-                credentials: encrypt(JSON.stringify({ password: hash })),
-                hash: { key: hashedEmail }
-            }], { session });
-
-            await session.commitTransaction();
-            console.log("✓ User created successfully");
-
-            user = newUser;
-
-        } catch (e) {
-            if (session.inTransaction()) {
-                await session.abortTransaction();
-            }
-            console.error("Failed to create user:", e);
-            throw e;
-        } finally {
-            await session.endSession();
-        }
-    } else {
-        console.log("✓ User already exists");
-    }
-
-    // Always try to create self-project (whether user was just created or already existed)
-    await ensureSelfProject(user?._id?.toString());
-
-    return user;
-};
-
-/**
- * Ensure self-project exists for internal logging
- */
 /**
  * 
- * @param {string} userId 
+ * @param {*} params 
  * @returns 
  */
-const ensureSelfProject = async (userId) => {
+const seedUser = async (params) => {
 
-    if (!isValidObjectId(userId)) {
-        console.error("  No userId set, skipping self-project");
-        return null;
-    }
-
-    const projectTitle = decryptSecret(process.env.ENC_SELF_PROJECT_TITLE);
-
-    if (!projectTitle) {
-        console.error("  No ENC_SELF_PROJECT_TITLE set, skipping self-project");
-        return null;
-    }
-
-    const projectSlug = createSlug(projectTitle);
-
-    if (!projectSlug) {
-        console.error("  Failed to create slug from project title");
-        return null;
-    }
-
-    submitCreateProject({
-        title: projectTitle,
-        slug: projectSlug,
-        creator: userId,
-        settings: {
-            indexes: [
-                "context.service",
-                "data.title",
-            ],
-            allowedOrigin: [] // internal backend only
-        }
+    const v = new Validator(params, {
+        email: "required|email",
+        fullname: "required|string",
+        password: "required|string",
     });
+
+    let matched = await v.check();
+    if (!matched) {
+        throw HttpError(INVALID_INPUT_ERR_CODE, v.errors);
+    }
+
+    const email = sanitizeEmail(params?.email)
+    const hashedEmail = hashString(email);
+
+    const projectTitle = decryptSecret(process?.env?.ENC_SELF_PROJECT_TITLE)
+
+    // Create admin with full transaction support
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
+    try {
+
+        const userCount = await userModel.countDocuments({})
+        if (userCount > 0) {
+            throw HttpError(FORBIDDEN_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
+        }
+
+        const existingUser = await userModel.findOne(
+            { 'hash.email': hashedEmail },
+            null,
+            { session }
+        );
+
+        if (existingUser) {
+            await session.abortTransaction();
+            throw HttpError(INVALID_INPUT_ERR_CODE, "Admin with this email already exists");
+        }
+
+
+        const [newUser] = await userModel.create([sanitizeObject({
+            fullname: striptags(params?.fullname),
+            email,
+            permissions: [
+                WRITE_USER_USER_ROLE,
+                READ_USER_USER_ROLE,
+                WRITE_PROJECT_USER_ROLE,
+                READ_PROJECT_USER_ROLE,
+                WRITE_USER_INVITATION_USER_ROLE,
+                READ_USER_INVITATION_USER_ROLE,
+                READ_REPORT_USER_ROLE,
+                WRITE_REPORT_USER_ROLE,
+                WRITE_WEBHOOK_USER_ROLE,
+                READ_WEBHOOK_USER_ROLE,
+                WRITE_BUCKET_USER_ROLE,
+                WRITE_ALERT_USER_ROLE,
+                READ_ALERT_USER_ROLE,
+                READ_BUCKET_USER_ROLE
+            ],
+            hash: { email: hashedEmail }
+        })], { session });
+
+        const salt = bcrypt.genSaltSync(10);
+        const passwordHash = bcrypt.hashSync(params?.password, salt);
+
+        await userLoginModel.create([{
+            user: newUser._id,
+            key: email,
+            type: EMAIL_PASSWORD_LOGIN_TYPE,
+            credentials: encrypt(JSON.stringify({ password: passwordHash })),
+            hash: { key: hashedEmail }
+        }], { session });
+
+        await session.commitTransaction();
+        console.log("✓ User created successfully");
+
+
+
+        if (!projectTitle) {
+            console.warn('Self-logging not configured (ENC_SELF_PROJECT_TITLE not set)');
+            return newUser.toJSON()
+        }
+
+        const projectSlug = createSlug(striptags(projectTitle));
+
+        if (!projectSlug) {
+            console.error("  Failed to create slug from project title");
+            return newUser.toJSON()
+        }
+        
+        submitCreateProject({
+            title: projectTitle,
+            slug: projectSlug,
+            creator: newUser._id.toString(),
+            settings: {
+                indexes: [
+                    "context.service",
+                    "data.title",
+                ],
+                allowedOrigin: [] // internal backend only
+            }
+        });
+
+        return newUser.toJSON();
+
+    } catch (error) {
+        if (session.inTransaction()) {
+            await session.abortTransaction();
+        }
+        console.error("Failed to create admin:", error);
+        throw error;
+    } finally {
+        await session.endSession();
+    }
 };
 
 /**

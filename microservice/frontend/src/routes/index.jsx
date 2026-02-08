@@ -21,6 +21,7 @@ import DashboardWebhook from "../views/DashboardWebhook";
 import DashboardAlert from "../views/DashboardAlert";
 import DashboardBucket from "../views/DashboardBucket";
 import DashboardBucketDetail from "../views/DashboardBucketDetail";
+import UserSetupPage from "../views/SetupPage";
 
 export default function Router() {
     return (
@@ -29,6 +30,7 @@ export default function Router() {
                 <Routes>
                     <Route path="/" element={<Landing />} />
                     <Route path="/login" element={<LoginPage />} />
+                    <Route path="/setup" element={<UserSetupPage />} />
 
                     <Route path="/dashboard" element={<DashboardLayout />} >
                         <Route index element={<DashboardPage />} />

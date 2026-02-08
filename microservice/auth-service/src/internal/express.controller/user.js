@@ -21,7 +21,7 @@ const {
     READ_USER_USER_ROLE,
 
 } = require("common/constant");
-const { paginateUser, removeUser, handleUserLogin, createUserToken, patchUserPermission, updateUserProfile, patchUserPassword } = require("../service/user");
+const { paginateUser, removeUser, handleUserLogin, createUserToken, patchUserPermission, updateUserProfile, patchUserPassword, seedUser } = require("../service/user");
 const { createRefreshToken, expireRefreshToken } = require("../service/auth");
 const { listUsersProject, listUsersBucket, getUserBucketStats, getUserProjectStats } = require("../../shared/provider/core.service");
 const { CanUserDo, getLastLogin } = require("../utils/helper");
@@ -147,7 +147,7 @@ module.exports = {
             ...req?.body,
             lastLogin
         })
-        
+
         if (!user) {
             throw HttpError(NO_ACCESS_ERR_CODE, NO_ACCESS_ERR_MESSAGE);
         }
@@ -282,6 +282,20 @@ module.exports = {
         }
 
         await patchUserPassword(req?.user?.id, req?.body)
+
+        HttpResponse(res).json({
+            error: SUCCESS_ERR_CODE,
+            message: SUCCESS_ERR_MESSAGE,
+        });
+    },
+    /**
+     * 
+     * @param {*} req 
+     * @param {*} res 
+     */
+    async UserSeed(req, res) {
+
+        await seedUser(req?.body)
 
         HttpResponse(res).json({
             error: SUCCESS_ERR_CODE,

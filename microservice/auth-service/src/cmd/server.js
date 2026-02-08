@@ -5,7 +5,6 @@ const { connectToDB } = require("../shared/mongoose/index.js");
 const { Server } = require("jsonrpc-ws");
 const { useRPCWebsocket } = require("common/hooks");
 const { logger } = require("../shared/logger/index.js");
-const { seedUser } = require("../internal/service/user.js");
 
 (async () => {
     await connectToDB();
@@ -42,7 +41,5 @@ const { seedUser } = require("../internal/service/user.js");
     });
 
     require("./rpc-websockets.js").init(rpc({ server, path: "/rpc" }));
-
-    await seedUser()
 
 })();

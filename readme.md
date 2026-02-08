@@ -255,7 +255,7 @@ curl -fsSL https://raw.githubusercontent.com/devatlogstyx/logstyx/main/install.s
 The installer will:
 
 * Check Docker prerequisites
-* Collect initial admin credentials
+* Collect project configuration (title, CORS settings)
 * Generate encryption and JWT secrets
 * Create encrypted configuration files
 * Optionally start all services
@@ -265,6 +265,12 @@ Once running, access Logstyx at:
 ```
 http://localhost:5000
 ```
+
+### Initial Setup
+
+On first access, you need to go to the `/setup` page where you can create your user account. This page will only be accessible when no user accounts exist in the system.
+
+After completing setup, you can log in with your credentials to start using Logstyx.
 
 ---
 
@@ -320,7 +326,6 @@ For local development with hot reload:
 
    ```bash
    ./install.sh
-   cd ..
    ```
 
 4. Start development services
@@ -328,6 +333,8 @@ For local development with hot reload:
    ```bash
    docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
    ```
+
+5. Create your admin account by visiting `http://localhost:5000/setup`
 
 Access the app at `http://localhost:5000`.
 
@@ -364,22 +371,23 @@ docker compose down -v
 
 ### Auto-Generated (Installer)
 
-* `USER_NAME`
-* `USER_EMAIL`
-* `USER_PASSWORD`
-* `SELF_PROJECT_TITLE`
-* `CRYPTO_SECRET`
-* `REFRESH_TOKEN_SECRET`
-* `USER_AUTHENTICATION_JWT_SECRET`
-* `MASTER_KEY`
+* `CRYPTO_SECRET` - Encryption secret for sensitive data
+* `REFRESH_TOKEN_SECRET` - JWT refresh token secret
+* `USER_AUTHENTICATION_JWT_SECRET` - JWT authentication secret
+* `MASTER_KEY` - Master encryption key for .env.encrypted file
+
+### Project Configuration (Installer)
+
+* `SELF_PROJECT_TITLE` - Project title displayed in the UI
+* `ALLOWED_ORIGIN` - (Optional) Comma-separated list of allowed CORS origins (e.g., `https://app.example.com:3000,https://admin.example.com:3000`)
 
 ### Optional (External Services)
 
-* `AMQP_HOST`
-* `REDIS_URL`
-* `MONGODB_HOST`
+* `AMQP_HOST` - RabbitMQ connection URL
+* `REDIS_URL` - Redis connection URL
+* `MONGODB_HOST` - MongoDB connection URL
 
-Sensitive values can be prefixed with `ENC_` to store encrypted values.
+Sensitive values are prefixed with `ENC_` and stored encrypted in the `.env.encrypted` file.
 
 ---
 

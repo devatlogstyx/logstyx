@@ -60,7 +60,7 @@ decrypt_value() {
 
 # Function to validate encrypted env file
 validate_encrypted_env() {
-    local required_vars=("ENC_USER_NAME" "ENC_USER_EMAIL" "ENC_USER_PASSWORD" "ENC_SELF_PROJECT_TITLE" "ENC_CRYPTO_SECRET" "ENC_REFRESH_TOKEN_SECRET" "ENC_USER_AUTHENTICATION_JWT_SECRET" "MASTER_KEY")
+    local required_vars=("ENC_SELF_PROJECT_TITLE" "ENC_CRYPTO_SECRET" "ENC_REFRESH_TOKEN_SECRET" "ENC_USER_AUTHENTICATION_JWT_SECRET" "MASTER_KEY")
     
     if [ ! -f ".env.encrypted" ]; then
         return 1
@@ -69,6 +69,31 @@ validate_encrypted_env() {
     for var in "${required_vars[@]}"; do
         if ! grep -q "^${var}=" .env.encrypted; then
             echo -e "${RED}Error: Missing required variable ${var} in .env.encrypted${NC}"
+            return 1
+        fi
+    done
+    
+    return 0
+}
+
+# Function to validate ALLOWED_ORIGIN format
+validate_allowed_origin() {
+    local origins=$1
+    
+    # If empty, it's valid (optional field)
+    if [ -z "$origins" ]; then
+        return 0
+    fi
+    
+    # Split by comma and validate each URL
+    IFS=',' read -ra URLS <<< "$origins"
+    for url in "${URLS[@]}"; do
+        # Trim whitespace
+        url=$(echo "$url" | xargs)
+        
+        # Check if URL starts with http:// or https://
+        if [[ ! "$url" =~ ^https?:// ]]; then
+            echo -e "${RED}Error: Invalid URL format '$url' - must start with http:// or https://${NC}"
             return 1
         fi
     done
@@ -205,33 +230,37 @@ if [ "$USE_EXTERNAL" = true ]; then
     done
 fi
 
-# Collect user input
-echo -e "\n${BLUE}=== Initial Setup ===${NC}\n"
-
-read -p "Enter admin username: " USER_NAME
-while [[ -z "$USER_NAME" ]]; do
-    echo -e "${RED}Username cannot be empty${NC}"
-    read -p "Enter admin username: " USER_NAME
-done
-
-read -p "Enter admin email: " USER_EMAIL
-while [[ -z "$USER_EMAIL" ]]; do
-    echo -e "${RED}Email cannot be empty${NC}"
-    read -p "Enter admin email: " USER_EMAIL
-done
-
-read -sp "Enter admin password: " USER_PASSWORD
-echo ""
-while [[ -z "$USER_PASSWORD" ]]; do
-    echo -e "${RED}Password cannot be empty${NC}"
-    read -sp "Enter admin password: " USER_PASSWORD
-    echo ""
-done
+# Collect project configuration
+echo -e "\n${BLUE}=== Project Configuration ===${NC}\n"
 
 read -p "Enter project title (default: My Logstyx Project): " SELF_PROJECT_TITLE
 SELF_PROJECT_TITLE=${SELF_PROJECT_TITLE:-"My Logstyx Project"}
 
-echo -e "\n${GREEN}Generating security secrets...${NC}"
+echo ""
+echo -e "${BLUE}CORS Configuration (Optional)${NC}"
+echo "Enter allowed origins for CORS (comma-separated URLs with protocol, domain, and port)"
+echo "Example: https://app.example.com:3000,https://admin.example.com:3000"
+echo "Leave blank to skip"
+read -p "Allowed Origins: " ALLOWED_ORIGIN
+
+# Validate ALLOWED_ORIGIN format if provided
+if [ -n "$ALLOWED_ORIGIN" ]; then
+    while ! validate_allowed_origin "$ALLOWED_ORIGIN"; do
+        echo ""
+        echo "Please enter valid URLs (e.g., https://example.com:3000,http://localhost:3000)"
+        echo "Or leave blank to skip"
+        read -p "Allowed Origins: " ALLOWED_ORIGIN
+        
+        # If user leaves it blank, break the loop
+        if [ -z "$ALLOWED_ORIGIN" ]; then
+            break
+        fi
+    done
+fi
+
+# Generate security secrets
+echo -e "\n${BLUE}=== Security Configuration ===${NC}\n"
+echo -e "${GREEN}Generating security secrets...${NC}"
 CRYPTO_SECRET=$(generate_secret 32)
 REFRESH_TOKEN_SECRET=$(generate_secret 32)
 USER_AUTHENTICATION_JWT_SECRET=$(generate_secret 32)
@@ -242,10 +271,7 @@ MASTER_KEY=$(generate_secret 32)
 echo -e "${GREEN}✓ Secrets generated${NC}\n"
 
 # Encrypt values
-echo -e "${GREEN}Encrypting credentials...${NC}"
-ENC_USER_NAME=$(encrypt_value "$USER_NAME" "$MASTER_KEY")
-ENC_USER_EMAIL=$(encrypt_value "$USER_EMAIL" "$MASTER_KEY")
-ENC_USER_PASSWORD=$(encrypt_value "$USER_PASSWORD" "$MASTER_KEY")
+echo -e "${GREEN}Encrypting configuration...${NC}"
 ENC_SELF_PROJECT_TITLE=$(encrypt_value "$SELF_PROJECT_TITLE" "$MASTER_KEY")
 ENC_CRYPTO_SECRET=$(encrypt_value "$CRYPTO_SECRET" "$MASTER_KEY")
 ENC_REFRESH_TOKEN_SECRET=$(encrypt_value "$REFRESH_TOKEN_SECRET" "$MASTER_KEY")
@@ -253,15 +279,18 @@ ENC_USER_AUTHENTICATION_JWT_SECRET=$(encrypt_value "$USER_AUTHENTICATION_JWT_SEC
 
 # Create .env.encrypted file
 cat > .env.encrypted << EOF
-ENC_USER_NAME=$ENC_USER_NAME
-ENC_USER_EMAIL=$ENC_USER_EMAIL
-ENC_USER_PASSWORD=$ENC_USER_PASSWORD
 ENC_SELF_PROJECT_TITLE=$ENC_SELF_PROJECT_TITLE
 ENC_CRYPTO_SECRET=$ENC_CRYPTO_SECRET
 ENC_REFRESH_TOKEN_SECRET=$ENC_REFRESH_TOKEN_SECRET
 ENC_USER_AUTHENTICATION_JWT_SECRET=$ENC_USER_AUTHENTICATION_JWT_SECRET
 MASTER_KEY=$MASTER_KEY
 EOF
+
+# Add ALLOWED_ORIGIN if provided
+if [ -n "$ALLOWED_ORIGIN" ]; then
+    ENC_ALLOWED_ORIGIN=$(encrypt_value "$ALLOWED_ORIGIN" "$MASTER_KEY")
+    echo "ENC_ALLOWED_ORIGIN=$ENC_ALLOWED_ORIGIN" >> .env.encrypted
+fi
 
 # Add external service URLs if provided
 if [ "$USE_EXTERNAL" = true ]; then
@@ -287,9 +316,10 @@ if [ "$USE_EXTERNAL" = true ]; then
 else
     echo -e "Deployment: ${BLUE}Bundled Services${NC}"
 fi
-echo -e "Admin Username: ${BLUE}$USER_NAME${NC}"
-echo -e "Admin Email: ${BLUE}$USER_EMAIL${NC}"
 echo -e "Project Title: ${BLUE}$SELF_PROJECT_TITLE${NC}"
+if [ -n "$ALLOWED_ORIGIN" ]; then
+    echo -e "Allowed Origins: ${BLUE}$ALLOWED_ORIGIN${NC}"
+fi
 echo -e "Configuration: ${BLUE}.env.encrypted${NC}"
 echo ""
 
@@ -339,9 +369,7 @@ if [[ "$START_NOW" =~ ^[Yy]$ ]]; then
     echo -e "\nWait a moment for services to initialize, then access:"
     echo -e "${BLUE}http://localhost:5000${NC}"
     echo ""
-    echo -e "Login with:"
-    echo -e "  Email: ${BLUE}$USER_EMAIL${NC}"
-    echo -e "  Password: ${BLUE}[your password]${NC}"
+    echo -e "${YELLOW}Note: You'll need to create your admin account on first access${NC}"
 else
     echo -e "\n${YELLOW}Installation complete!${NC}"
     echo -e "\nTo start Logstyx, run:"
@@ -350,6 +378,8 @@ else
     else
         echo -e "${BLUE}docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d${NC}"
     fi
+    echo ""
+    echo -e "${YELLOW}Note: You'll need to create your admin account on first access${NC}"
 fi
 
 echo -e "\n${YELLOW}⚠  Important: Your MASTER_KEY has been saved to .env.encrypted${NC}"

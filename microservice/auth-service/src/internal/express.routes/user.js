@@ -5,9 +5,10 @@ const express = require("express");
 const router = express.Router();
 const { asyncHandler } = require("common/function");
 
-const { UserGetMe, UserPaginate, UserRemove, UserLogin, UserLogout, UserUpdate, UserListProject, UserUpdateProfile, UserPatchPassword, UserListBucket, UserGetMyProjectStats, UserGetMyBucketStats } = require("../express.controller/user");
+const { UserGetMe, UserPaginate, UserRemove, UserLogin, UserLogout, UserUpdate, UserListProject, UserUpdateProfile, UserPatchPassword, UserListBucket, UserGetMyProjectStats, UserGetMyBucketStats, UserSeed } = require("../express.controller/user");
 
 router.get("/", asyncHandler(UserPaginate));
+router.post("/seed", asyncHandler(UserSeed));
 router.post("/login", asyncHandler(UserLogin));
 router.post("/logout", asyncHandler(UserLogout));
 
