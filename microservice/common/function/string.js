@@ -1,3 +1,5 @@
+const { ALLOWED_HTML_TAGS } = require("../constant");
+
 const sanitizeEmail = (email = "") => {
 
     let [name, domain] = email?.toString()?.split("@");
@@ -57,10 +59,12 @@ const JSONParseX = (str) => {
     });
 };
 
-const sanitizeForHTML = (data, options = {}, striptags) => {
+const sanitizeForHTML = (data, striptags) => {
     function sanitizeValue(value) {
         if (typeof value === 'string') {
-            return striptags?.(value, options?.allowedTags);
+            return striptags?.(value, {
+                allowedTags: new Set(ALLOWED_HTML_TAGS)
+            });
         }
 
         if (Array.isArray(value)) {

@@ -5,7 +5,7 @@ import useModalTimeline from "./hooks"
 
 const ModalTimeline = ({
     opened,
-    projectId,
+    bucketId,
     logKey,
     onClose
 }) => {
@@ -13,7 +13,7 @@ const ModalTimeline = ({
     const {
         chartData
     } = useModalTimeline({
-        projectId,
+        bucketId,
         logKey
     })
 

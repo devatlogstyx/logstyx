@@ -5,7 +5,7 @@ import { useErrorMessage } from "../../../hooks/useMessage";
 import { getLogTimeline } from "../../../api/bucket";
 
 const useModalTimeline = ({
-    projectId,
+    bucketId,
     logKey
 }) => {
 
@@ -15,17 +15,17 @@ const useModalTimeline = ({
 
     const fetchData = React.useCallback(async () => {
         try {
-            if (!projectId || !logKey) {
+            if (!bucketId || !logKey) {
                 return null
             }
 
-            let l = await getLogTimeline(controller.signal, projectId, logKey)
+            let l = await getLogTimeline(controller.signal, bucketId, logKey)
             setLine(l)
 
         } catch (e) {
             ErrorMessage(e)
         }
-    }, [ErrorMessage, controller, projectId, logKey])
+    }, [ErrorMessage, controller, bucketId, logKey])
 
     React.useEffect(() => {
         fetchData()

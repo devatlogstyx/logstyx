@@ -260,11 +260,6 @@ const useMiddleware = ({
             const originals = {};
             let logged = false;
 
-            // Sanitization options - customize based on your needs
-            const sanitizationOptions = {
-                allowedTags: ALLOWED_HTML_TAGS
-            };
-
             methods.forEach((m) => {
                 originals[m] = res[m];
                 res[m] = ((method) => {
@@ -273,7 +268,7 @@ const useMiddleware = ({
                         if (args.length > 0 && (method === "json" || method === "send")) {
                             if (args[0] !== null && args[0] !== undefined) {
                                 try {
-                                    args[0] = sanitizeForHTML(args[0], sanitizationOptions, Striptags);
+                                    args[0] = sanitizeForHTML(args[0], Striptags);
                                 } catch (error) {
                                     console.error('Sanitization error:', error);
                                 }

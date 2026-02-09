@@ -46,7 +46,7 @@ export const getBucketLogStats = async (signal, bucketId) => {
 /**
  * 
  * @param {*} signal 
- * @param {string} projectId 
+ * @param {string} bucketId 
  * @param {string} logKey 
  * @returns 
  */
