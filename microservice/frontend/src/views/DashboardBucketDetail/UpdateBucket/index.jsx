@@ -43,19 +43,14 @@ const UpdateBucket = ({ bucket, onUpdate }) => {
                         onChange={(v) => {
                             form.setFieldValue('filter', v)
                         }}
-                        
+
                     />
                     <TagsInput
                         label="Indexed Fields (Hashed)"
-                        description="Initial indexes cannot be removed. Good for strings and IDs."
+                        description="Good for strings and IDs."
                         placeholder="Enter fields to index"
                         value={form.values.indexes}
-                        onChange={(value) => {
-                            const initialIndexes = bucket?.settings?.indexes || [];
-                            // Get unique values that include all initial indexes
-                            const uniqueValues = [...new Set([...initialIndexes, ...value])];
-                            form.setFieldValue('indexes', uniqueValues);
-                        }}
+                        onChange={(value) => form.setFieldValue('indexes', value)}
                         error={form.errors.indexes}
                     />
 
