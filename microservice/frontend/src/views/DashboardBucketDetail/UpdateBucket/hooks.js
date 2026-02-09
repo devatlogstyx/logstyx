@@ -53,16 +53,6 @@ const useUpdateBucket = ({
                     return 'Indexes must be an array';
                 }
 
-                // Get initial indexes for comparison
-                const initialIndexes = bucket?.settings?.indexes || [];
-
-                // Check if all initial values are still present
-                for (const initialIndex of initialIndexes) {
-                    if (!value.includes(initialIndex)) {
-                        return `Cannot remove initial index: "${initialIndex}"`;
-                    }
-                }
-
                 // Validate each index
                 for (let i = 0; i < value.length; i++) {
                     const index = value[i]?.trim();
