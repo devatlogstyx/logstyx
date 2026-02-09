@@ -391,16 +391,6 @@ Sensitive values are prefixed with `ENC_` and stored encrypted in the `.env.encr
 
 ---
 
-## Roadmap (Non-Binding)
-
-* Optional plaintext or hybrid indexing
-* Log retention and lifecycle policies
-* Role-based access control (RBAC)
-* Metrics and tracing integration
-* Improved query and aggregation tooling
-
----
-
 ## Support
 
 * **Issues**: GitHub Issues
