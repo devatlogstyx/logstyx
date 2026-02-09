@@ -1,11 +1,11 @@
 //@ts-check
 
-import React, { useCallback, useMemo } from "react"
+import React, { useCallback } from "react"
 import { useErrorMessage } from "../../../hooks/useMessage"
 import ModalLogDetail from "../ModalLogDetail"
 import ModalTimeline from "../ModalTimeline"
-import { listBucketDistinctValues, paginateBucketLogs } from "../../../api/bucket"
 import { sanitizeObject } from "../../../utils/function"
+import useAPI from "../../../hooks/useAPI"
 
 
 const useBucketLogs = ({ bucket }) => {
@@ -42,6 +42,8 @@ const useBucketLogs = ({ bucket }) => {
             return acc;
         }, {}) || {}
     );
+
+    const api = useAPI("/v1/buckets");
 
     const toggleColumn = (columnName) => {
         setVisibleColumns(prev => ({
@@ -174,16 +176,16 @@ const useBucketLogs = ({ bucket }) => {
                 }
             })
 
-            const l = await paginateBucketLogs(
-                logsControllerRef.current.signal,
-                bucket?.id,
-                sanitizeObject({
-                    filterField: filterFields.length > 0 ? filterFields : undefined,
-                    filterValue: filterValues.length > 0 ? filterValues : undefined,
-                    filterOperator: filterOperators.length > 0 ? filterOperators : undefined, // ✅ Add operators
-                    page,
-                    sortBy: sortConfig?.key ? `${sortConfig.key}:${sortConfig.direction}` : undefined
-                })
+            const l = await api.custom("get", `/${bucket?.id}/logs`,
+                {
+                    params: sanitizeObject({
+                        filterField: filterFields.length > 0 ? filterFields : undefined,
+                        filterValue: filterValues.length > 0 ? filterValues : undefined,
+                        filterOperator: filterOperators.length > 0 ? filterOperators : undefined, // ✅ Add operators
+                        page,
+                        sortBy: sortConfig?.key ? `${sortConfig.key}:${sortConfig.direction}` : undefined
+                    })
+                }
             )
             setList(l)
 
@@ -229,10 +231,11 @@ const useBucketLogs = ({ bucket }) => {
 
                     fieldValuesControllersRef.current[filter.id] = new AbortController()
 
-                    const f = await listBucketDistinctValues(
-                        fieldValuesControllersRef.current[filter.id].signal,
-                        bucket?.id,
-                        filter.field
+                    const f = await api.custom("get", `/${bucket?.id}/logs/field-values`, {
+                        params: {
+                            field: filter.field
+                        }
+                    }
                     )
                     setFieldValues(prev => ({
                         ...prev,

@@ -3,20 +3,18 @@
 import { useForm } from "@mantine/form";
 import React from "react";
 import { useErrorMessage } from "../../../hooks/useMessage";
-import { createProject } from "../../../api/project";
 import { FULL_PAYLOAD_DEDUPLICATION_STRATEGY } from "../../../utils/constant";
-import { createBucket } from "../../../api/bucket";
+import useAPI from "../../../hooks/useAPI";
 
 const useCreateBucket = ({
     onUpdate
 }) => {
 
-    const controller = React.useMemo(() => new AbortController(), []);
-
     const [isSubmitting, setIsSubmitting] = React.useState(false)
     const [isModalVisible, setIsModalVisible] = React.useState(false)
     const [step, setStep] = React.useState(0)
 
+    const api = useAPI("/v1/buckets")
     const ErrorMessage = useErrorMessage()
 
     const form = useForm({
@@ -126,14 +124,14 @@ const useCreateBucket = ({
                     deduplicationStrategy: values?.deduplicationStrategy
                 }
             }
-            await createBucket(controller.signal, payload)
+            await api.post(payload)
             onUpdate()
         } catch (e) {
             ErrorMessage(e)
         } finally {
             setIsSubmitting(false)
         }
-    }, [ErrorMessage, controller, onUpdate])
+    }, [ErrorMessage, api, onUpdate])
 
     return {
         form,

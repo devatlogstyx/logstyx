@@ -2,19 +2,21 @@
 
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { getReportBySlug } from '../../api/report';
 import WidgetCard from '../../component/WidgetCard';
+import useAPI from '../../hooks/useAPI';
 
 export default function PublicReportView() {
   const { slug } = useParams();
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  const api = useAPI(`/v1/reports`)
+
   useEffect(() => {
-    const ctrl = new AbortController();
-    getReportBySlug(ctrl.signal, slug).then(setReport).finally(() => setLoading(false));
-    return () => ctrl.abort();
-  }, [slug]);
+
+    api.get(slug).then(setReport).finally(() => setLoading(false));
+
+  }, [slug, api]);
 
   if (loading) return <div className="p-4">Loading...</div>;
   if (!report) return <div className="p-4">Not found</div>;
@@ -25,8 +27,8 @@ export default function PublicReportView() {
         <h1 className="text-xl font-semibold">{report.title}</h1>
         <div className="text-sm text-gray-500">Public View</div>
       </div>
-      
-      <div 
+
+      <div
         className="grid gap-3"
         style={{
           gridTemplateColumns: 'repeat(12, 1fr)',
@@ -35,7 +37,7 @@ export default function PublicReportView() {
       >
         {(report.widgets || []).map(w => {
           const pos = w.position || { x: 0, y: 0, w: 6, h: 2 };
-          
+
           return (
             <div
               key={w.id}

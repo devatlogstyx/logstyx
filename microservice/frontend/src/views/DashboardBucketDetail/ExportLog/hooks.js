@@ -1,7 +1,7 @@
 //@ts-check
 
-import React, { useCallback, useState } from "react";
-import { listBucketTimeline } from "../../../api/bucket";
+import { useCallback, useState } from "react";
+import useAPI from "../../../hooks/useAPI";
 
 const useExportLog = ({ bucketId }) => {
 
@@ -12,12 +12,11 @@ const useExportLog = ({ bucketId }) => {
     const [error, setError] = useState(null);
     const [success, setSuccess] = useState(false);
 
-    const controller = React.useMemo(() => new AbortController(), []);
-
+    const api = useAPI(`/v1/buckets`)
     const fetchPage = useCallback(async (page) => {
-        const response = await listBucketTimeline(controller.signal, bucketId, { limit: 50, page });
+        const response = await api.custom("get", `/${bucketId}/logs/timeline`, { params: { limit: 50, page } });
         return response;
-    }, [])
+    }, [api, bucketId])
 
     const exportLogs = async () => {
         setOpened(true);

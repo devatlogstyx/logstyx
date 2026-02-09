@@ -2,9 +2,9 @@
 
 import { useForm } from "@mantine/form";
 import React, { useEffect, useState } from "react";
-import { createWebhook, deleteWebhook, findWebhookById, paginateWebhooks, updateWebhook } from "../../api/webhooks";
-import { useErrorMessage, useSuccessMessage } from "../../hooks/useMessage";
+import { useErrorMessage } from "../../hooks/useMessage";
 import { useConfirmDialog } from "../../hooks/useConfirmDialog";
+import useAPI from "../../hooks/useAPI";
 
 
 export default function useDashboardWebhook() {
@@ -15,7 +15,7 @@ export default function useDashboardWebhook() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [page, setPage] = useState(1)
 
-    const controller = React.useMemo(() => new AbortController(), []);
+    const api = useAPI(`/v1/webhooks`)
 
     const ErrorMessage = useErrorMessage()
     const { openConfirmDialog, ConfirmDialogComponent } = useConfirmDialog();
@@ -71,7 +71,7 @@ export default function useDashboardWebhook() {
     const fetchWebhooks = React.useCallback(async () => {
         try {
             setLoading(true);
-            const data = await paginateWebhooks(controller.signal, {
+            const data = await api.paginate({
                 page,
                 limit: 10
             });
@@ -81,7 +81,7 @@ export default function useDashboardWebhook() {
         } finally {
             setLoading(false);
         }
-    }, [ErrorMessage, page, controller])
+    }, [ErrorMessage, page, api])
 
     useEffect(() => {
         fetchWebhooks();
@@ -139,9 +139,9 @@ export default function useDashboardWebhook() {
             };
 
             if (editingWebhook?.id) {
-                await updateWebhook(controller.signal, editingWebhook.id, payload);
+                await api.put( editingWebhook.id, payload);
             } else {
-                await createWebhook(controller.signal, payload);
+                await api.post(payload);
             }
 
             await fetchWebhooks();
@@ -161,7 +161,7 @@ export default function useDashboardWebhook() {
             cancelLabel: 'Cancel',
             onConfirm: async () => {
                 try {
-                    await deleteWebhook(controller.signal, id);
+                    await api.delete(id);
                     await fetchWebhooks();
                 } catch (err) {
                     ErrorMessage(err)
@@ -170,11 +170,11 @@ export default function useDashboardWebhook() {
             onCancel: () => console.log('Delete cancelled'),
         })
 
-    }, [ErrorMessage, fetchWebhooks, openConfirmDialog, controller])
+    }, [ErrorMessage, fetchWebhooks, openConfirmDialog, api])
 
     const handleEdit = async (id) => {
         try {
-            const data = await findWebhookById(controller.signal, id)
+            const data = await api.get(id)
             openModal(data)
         } catch (e) {
             ErrorMessage(e)

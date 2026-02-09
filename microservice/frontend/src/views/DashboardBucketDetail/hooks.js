@@ -1,10 +1,11 @@
 //@ts-check
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect,  useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useErrorMessage } from "../../hooks/useMessage";
-import { deleteBucket, findBucketById } from "../../api/bucket";
+
 import { useConfirmDialog } from "../../hooks/useConfirmDialog";
+import useAPI from "../../hooks/useAPI";
 
 const useDashboardBucketDetail = () => {
 
@@ -13,21 +14,23 @@ const useDashboardBucketDetail = () => {
 
     const { id } = useParams()
     const ErrorMessage = useErrorMessage()
-    const controller = useMemo(() => new AbortController(), []);
+    
     const { openConfirmDialog, ConfirmDialogComponent } = useConfirmDialog();
     const navigate = useNavigate()
+
+    const api = useAPI("/v1/buckets")
 
     const fetchData = useCallback(async () => {
         try {
             setIsLoading(true)
-            const r = await findBucketById(controller.signal, id)
+            const r = await api.get(id)
             setBucket(r)
         } catch (e) {
             ErrorMessage(e)
         } finally {
             setIsLoading(false)
         }
-    }, [controller.signal, ErrorMessage, id])
+    }, [api, ErrorMessage, id])
 
     useEffect(() => {
         fetchData()
@@ -44,7 +47,7 @@ const useDashboardBucketDetail = () => {
                     return null
                 }
                 try {
-                    await deleteBucket(controller.signal, bucket?.id)
+                    await api.delete(bucket?.id)
                     navigate(`/dashboard/buckets`)
                 } catch (err) {
                     ErrorMessage(err)

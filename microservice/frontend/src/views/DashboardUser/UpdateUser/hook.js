@@ -3,7 +3,7 @@
 import { useForm } from "@mantine/form";
 import React from "react";
 import { useErrorMessage } from "../../../hooks/useMessage";
-import { updateUser } from "../../../api/user";
+import useAPI from "../../../hooks/useAPI";
 
 const useUpdateUser = ({
     initialValues,
@@ -14,8 +14,9 @@ const useUpdateUser = ({
     const [isEditModalVisible, setIsEditModalVisible] = React.useState(false);
     const [isSubmitting, setIsSubmitting] = React.useState(false);
 
-    const controller = React.useMemo(() => new AbortController(), []);
     const ErrorMessage = useErrorMessage()
+
+    const api = useAPI(`/v1/users`)
 
     const form = useForm({
         mode: 'uncontrolled',
@@ -28,7 +29,7 @@ const useUpdateUser = ({
     const handleUpdateUser = React.useCallback(async (payload) => {
         try {
             setIsSubmitting(true)
-            await updateUser(controller.signal, userId, payload)
+            await api.put( userId, payload)
             onUpdate()
             form.reset()
         } catch (e) {
@@ -37,7 +38,7 @@ const useUpdateUser = ({
             setIsEditModalVisible(false)
             setIsSubmitting(false)
         }
-    }, [ErrorMessage, controller, onUpdate, form, userId])
+    }, [ErrorMessage, api, onUpdate, form, userId])
 
     return {
         form,

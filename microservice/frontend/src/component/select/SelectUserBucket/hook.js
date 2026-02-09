@@ -2,20 +2,23 @@
 
 import React from "react"
 import { useErrorMessage } from "../../../hooks/useMessage"
-import { listMyBucket } from "../../../api/bucket";
+
+import useAPI from "../../../hooks/useAPI";
 
 const useSelectBucket = () => {
 
-    const controller = React.useMemo(() => new AbortController(), []);
+    
     const [projects, setProjects] = React.useState([])
     const [isLoading, setIsLoading] = React.useState(false)
 
     const ErrorMessage = useErrorMessage()
 
+    const api = useAPI("/v1/users/me/buckets")
+
     const fetchData = React.useCallback(async () => {
         try {
             setIsLoading(true)
-            const d = await listMyBucket(controller.signal)
+            const d = await api.list()
             setProjects(d)
 
         } catch (e) {
@@ -23,7 +26,7 @@ const useSelectBucket = () => {
         } finally {
             setIsLoading(false)
         }
-    }, [ErrorMessage, controller])
+    }, [ErrorMessage, api])
 
     
     React.useEffect(() => {

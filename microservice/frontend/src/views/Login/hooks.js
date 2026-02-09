@@ -1,24 +1,23 @@
 //@ts-check
 import React from "react"
 import { useErrorMessage } from "../../hooks/useMessage"
-import { userLogin } from "../../api/user"
 import { useNavigate } from "react-router-dom"
 import { EMAIL_PASSWORD_LOGIN_TYPE } from "../../utils/constant"
 import { useUser } from "../../context/useUser"
+import useAPI from "../../hooks/useAPI"
 const useLogin = () => {
     const ErrorMessage = useErrorMessage()
     const navigate = useNavigate()
     const { refetchUser } = useUser()  // Add this
 
-    const controller = React.useMemo(() => new AbortController(), []);
-
     const [isSubmitting, setIsSubmitting] = React.useState(false)
+    const api = useAPI(`/v1/users`)
 
-    const handleLogin = React.useCallback(async (payload) => {
+    const handleLogin = React.useCallback(async (body) => {
         try {
             setIsSubmitting(true)
-            payload.type = EMAIL_PASSWORD_LOGIN_TYPE
-            await userLogin(payload, controller.signal)
+            body.type = EMAIL_PASSWORD_LOGIN_TYPE
+            await api.custom("post", `/login`, { body })
             await refetchUser()
 
             navigate(`/dashboard`)
@@ -27,7 +26,7 @@ const useLogin = () => {
         } finally {
             setIsSubmitting(false)
         }
-    }, [ErrorMessage, navigate, controller, refetchUser])
+    }, [ErrorMessage, navigate, api, refetchUser])
 
     return {
         handleLogin,

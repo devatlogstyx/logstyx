@@ -2,20 +2,23 @@
 
 import React from "react"
 import { useErrorMessage } from "../../../hooks/useMessage"
-import { listMyProject } from "../../../api/user"
+
+import useAPI from "../../../hooks/useAPI";
 
 const useSelectProject = () => {
 
-    const controller = React.useMemo(() => new AbortController(), []);
+
     const [projects, setProjects] = React.useState([])
     const [isLoading, setIsLoading] = React.useState(false)
 
     const ErrorMessage = useErrorMessage()
 
+    const api = useAPI("/v1/users/me")
+
     const fetchData = React.useCallback(async () => {
         try {
             setIsLoading(true)
-            const d = await listMyProject(controller.signal)
+            const d = await api.get("projects")
             setProjects(d)
 
         } catch (e) {
@@ -23,7 +26,7 @@ const useSelectProject = () => {
         } finally {
             setIsLoading(false)
         }
-    }, [ErrorMessage, controller])
+    }, [ErrorMessage, api])
 
     
     React.useEffect(() => {

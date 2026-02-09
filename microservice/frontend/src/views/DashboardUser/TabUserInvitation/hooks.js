@@ -1,20 +1,21 @@
 //@ts-check
 
 import React from "react";
-import { removeUserInvitation } from "../../../api/user.invitation";
 import { useConfirmDialog } from "../../../hooks/useConfirmDialog";
 import { useErrorMessage, useSuccessMessage } from "../../../hooks/useMessage";
 import { useClipboard } from "@mantine/hooks";
 import { PROJECT_TITLE } from "../../../utils/constant";
+import useAPI from "../../../hooks/useAPI";
 
 const useTabUserInvitation = ({
     onDelete
 }) => {
-    const controller = React.useMemo(() => new AbortController(), []);
 
     const { openConfirmDialog, ConfirmDialogComponent } = useConfirmDialog();
     const ErrorMessage = useErrorMessage()
     const SuccessMessage = useSuccessMessage()
+
+    const api = useAPI(`/v1/user-invitations`)
 
     const clipboard = useClipboard({ timeout: 500 });
 
@@ -39,7 +40,7 @@ const useTabUserInvitation = ({
             cancelLabel: 'Cancel',
             onConfirm: async () => {
                 try {
-                    await removeUserInvitation(controller.signal, id)
+                    await api.delete(id)
                     onDelete()
                 } catch (e) {
                     ErrorMessage(e)
@@ -47,7 +48,7 @@ const useTabUserInvitation = ({
             },
             onCancel: () => console.log('Delete cancelled'),
         })
-    }, [ErrorMessage, controller, openConfirmDialog, onDelete])
+    }, [ErrorMessage, api, openConfirmDialog, onDelete])
 
     return {
         handleRemove,

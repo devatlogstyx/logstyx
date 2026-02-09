@@ -3,16 +3,16 @@
 import React from "react";
 import { useErrorMessage } from "../../../hooks/useMessage";
 import { useNavigate, useParams } from "react-router-dom";
-import { removeProject } from "../../../api/project";
 import { useConfirmDialog } from "../../../hooks/useConfirmDialog";
+import useAPI from "../../../hooks/useAPI";
 
 const useTabOverview = () => {
 
     const { slug } = useParams()
-    const controller = React.useMemo(() => new AbortController(), []);
-    const [isSubmitting, setIsSubmitting] = React.useState(false)
+        const [isSubmitting, setIsSubmitting] = React.useState(false)
     const ErrorMessage = useErrorMessage()
     const navigate = useNavigate()
+    const api = useAPI("/v1/projects")
 
     const { openConfirmDialog, ConfirmDialogComponent } = useConfirmDialog();
 
@@ -27,7 +27,7 @@ const useTabOverview = () => {
                 try {
                     setIsSubmitting(true)
 
-                    await removeProject(controller.signal, slug)
+                    await api.delete(slug)
 
                     navigate(`/dashboard`)
 
@@ -40,7 +40,7 @@ const useTabOverview = () => {
             onCancel: () => console.log('Delete cancelled'),
         })
 
-    }, [ErrorMessage, controller, slug, navigate, openConfirmDialog])
+    }, [ErrorMessage, api, slug, navigate, openConfirmDialog])
 
     return {
         isSubmitting,

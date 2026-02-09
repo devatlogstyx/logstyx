@@ -1,10 +1,10 @@
 //@ts-check
 
 import React from "react";
-import { createAlert, deleteAlert, findAlertById, paginateAlerts, updateAlert } from "../../api/alert";
 import { useErrorMessage } from "../../hooks/useMessage";
 import { useForm } from "@mantine/form";
 import { useConfirmDialog } from "../../hooks/useConfirmDialog";
+import useAPI from "../../hooks/useAPI";
 
 const useDashboardAlert = () => {
 
@@ -15,7 +15,7 @@ const useDashboardAlert = () => {
     const [editingAlert, setEditingAlert] = React.useState(null)
     const [isSubmitting, setIsSubmitting] = React.useState(null)
 
-    const controller = React.useMemo(() => new AbortController(), []);
+    const api = useAPI("/v1/alerts")
 
     const { openConfirmDialog, ConfirmDialogComponent } = useConfirmDialog();
 
@@ -43,14 +43,14 @@ const useDashboardAlert = () => {
     const fetchAlert = React.useCallback(async () => {
         try {
             setLoading(true);
-            const data = await paginateAlerts(controller.signal, { page });
+            const data = await api.paginate({ page });
             setList(data);
         } catch (err) {
             ErrorMessage(err);
         } finally {
             setLoading(false);
         }
-    }, [ErrorMessage, page, controller])
+    }, [ErrorMessage, page, api])
 
     React.useEffect(() => {
         fetchAlert();
@@ -92,7 +92,7 @@ const useDashboardAlert = () => {
             cancelLabel: 'Cancel',
             onConfirm: async () => {
                 try {
-                    await deleteAlert(controller.signal, id);
+                    await api.delete(id);
                     await fetchAlert();
                 } catch (err) {
                     ErrorMessage(err)
@@ -104,7 +104,7 @@ const useDashboardAlert = () => {
     }
     const handleEdit = async (id) => {
         try {
-            const data = await findAlertById(controller.signal, id)
+            const data = await api.get(id)
             openModal(data)
         } catch (e) {
             ErrorMessage(e)
@@ -131,9 +131,9 @@ const useDashboardAlert = () => {
             };
 
             if (editingAlert?.id) {
-                await updateAlert(controller.signal, editingAlert.id, payload);
+                await api.put(editingAlert.id, payload);
             } else {
-                await createAlert(controller.signal, payload);
+                await api.post(payload);
             }
 
             await fetchAlert();

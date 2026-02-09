@@ -2,8 +2,8 @@
 
 import React from "react";
 import { useErrorMessage } from "../../../hooks/useMessage";
-import { getUserProjectStats } from "../../../api/user";
 import { generateColor } from "../../../utils/function";
+import useAPI from "../../../hooks/useAPI";
 
 const useProjectViews = () => {
 
@@ -12,12 +12,11 @@ const useProjectViews = () => {
 
     const ErrorMessage = useErrorMessage()
 
-    const controller = React.useMemo(() => new AbortController(), []);
-
+    const api = useAPI("/v1/users/me/project-stats")
     const fetchData = React.useCallback(async () => {
         try {
             setIsLoading(true)
-            const r = await getUserProjectStats(controller.signal)
+            const r = await api.list()
             setProjects(r?.map((n) => {
                 return {
                     ...n,
@@ -30,7 +29,7 @@ const useProjectViews = () => {
         } finally {
             setIsLoading(false)
         }
-    }, [ErrorMessage, controller])
+    }, [ErrorMessage, api])
 
 
     React.useEffect(() => {

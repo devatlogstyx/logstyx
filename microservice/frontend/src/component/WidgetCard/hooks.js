@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { getWidgetData } from "../../api/report";
+import useAPI from "../../hooks/useAPI";
 
 //@ts-check
 export default function useWidgetCard({
@@ -14,16 +14,18 @@ export default function useWidgetCard({
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
+    const api = useAPI(`/v1/reports`)
     const fetchData = useCallback(async () => {
+
         setLoading(true);
         setError(null);
         const ctrl = new AbortController();
-        getWidgetData(ctrl.signal, slug, widget.id)
+        api.custom("get", `/${slug}/widgets/${widget.id}/data`, {})
             .then(setData)
             .catch(e => setError(e?.message || 'Error loading data'))
             .finally(() => setLoading(false));
         return () => ctrl.abort();
-    }, [slug, widget?.id])
+    }, [slug, widget?.id, api])
 
     useEffect(() => {
         fetchData();

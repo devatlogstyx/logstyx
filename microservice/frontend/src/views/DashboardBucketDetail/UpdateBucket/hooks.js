@@ -2,7 +2,7 @@
 import { useForm } from "@mantine/form";
 import React from "react"
 import { useErrorMessage } from "../../../hooks/useMessage";
-import { updateBucket } from "../../../api/bucket";
+import useAPI from "../../../hooks/useAPI";
 
 const useUpdateBucket = ({
     bucket,
@@ -12,7 +12,7 @@ const useUpdateBucket = ({
     const [isModalVisible, setIsModalVisible] = React.useState(false)
     const [isSubmitting, setIsSubmitting] = React.useState(false)
 
-    const controller = React.useMemo(() => new AbortController(), []);
+    const api = useAPI(`/v1/buckets`)
 
     const ErrorMessage = useErrorMessage()
     const initialHours = bucket?.settings?.retentionHours
@@ -130,14 +130,14 @@ const useUpdateBucket = ({
     const handleSubmit = React.useCallback(async (values) => {
         try {
             setIsSubmitting(true)
-            await updateBucket(controller.signal, bucket?.id, values)
+            await api.put(bucket?.id, values)
             onUpdate()
         } catch (e) {
             ErrorMessage(e)
         } finally {
             setIsSubmitting(false)
         }
-    }, [ErrorMessage, controller, bucket, onUpdate])
+    }, [ErrorMessage, api, bucket, onUpdate])
 
     return {
         form,

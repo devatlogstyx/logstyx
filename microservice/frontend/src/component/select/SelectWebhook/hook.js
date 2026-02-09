@@ -2,20 +2,22 @@
 
 import React from "react"
 import { useErrorMessage } from "../../../hooks/useMessage"
-import { listAllWebhook } from "../../../api/webhooks";
+import useAPI from "../../../hooks/useAPI";
 
 const useSelectWebhook = () => {
 
-    const controller = React.useMemo(() => new AbortController(), []);
+    
     const [webhooks, setWebhooks] = React.useState([])
     const [isLoading, setIsLoading] = React.useState(false)
+
+    const api = useAPI("/v1/webhooks")
 
     const ErrorMessage = useErrorMessage()
 
     const fetchData = React.useCallback(async () => {
         try {
             setIsLoading(true)
-            const d = await listAllWebhook(controller.signal)
+            const d = await api.listAll()
             setWebhooks(d)
 
         } catch (e) {
@@ -23,7 +25,7 @@ const useSelectWebhook = () => {
         } finally {
             setIsLoading(false)
         }
-    }, [ErrorMessage, controller])
+    }, [ErrorMessage, api])
 
     
     React.useEffect(() => {

@@ -2,8 +2,8 @@
 
 import React from "react";
 import { useErrorMessage } from "../../../hooks/useMessage";
-import { getUserBucketStats } from "../../../api/user";
 import { generateColor } from "../../../utils/function";
+import useAPI from "../../../hooks/useAPI";
 
 const useBucketViews = () => {
 
@@ -11,13 +11,12 @@ const useBucketViews = () => {
     const [isLoading, setIsLoading] = React.useState(true)
 
     const ErrorMessage = useErrorMessage()
-
-    const controller = React.useMemo(() => new AbortController(), []);
+    const api = useAPI("/v1/users/me/bucket-stats")
 
     const fetchData = React.useCallback(async () => {
         try {
             setIsLoading(true)
-            const r = await getUserBucketStats(controller.signal)
+            const r = await api.list()
             setBuckets(r?.map((n) => {
                 return {
                     ...n,
@@ -30,7 +29,7 @@ const useBucketViews = () => {
         } finally {
             setIsLoading(false)
         }
-    }, [ErrorMessage, controller])
+    }, [ErrorMessage, api])
 
 
     React.useEffect(() => {

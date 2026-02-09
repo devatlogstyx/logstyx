@@ -1,6 +1,6 @@
 import React from "react";
 import { useErrorMessage } from "../../hooks/useMessage";
-import { getCurrentUser } from "../../api/user";
+import useAPI from "../../hooks/useAPI";
 
 //@ts-check
 const useUserContext = () => {
@@ -9,15 +9,13 @@ const useUserContext = () => {
     const [isLoading, setIsLoading] = React.useState(true);
     const ErrorMessage = useErrorMessage()
 
-    const controllerRef = React.useRef(null);
+    const api = useAPI("/v1/users")
 
     const fetchUser = React.useCallback(async () => {
-        const controller = new AbortController();
-        controllerRef.current = controller;
 
         try {
             setIsLoading(true)
-            const u = await getCurrentUser(controller.signal)
+            const u = await api.get("me")
             if (!u) {
                 throw new Error(`Not login`)
             }
@@ -28,7 +26,7 @@ const useUserContext = () => {
         } finally {
             setIsLoading(false)
         }
-    }, [ErrorMessage])
+    }, [ErrorMessage, api])
 
 
     React.useEffect(() => {

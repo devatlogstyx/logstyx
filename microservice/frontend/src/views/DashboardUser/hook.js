@@ -2,23 +2,23 @@
 
 import React from "react";
 import { useErrorMessage } from "../../hooks/useMessage";
-import { listAllUserInvitation } from "../../api/user.invitation";
-import { listAllUser } from "../../api/user";
+import useAPI from "../../hooks/useAPI";
 
 const useDashboardUser = () => {
     const ErrorMessage = useErrorMessage()
-    const controller = React.useMemo(() => new AbortController(), []);
 
     const [users, setUsers] = React.useState([]);
     const [invitations, setInvitations] = React.useState([]);
     const [activeTab, setActiveTab] = React.useState("users");
+    const InvitationAPI = useAPI(`/v1/user-invitations`)
+    const UserAPI = useAPI(`/v1/users`)
 
     const fetchData = React.useCallback(async () => {
         try {
 
             const [u, i] = await Promise.all([
-                listAllUser(controller.signal),
-                listAllUserInvitation(controller.signal)
+                UserAPI.listAll({}),
+                InvitationAPI.listAll()
             ])
 
             setUsers(u)
@@ -27,7 +27,7 @@ const useDashboardUser = () => {
         } catch (e) {
             ErrorMessage(e)
         }
-    }, [ErrorMessage, controller])
+    }, [ErrorMessage, UserAPI, InvitationAPI])
 
 
 

@@ -2,7 +2,7 @@
 import { useForm } from "@mantine/form";
 import React from "react"
 import { useErrorMessage } from "../../../hooks/useMessage";
-import { updateProject } from "../../../api/project";
+import useAPI from "../../../hooks/useAPI";
 const useUpdateSettings = ({
     project,
     onUpdate
@@ -11,7 +11,7 @@ const useUpdateSettings = ({
     const [isModalVisible, setIsModalVisible] = React.useState(false)
     const [isSubmitting, setIsSubmitting] = React.useState(false)
 
-    const controller = React.useMemo(() => new AbortController(), []);
+    const api = useAPI(`/v1/projects`)
 
     const ErrorMessage = useErrorMessage()
     const initialHours = project?.settings?.retentionHours
@@ -158,14 +158,14 @@ const useUpdateSettings = ({
     const handleSubmit = React.useCallback(async (values) => {
         try {
             setIsSubmitting(true)
-            await updateProject(controller.signal, project?.id, values)
+            await api.put(project?.id, values)
             onUpdate()
         } catch (e) {
             ErrorMessage(e)
         } finally {
             setIsSubmitting(false)
         }
-    }, [ErrorMessage, controller, project, onUpdate])
+    }, [ErrorMessage, api, project, onUpdate])
 
     return {
         form,

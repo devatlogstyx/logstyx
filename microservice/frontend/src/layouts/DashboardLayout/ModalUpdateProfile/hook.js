@@ -2,7 +2,7 @@ import { useForm } from "@mantine/form";
 import { useUser } from "../../../context/useUser";
 import React from "react";
 import { useErrorMessage } from "../../../hooks/useMessage";
-import { updateMyPassword, updateMyProfile } from "../../../api/user";
+import useAPI from "../../../hooks/useAPI";
 
 //@ts-check
 const useModalUpdateProfile = ({
@@ -14,7 +14,7 @@ const useModalUpdateProfile = ({
     const [isSubmitting, setIsSubmitting] = React.useState(false)
     const ErrorMessage = useErrorMessage()
 
-    const controller = React.useMemo(() => new AbortController(), []);
+    const api = useAPI("/v1/users")
 
     const profileForm = useForm({
         mode: 'uncontrolled',
@@ -81,7 +81,7 @@ const useModalUpdateProfile = ({
     const handleSubmitPassword = React.useCallback(async (values) => {
         try {
             setIsSubmitting(true)
-            await updateMyPassword(controller.signal, values)
+            await api.custom("patch", "/me/password", { body: values })
             onClose()
         } catch (e) {
             ErrorMessage(e)
@@ -89,12 +89,12 @@ const useModalUpdateProfile = ({
             setIsSubmitting(false)
 
         }
-    }, [ErrorMessage, controller, onClose])
+    }, [ErrorMessage, api, onClose])
 
     const handleSubmitProfile = React.useCallback(async (values) => {
         try {
             setIsSubmitting(true)
-            await updateMyProfile(controller.signal, values)
+            await api.put("me", values)
             location.reload()
         } catch (e) {
             ErrorMessage(e)
@@ -102,7 +102,7 @@ const useModalUpdateProfile = ({
             setIsSubmitting(false)
 
         }
-    }, [ErrorMessage, controller])
+    }, [ErrorMessage, api])
 
     return {
         profileForm,

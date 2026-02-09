@@ -2,9 +2,9 @@
 
 import { useForm } from "@mantine/form";
 import React from "react";
-import { createUserInvitation } from "../../../api/user.invitation";
 import { useErrorMessage } from "../../../hooks/useMessage";
 import { READ_BUCKET_USER_ROLE, READ_PROJECT_ROLE } from "../../../utils/constant";
+import useAPI from "../../../hooks/useAPI";
 
 const useCreateUserInvitation = ({
     onCreate
@@ -15,6 +15,7 @@ const useCreateUserInvitation = ({
 
     const controller = React.useMemo(() => new AbortController(), []);
     const ErrorMessage = useErrorMessage()
+    const InvitationAPI = useAPI(`/v1/user-invitations`)
 
     const form = useForm({
         mode: 'uncontrolled',
@@ -33,7 +34,7 @@ const useCreateUserInvitation = ({
     const handleCreateInvitation = React.useCallback(async (payload) => {
         try {
             setIsSubmitting(true)
-            await createUserInvitation(controller.signal, payload)
+            await InvitationAPI.post(payload)
             onCreate()
             form.reset()
         } catch (e) {
@@ -42,7 +43,7 @@ const useCreateUserInvitation = ({
             setIsInviteModalVisible(false)
             setIsSubmitting(false)
         }
-    }, [ErrorMessage, controller, onCreate, form])
+    }, [ErrorMessage, InvitationAPI, onCreate, form])
 
     return {
         form,

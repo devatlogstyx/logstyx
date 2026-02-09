@@ -5,16 +5,15 @@
 import { useForm } from "@mantine/form";
 import React from "react";
 import { useErrorMessage } from "../../hooks/useMessage";
-import { setupUser } from "../../api/user";
+import useAPI from "../../hooks/useAPI";
 
 const useUserSetupPage = () => {
 
     const [step, setStep] = React.useState(1);
     const [isSubmitting, setIsSubmitting] = React.useState(false);
 
-    const controller = React.useMemo(() => new AbortController(), []);
-
     const ErrorMessage = useErrorMessage()
+    const api = useAPI(`/v1/users`)
 
     const form = useForm({
         initialValues: {
@@ -53,7 +52,7 @@ const useUserSetupPage = () => {
     const handleSubmit = async () => {
         setIsSubmitting(true);
         try {
-            await setupUser(controller.signal, form?.values);
+            await api.custom("post", `/seed`, { body: form?.values });
             setStep(3)
         } catch (e) {
             ErrorMessage(e)

@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { useErrorMessage, useSuccessMessage } from "../../../hooks/useMessage";
-import { testProbeConnection } from "../../../api/probes";
+import useAPI from "../../../hooks/useAPI";
 /**
  * 
  * @param {*} param0 
@@ -15,19 +15,18 @@ const useModalForm = ({
     const SuccessMessage = useSuccessMessage()
     const [isTesting, setIsTesting] = useState(false)
 
-    const controller = React.useMemo(() => new AbortController(), []);
-
+    const testAPI = useAPI("/v1/probes/test-connection")
     const handleTestConnection = React.useCallback(async () => {
         try {
             setIsTesting(true)
-            await testProbeConnection(controller.signal, form?.values?.connection)
+            await testAPI.post(form?.values?.connection)
             SuccessMessage(`Connected successfully`)
         } catch (e) {
             ErrorMessage(e)
         } finally {
             setIsTesting(false)
         }
-    }, [ErrorMessage, controller, form, SuccessMessage])
+    }, [ErrorMessage, testAPI, form, SuccessMessage])
 
     const [currentStep, setCurrentStep] = useState(0);
 

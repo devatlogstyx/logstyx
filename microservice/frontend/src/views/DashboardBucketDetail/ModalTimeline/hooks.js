@@ -2,16 +2,18 @@
 
 import React from "react";
 import { useErrorMessage } from "../../../hooks/useMessage";
-import { getLogTimeline } from "../../../api/bucket";
+import useAPI from "../../../hooks/useAPI";
 
 const useModalTimeline = ({
     bucketId,
     logKey
 }) => {
 
-    const controller = React.useMemo(() => new AbortController(), []);
+    
     const ErrorMessage = useErrorMessage()
     const [line, setLine] = React.useState([])
+
+    const api = useAPI(`/v1/buckets`)
 
     const fetchData = React.useCallback(async () => {
         try {
@@ -19,13 +21,13 @@ const useModalTimeline = ({
                 return null
             }
 
-            let l = await getLogTimeline(controller.signal, bucketId, logKey)
+            let l = await api.custom("get", `/${bucketId}/logs/${logKey}/timeline`, {})
             setLine(l)
 
         } catch (e) {
             ErrorMessage(e)
         }
-    }, [ErrorMessage, controller, bucketId, logKey])
+    }, [ErrorMessage, api, bucketId, logKey])
 
     React.useEffect(() => {
         fetchData()

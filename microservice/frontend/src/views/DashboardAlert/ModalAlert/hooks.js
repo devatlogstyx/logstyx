@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useErrorMessage } from "../../../hooks/useMessage";
-import { findWebhookById } from "../../../api/webhooks";
 import { extractMustacheVars } from "../../../utils/function";
+import useAPI from "../../../hooks/useAPI";
 
 export default function useModalAlert({
     form,
@@ -11,8 +11,7 @@ export default function useModalAlert({
     const [step, setStep] = useState(0);
     const [mustacheVars, setMustacheVars] = useState([]);
 
-    const controller = React.useMemo(() => new AbortController(), []);
-
+    const api = useAPI("/v1/webhooks")
     const ErrorMessage = useErrorMessage()
 
     const handleCloseModal = () => {
@@ -27,7 +26,7 @@ export default function useModalAlert({
         }
 
         try {
-            const webhook = await findWebhookById(controller.signal, form.values.webhook)
+            const webhook = await api.get(form.values.webhook)
             const headerVars = extractMustacheVars(JSON.stringify(webhook.connection.headers));
             const bodyVars = extractMustacheVars(JSON.stringify(webhook.connection.body_template));
             const allVars = [...new Set([...headerVars, ...bodyVars])];
@@ -35,7 +34,7 @@ export default function useModalAlert({
         } catch (e) {
             ErrorMessage(e)
         }
-    }, [controller.signal, ErrorMessage, form.values.webhook])
+    }, [api, ErrorMessage, form.values.webhook])
 
     React.useEffect(() => {
         setupMustacheVar()

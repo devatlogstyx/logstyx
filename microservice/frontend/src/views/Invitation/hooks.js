@@ -2,7 +2,7 @@
 import React from "react"
 import { useErrorMessage, useSuccessMessage } from "../../hooks/useMessage"
 import { useNavigate, useParams } from "react-router-dom"
-import { validateUserInvitation } from "../../api/user.invitation"
+import useAPI from "../../hooks/useAPI"
 const useInvitation = () => {
     const ErrorMessage = useErrorMessage()
     const SuccessMessage = useSuccessMessage()
@@ -10,14 +10,14 @@ const useInvitation = () => {
     const navigate = useNavigate()
     const { id } = useParams()
 
-    const controller = React.useMemo(() => new AbortController(), []);
-
     const [isSubmitting, setIsSubmitting] = React.useState(false)
 
-    const handleValidateInvitaiton = React.useCallback(async (payload) => {
+    const api = useAPI(`/v1/user-invitations`)
+
+    const handleValidateInvitaiton = React.useCallback(async (body) => {
         try {
 
-            await validateUserInvitation(controller.signal, id, payload)
+            await api.custom("post", `/${id}/validate`, { body })
             SuccessMessage(`Account successfully created, you now can login`)
             navigate("/login")
         } catch (e) {
@@ -25,7 +25,7 @@ const useInvitation = () => {
         } finally {
             setIsSubmitting(false)
         }
-    }, [ErrorMessage, navigate, controller, id])
+    }, [ErrorMessage, navigate, SuccessMessage, api, id])
 
     return {
         handleValidateInvitaiton,

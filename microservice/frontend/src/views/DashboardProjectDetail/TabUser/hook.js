@@ -2,18 +2,17 @@
 
 import React from "react"
 import { useErrorMessage } from "../../../hooks/useMessage"
-import { removeUserFromProject } from "../../../api/project"
 import { useConfirmDialog } from "../../../hooks/useConfirmDialog";
+import useAPI from "../../../hooks/useAPI";
 
 const useTabUser = ({
     projectId,
     onUpdate
 }) => {
 
-    const controller = React.useMemo(() => new AbortController(), []);
-
     const ErrorMessage = useErrorMessage()
     const { openConfirmDialog, ConfirmDialogComponent } = useConfirmDialog();
+    const api = useAPI("/v1/projects")
 
     const handleRemoveUser = React.useCallback(async (userId) => {
         openConfirmDialog({
@@ -24,7 +23,7 @@ const useTabUser = ({
             cancelLabel: 'Cancel',
             onConfirm: async () => {
                 try {
-                    await removeUserFromProject(controller.signal, projectId, userId)
+                    await api.custom(`delete`, `/${projectId}/users/${userId}`, {})
                     onUpdate()
                 } catch (e) {
                     ErrorMessage(e)
@@ -33,7 +32,7 @@ const useTabUser = ({
             onCancel: () => console.log('Delete cancelled'),
         })
 
-    }, [ErrorMessage, controller.signal, onUpdate, openConfirmDialog, projectId])
+    }, [ErrorMessage, api, onUpdate, openConfirmDialog, projectId])
 
     return {
         handleRemoveUser,

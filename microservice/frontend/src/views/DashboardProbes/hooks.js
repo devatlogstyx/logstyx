@@ -3,9 +3,8 @@
 import { useForm } from "@mantine/form";
 import React, { useCallback, useEffect, useState } from "react";
 import { useErrorMessage } from "../../hooks/useMessage";
-import { createProbe, paginateProbe, removeProbe, updateProbe } from "../../api/probes";
-import { listMyProject } from "../../api/project";
 import { useConfirmDialog } from "../../hooks/useConfirmDialog";
+import useAPI from "../../hooks/useAPI";
 
 
 const useDashboardProbes = () => {
@@ -17,7 +16,8 @@ const useDashboardProbes = () => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [page, setPage] = useState(1)
 
-    const controller = React.useMemo(() => new AbortController(), []);
+    const ProbeAPI = useAPI("/v1/probes")
+    const UserAPI = useAPI("/v1/users/me")
 
     const ErrorMessage = useErrorMessage()
     const { openConfirmDialog, ConfirmDialogComponent } = useConfirmDialog();
@@ -41,18 +41,18 @@ const useDashboardProbes = () => {
 
     const fetchProbes = useCallback(async () => {
         try {
-            const res = await paginateProbe(controller.signal, { page });
+            const res = await ProbeAPI.paginate({ page });
             setList(res);
         } catch (err) {
             ErrorMessage(err)
         } finally {
             setIsLoading(false);
         }
-    }, [ErrorMessage, controller, page])
+    }, [ErrorMessage, ProbeAPI, page])
 
     const fetchProjects = useCallback(async () => {
         try {
-            const data = await listMyProject(controller.signal);
+            const data = await UserAPI.get("projects");
 
             // @ts-ignore
             setProjects(data?.map((n) => {
@@ -64,7 +64,7 @@ const useDashboardProbes = () => {
         } catch (err) {
             ErrorMessage(err)
         }
-    }, [ErrorMessage, controller])
+    }, [ErrorMessage, UserAPI])
 
     useEffect(() => {
         fetchProbes();
@@ -117,9 +117,9 @@ const useDashboardProbes = () => {
             };
 
             if (editingProbe) {
-                await updateProbe(controller.signal, editingProbe.id, payload)
+                await ProbeAPI.put(editingProbe.id, payload)
             } else {
-                await createProbe(controller.signal, payload)
+                await ProbeAPI.post(payload)
             }
 
             await fetchProbes();
@@ -143,7 +143,7 @@ const useDashboardProbes = () => {
             cancelLabel: 'Cancel',
             onConfirm: async () => {
                 try {
-                    await removeProbe(controller.signal, id)
+                    await ProbeAPI.delete(id)
                     await fetchProbes();
                 } catch (err) {
                     ErrorMessage(err)
@@ -152,7 +152,7 @@ const useDashboardProbes = () => {
             onCancel: () => console.log('Delete cancelled'),
         })
 
-    }, [ErrorMessage, controller, fetchProbes, openConfirmDialog])
+    }, [ErrorMessage, ProbeAPI, fetchProbes, openConfirmDialog])
 
     const authType = form.values.connection.auth.type;
 

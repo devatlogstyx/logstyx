@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState, useCallback } from 'react';
-import { paginateReports, createReport, deleteReport, updateReport } from '../../api/report';
 import { PRIVATE_REPORT_VISIBILITY } from '../../utils/constant';
 import { useErrorMessage } from '../../hooks/useMessage';
 import { useConfirmDialog } from '../../hooks/useConfirmDialog';
+import useAPI from '../../hooks/useAPI';
 
 export function useDashboardReports() {
   const [list, setList] = useState([]);
@@ -14,6 +14,8 @@ export function useDashboardReports() {
   const [visibility, setVisibility] = useState(PRIVATE_REPORT_VISIBILITY);
   const [creating, setCreating] = useState(false);
 
+  const api = useAPI("/v1/reports")
+
   // edit modal state
   const [editModalOpened, setEditModalOpened] = useState(false);
   const [editId, setEditId] = useState(null);
@@ -23,22 +25,20 @@ export function useDashboardReports() {
 
   const [deletingIds, setDeletingIds] = useState(() => new Set());
 
-  const controller = useMemo(() => new AbortController(), []);
-
   const ErrorMessage = useErrorMessage();
   const { openConfirmDialog, ConfirmDialogComponent } = useConfirmDialog();
 
   const fetchReports = useCallback(async () => {
     try {
       setLoading(true)
-      const res = await paginateReports(controller.signal, { page, limit: 50 })
+      const res = await api.paginate({ page, limit: 50 })
       setList(res);
     } catch (e) {
       ErrorMessage(e)
     } finally {
       setLoading(false)
     }
-  }, [ErrorMessage, controller, page])
+  }, [ErrorMessage, api, page])
 
   useEffect(() => {
     fetchReports()
@@ -78,8 +78,7 @@ export function useDashboardReports() {
       if (!title.trim()) return;
       try {
         setCreating(true);
-        const ctrl = new AbortController();
-        const data = await createReport(ctrl.signal, { title: title.trim(), visibility });
+        const data = await api.post({ title: title.trim(), visibility });
         if (data) {
 
           fetchReports()
@@ -92,7 +91,7 @@ export function useDashboardReports() {
         setCreating(false);
       }
     },
-    [title, visibility, ErrorMessage, closeCreateModal, resetForm, fetchReports]
+    [api, title, visibility, ErrorMessage, closeCreateModal, resetForm, fetchReports]
   );
 
   const onEditSubmit = useCallback(
@@ -101,8 +100,7 @@ export function useDashboardReports() {
       if (!editId || !editTitle.trim()) return;
       try {
         setUpdating(true);
-        const ctrl = new AbortController();
-        const updated = await updateReport(ctrl.signal, editId, {
+        const updated = await api.put(editId, {
           title: editTitle.trim(),
           visibility: editVisibility,
         });
@@ -116,7 +114,7 @@ export function useDashboardReports() {
         setUpdating(false);
       }
     },
-    [editId, editTitle, editVisibility, ErrorMessage, closeEditModal, fetchReports]
+    [editId, api, editTitle, editVisibility, ErrorMessage, closeEditModal, fetchReports]
   );
 
   const isDeleting = useCallback((id) => deletingIds.has(id), [deletingIds]);
@@ -132,8 +130,7 @@ export function useDashboardReports() {
           const id = report.id;
           setDeletingIds((prev) => new Set([...prev, id]));
           try {
-            const ctrl = new AbortController();
-            await deleteReport(ctrl.signal, id);
+            await api.delete(id);
             setList((prev) => prev.filter((r) => r.id !== id));
           } catch (err) {
             ErrorMessage(err);
@@ -148,7 +145,7 @@ export function useDashboardReports() {
         onCancel: () => { },
       });
     },
-    [openConfirmDialog, ErrorMessage]
+    [openConfirmDialog,api, ErrorMessage]
   );
 
   return {

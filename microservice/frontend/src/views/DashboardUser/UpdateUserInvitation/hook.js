@@ -2,8 +2,8 @@
 
 import { useForm } from "@mantine/form";
 import React from "react";
-import { updateUserInvitation } from "../../../api/user.invitation";
 import { useErrorMessage } from "../../../hooks/useMessage";
+import useAPI from "../../../hooks/useAPI";
 
 const useUpdateUserInvitation = ({
     initialValues,
@@ -13,8 +13,7 @@ const useUpdateUserInvitation = ({
 
     const [isEditModalVisible, setIsEditModalVisible] = React.useState(false);
     const [isSubmitting, setIsSubmitting] = React.useState(false);
-
-    const controller = React.useMemo(() => new AbortController(), []);
+    
     const ErrorMessage = useErrorMessage()
 
     const form = useForm({
@@ -24,11 +23,12 @@ const useUpdateUserInvitation = ({
         },
     });
 
+    const api = useAPI(`/v1/user-invitations`)
 
     const handleUpdateInvitation = React.useCallback(async (payload) => {
         try {
             setIsSubmitting(true)
-            await updateUserInvitation(controller.signal, invitationId, payload)
+            await api.put(invitationId, payload)
             onUpdate()
             form.reset()
         } catch (e) {
@@ -37,7 +37,7 @@ const useUpdateUserInvitation = ({
             setIsEditModalVisible(false)
             setIsSubmitting(false)
         }
-    }, [ErrorMessage, controller, onUpdate, form, invitationId])
+    }, [ErrorMessage, api, onUpdate, form, invitationId])
 
     return {
         form,

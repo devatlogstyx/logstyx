@@ -1,9 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { useForm } from '@mantine/form';
 import { useParams } from 'react-router-dom';
-import { getReportBySlug, createWidget, deleteWidget, updateReport, updateWidget } from '../../api/report';
 import { useConfirmDialog } from '../../hooks/useConfirmDialog';
-import { listMyBucket } from '../../api/bucket';
+import useAPI from '../../hooks/useAPI';
 
 export function useDashboardReportDetail() {
   const { slug } = useParams();
@@ -30,17 +29,18 @@ export function useDashboardReportDetail() {
 
   const { openConfirmDialog, ConfirmDialogComponent } = useConfirmDialog();
 
+  const ReportAPI = useAPI(`/v1/reports`)
+  const BucketAPI = useAPI(`/v1/users/me`)
+  const WidgetAPI = useAPI(`v1/reports/widgets`)
+
   useEffect(() => {
-    const ctrl = new AbortController();
-    getReportBySlug(ctrl.signal, slug).then(setReport).finally(() => setLoading(false));
-    listMyBucket(ctrl.signal).then(setBuckets);
-    return () => ctrl.abort();
-  }, [slug]);
+    ReportAPI.get(slug).then(setReport).finally(() => setLoading(false));
+    BucketAPI.get("buckets").then(setBuckets);
+  }, [slug, ReportAPI, BucketAPI]);
 
   const onAddWidget = form.onSubmit(async (values) => {
     setIsSubmitting(true)
-    const ctrl = new AbortController();
-    const created = await createWidget(ctrl.signal, report.id, {
+    const created = await ReportAPI.custom(`post`, `/${report?.id}/widgets`, {
       bucket: values.bucket,
       template: values.template,
       title: values.title || `${values.template}`,
@@ -55,8 +55,7 @@ export function useDashboardReportDetail() {
 
   const onChangeVisibility = async (e) => {
     const vis = e.target.value;
-    const ctrl = new AbortController();
-    const updated = await updateReport(ctrl.signal, report.id, { title: report.title, visibility: vis });
+    const updated = await ReportAPI.put(report.id, { title: report.title, visibility: vis });
     setReport({ ...report, visibility: updated.visibility });
   };
 
@@ -71,8 +70,7 @@ export function useDashboardReportDetail() {
         setDeletingId(widgetId);
         try {
           setIsSubmitting(true)
-          const ctrl = new AbortController();
-          await deleteWidget(ctrl.signal, widgetId);
+          await WidgetAPI.delete(widgetId);
           setReport({ ...report, widgets: (report.widgets || []).filter(w => w.id !== widgetId) });
         } catch (err) {
           setDeleteError(err?.message || 'Failed to delete');
@@ -103,8 +101,7 @@ export function useDashboardReportDetail() {
   const handleSubmit = form.onSubmit(async (values) => {
     setIsSubmitting(true)
     if (editingWidgetId) {
-      const ctrl = new AbortController();
-      const updated = await updateWidget(ctrl.signal, editingWidgetId, {
+      const updated = await WidgetAPI.put(editingWidgetId, {
         bucket: values.bucket,
         template: values.template,
         title: values.title || `${values.template}`,
@@ -117,8 +114,7 @@ export function useDashboardReportDetail() {
       form.reset();
       if (report) setReport({ ...report, widgets: updatedWidgets });
     } else {
-      const ctrl = new AbortController();
-      const created = await createWidget(ctrl.signal, report.id, {
+      const created = await ReportAPI.custom(`post`, `/${report.id}/widgets`, {
         bucket: values.bucket,
         template: values.template,
         title: values.title || `${values.template}`,
@@ -139,8 +135,8 @@ export function useDashboardReportDetail() {
 
   const updateWidgetPosition = async (widgetId, position) => {
     try {
-      const ctrl = new AbortController();
-      await updateWidget(ctrl.signal, widgetId, { position });
+      
+      await WidgetAPI.put(widgetId, { position });
     } catch (err) {
       console.error('Failed to update widget position:', err);
     }
