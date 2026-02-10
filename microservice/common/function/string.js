@@ -137,11 +137,11 @@ const extractMustacheVars = (templateStr) => {
 const evaluateCondition = (data, filter) => {
     const { field, operator, value } = filter;
     const fieldValue = getNestedValue(data, field);
+    
     // Handle null/undefined field values
     if (fieldValue === undefined || fieldValue === null) {
         return false;
     }
-
 
     switch (operator) {
         case 'gt':
@@ -162,7 +162,7 @@ const evaluateCondition = (data, filter) => {
         case 'ne':
             return fieldValue != value;
 
-        case 'contain':
+        case 'contains':
             if (typeof fieldValue === 'string') {
                 return fieldValue.toLowerCase().includes(String(value).toLowerCase());
             }
@@ -171,11 +171,22 @@ const evaluateCondition = (data, filter) => {
             }
             return false;
 
+        case 'in':
+            if (!Array.isArray(value)) {
+                return false;
+            }
+            return value.includes(fieldValue);
+
+        case 'nin':
+            if (!Array.isArray(value)) {
+                return false;
+            }
+            return !value.includes(fieldValue);
+
         default:
             return false;
     }
 };
-
 
 /**
  * 

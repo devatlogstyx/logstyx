@@ -246,8 +246,6 @@ const processWriteLog = async ({ headers, body }) => {
     }).cursor()
 
     for await (const bucket of buckets) {
-        console.log(bucket)
-
         try {
             await createLog(bucket.toJSON(), {
                 project_id: projectId,
