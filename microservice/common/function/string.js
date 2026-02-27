@@ -60,6 +60,8 @@ const JSONParseX = (str) => {
 };
 
 const sanitizeForHTML = (data, striptags) => {
+    const seen = new WeakSet();
+
     function sanitizeValue(value) {
         if (typeof value === 'string') {
             return striptags?.(value, {
@@ -68,13 +70,16 @@ const sanitizeForHTML = (data, striptags) => {
         }
 
         if (Array.isArray(value)) {
+            if (seen.has(value)) return '[circular]'
+            seen.add(value)
             return value.map(sanitizeValue);
         }
 
         if (value && typeof value === 'object' && value.constructor === Object) {
+            if (seen.has(value)) return '[circular]'
+            seen.add(value)
             const sanitized = {};
             for (const [key, val] of Object.entries(value)) {
-                // Don't sanitize keys unless they're suspicious
                 const sanitizedKey = typeof key === 'string' && key.includes('<')
                     ? striptags?.(key, options?.allowedTags)
                     : key;
@@ -83,7 +88,7 @@ const sanitizeForHTML = (data, striptags) => {
             return sanitized;
         }
 
-        return value; // Numbers, booleans, null, undefined, dates, etc.
+        return value;
     }
 
     return sanitizeValue(data);

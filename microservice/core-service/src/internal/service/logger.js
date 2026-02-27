@@ -2,7 +2,7 @@
 
 const { mongoose, isValidObjectId } = require("./../../shared/mongoose");
 const { getProjectFromCache, getBucketFromCache } = require("../../shared/cache");
-const { HttpError, hashString, decryptSecret, createSlug, num2Ceil, num2Floor } = require("common/function");
+const { HttpError, hashString, decryptSecret, createSlug, num2Ceil, num2Floor, sanitizeForHTML } = require("common/function");
 const { NOT_FOUND_ERR_CODE, NOT_FOUND_ERR_MESSAGE, BROWSER_CLIENT_TYPE, INVALID_INPUT_ERR_CODE, INVALID_INPUT_ERR_MESSAGE, INVALID_ID_ERR_MESSAGE } = require("common/constant");
 const { validateOrigin, validateSignature, generateIndexedHashes, validateCustomIndex, generateRawValues, generateLogKey, evaluateBucketFilter, HToMs, sanitizeFieldName } = require("../utils/helper");
 const projectModel = require("../model/project.model");
@@ -12,6 +12,7 @@ const logSchema = require("../model/log.model");
 const logstampSchema = require("../model/logstamp.model");
 const { submitProcessLogAlert } = require("../../shared/provider/mq-producer");
 const bucketModel = require("../model/bucket.model");
+const { striptags } = require("striptags");
 const Registry = {};
 const { ObjectId } = mongoose.Types
 
@@ -299,28 +300,30 @@ const createLog = async (bucket, params) => {
     }
 
     const key = generateLogKey(params, bucket)
-    const context = {
+    const context = sanitizeForHTML({
         ...params?.context ?? {},
         project_id: params?.project_id,
         project_title: params?.project_title
-    }
+    }, striptags)
+
+    const data = sanitizeForHTML(params?.data, striptags)
 
     const { log, logstamp } = await getLogModel(bucket?.id)
 
     const hashes = generateIndexedHashes({
         context,
-        data: params?.data
+        data
     }, bucket);
 
     // Generate raw values for rawIndexes
     const rawValues = generateRawValues({
         context,
-        data: params?.data
+        data
     }, bucket);
 
     const [compressedContext, compressedData] = await Promise.all([
         compressAndEncrypt(context),
-        compressAndEncrypt(params?.data)
+        compressAndEncrypt(data)
     ])
 
     await log.findOneAndUpdate(
