@@ -307,6 +307,7 @@ const useMiddleware = ({
             next({ error: NOT_FOUND_ERR_CODE, message: NOT_FOUND_ERR_MESSAGE });
         },
         ExpressErrorHandler: (err, req, res, next) => {
+            console.log(err)
             HttpResponse(res).error(err);
             Log?.custom?.(ERROR_LOG_LEVEL, {
                 title: `${req.method} ${req.path}`,
