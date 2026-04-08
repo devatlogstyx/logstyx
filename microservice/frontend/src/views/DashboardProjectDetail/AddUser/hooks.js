@@ -41,7 +41,7 @@ const useAddUser = ({
         try {
             setIsSubmitting(true)
 
-            await projectAPI.custom("post", `/${projectId}/users/${values?.userId}`, {})
+            await projectAPI.custom("patch", `/${projectId}/users/${values?.userId}`, {})
             onUpdate()
         } catch (e) {
             ErrorMessage(e)
