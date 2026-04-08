@@ -16,6 +16,7 @@ const useAddUser = ({
     const [isSubmitting, setIsSubmitting] = React.useState(false)
     const [users, setUsers] = React.useState([]);
     const api = useAPI("/v1/users")
+    const projectAPI = useAPI("/v1/projects")
 
     const form = useForm({
         mode: 'uncontrolled',
@@ -40,7 +41,7 @@ const useAddUser = ({
         try {
             setIsSubmitting(true)
 
-            await api.custom("post", `/${projectId}/users/${values?.userId}`, {})
+            await projectAPI.custom("post", `/${projectId}/users/${values?.userId}`, {})
             onUpdate()
         } catch (e) {
             ErrorMessage(e)
