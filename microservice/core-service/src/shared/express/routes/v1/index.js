@@ -17,7 +17,7 @@ const privateMiddleware = useCors({
 const publicMiddleware = useCors({
     Detector: DeviceDetector,
     Cors: cors,
-    allowedOrigins: getAllowedOriginFromCache
+    allowedOrigins: () => "*"
 });
 
 router.use("/projects", privateMiddleware, require("../../../../internal/express.routes/project"));
