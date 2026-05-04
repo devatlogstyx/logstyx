@@ -32,7 +32,7 @@ const useUserContext = () => {
     React.useEffect(() => {
         fetchUser()
         return () => {
-            controllerRef.current?.abort()
+
         }
     }, [fetchUser]);
 
