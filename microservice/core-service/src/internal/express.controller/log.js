@@ -14,11 +14,14 @@ const {
     NOT_FOUND_ERR_CODE,
     NOT_FOUND_ERR_MESSAGE,
     FORBIDDEN_ERR_CODE,
+    INVALID_INPUT_ERR_CODE,
+    INVALID_INPUT_ERR_MESSAGE,
 
 } = require("common/constant");
 const { submitWriteLog } = require("../../shared/provider/mq-producer");
 const { logTimelineByKey } = require("../service/logger");
-const { getBucketFromCache } = require("../../shared/cache");
+const { getBucketFromCache, getProjectFromCache } = require("../../shared/cache");
+const { validateOrigin, validateSignature } = require("../utils/helper");
 
 module.exports = {
 
@@ -37,6 +40,24 @@ module.exports = {
             } else if (req?.headers?.referer) {
                 origin = new URL(req.headers.referer).origin; // Extract full origin from referer
             }
+        }
+
+        const { projectId, appid } = req?.body ?? {}
+        const { deviceClientType, signature } = req?.headers ?? {}
+
+        const project = await getProjectFromCache(projectId)
+        if (!project) {
+            throw HttpError(NOT_FOUND_ERR_CODE, NOT_FOUND_ERR_MESSAGE)
+        }
+
+        if (deviceClientType == BROWSER_CLIENT_TYPE) {
+            validateOrigin(project, origin)
+        } else if (appid) {
+            validateOrigin(project, appid)
+        } else if (signature) {
+            validateSignature(project, req?.headers, req?.body)
+        } else {
+            throw HttpError(INVALID_INPUT_ERR_CODE, INVALID_INPUT_ERR_MESSAGE)
         }
 
         submitWriteLog({
