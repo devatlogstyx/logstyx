@@ -32,7 +32,7 @@ const getProbeFromCache = async (id) => getCache(PROBE_CACHE_KEY, id, probeModel
 
 
 const updateWidgetCache = async (id) => updateCache(WIDGET_CACHE_KEY, id, widgetModel)
-const getWidgetFromCache = async (id) => getCache(WIDGET_CACHE_KEY, id, widgetModel)
+const getWidgetFromCache = async (id) => getCache(WIDGET_CACHE_KEY, id, widgetModel, null)
 
 
 const updateReportCache = async (id) => updateCache(REPORT_CACHE_KEY, id, reportModel)
