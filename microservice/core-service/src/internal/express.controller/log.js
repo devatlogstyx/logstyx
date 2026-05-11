@@ -54,11 +54,12 @@ module.exports = {
                 error: SUCCESS_ERR_CODE,
                 message: SUCCESS_ERR_MESSAGE,
             });
+
         }
 
         const project = await getProjectFromCache(projectId)
         if (!project) {
-            onError({ projectId, appid, deviceClientType, signature })
+            return onError({ projectId, appid, deviceClientType, signature })
         }
 
         if (deviceClientType == BROWSER_CLIENT_TYPE) {
@@ -68,7 +69,7 @@ module.exports = {
         } else if (signature) {
             validateSignature(project, req?.headers, req?.body)
         } else {
-            onError({ projectId, appid, deviceClientType, signature })
+            return onError({ projectId, appid, deviceClientType, signature })
         }
 
         submitWriteLog({
