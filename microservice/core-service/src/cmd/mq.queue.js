@@ -18,15 +18,16 @@ const consumer = useMQConsumer({
     log
 })
 
-consumer.use(WRITE_LOG_MQ_QUEUE, processWriteLog);
-consumer.use(CREATE_LOG_MQ_QUEUE, processCreateSelfLog);
+consumer.use(WRITE_LOG_MQ_QUEUE, (e) => processWriteLog(e)?.catch(console.error));
+consumer.use(CREATE_LOG_MQ_QUEUE, (e) => processCreateSelfLog(e)?.catch(console.error));
+
 consumer.use(CREATE_PROJECT_MQ_QUEUE, (params) => createProject(params, {
     createBucketFunc: createBucket,
     initLoggerFunc: initLogger
-}));
+})?.catch(console.error));
 
-consumer.use(ADD_USER_TO_PROJECT_MQ_QUEUE, ({ userId, projectId }) => addUserToProject(userId, projectId));
+consumer.use(ADD_USER_TO_PROJECT_MQ_QUEUE, ({ userId, projectId }) => addUserToProject(userId, projectId)?.catch(console.error));
 
-consumer.use(ON_USER_REMOVE_MQ_EXCHANGE, ({ userId }) => processRemoveUserFromAllProject(userId), { isFanout: true });
-consumer.use(EXECUTE_PROBE_WORKER_MQ_QUEUE, ({ probeId }) => processExecuteProbeWorker(probeId, createLog));
+consumer.use(ON_USER_REMOVE_MQ_EXCHANGE, ({ userId }) => processRemoveUserFromAllProject(userId)?.catch(console.error), { isFanout: true });
+consumer.use(EXECUTE_PROBE_WORKER_MQ_QUEUE, ({ probeId }) => processExecuteProbeWorker(probeId, createLog)?.catch(console.error));
 consumer.start()

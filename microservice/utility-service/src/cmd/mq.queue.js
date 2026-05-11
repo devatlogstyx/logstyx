@@ -22,11 +22,11 @@ const consumer = useMQConsumer({
     log: logger,
 })
 
-consumer.use(CREATE_AGENDA_JOB_MQ_QUEUE, ({ scheduledAt, name, params }) => createAgendaJob({ scheduledAt, name, params }));
-consumer.use(CANCEL_AGENDA_JOB_MQ_QUEUE, (params) => cancelAgendaJob(params));
+consumer.use(CREATE_AGENDA_JOB_MQ_QUEUE, ({ scheduledAt, name, params }) => createAgendaJob({ scheduledAt, name, params })?.catch(console.error));
+consumer.use(CANCEL_AGENDA_JOB_MQ_QUEUE, (params) => cancelAgendaJob(params)?.catch(console.error));
 
-consumer.use(PROCESS_LOG_ALERT_MQ_QUEUE, ({ projectId, alertId, params }) => processLogAlert(projectId, alertId, params));
+consumer.use(PROCESS_LOG_ALERT_MQ_QUEUE, ({ projectId, alertId, params }) => processLogAlert(projectId, alertId, params)?.catch(console.error));
 
-consumer.use(PROCESS_SEND_WEBHOOK_MQ_QUEUE, ({ webhookId, payload }) => processSendWebhook(webhookId, payload));
+consumer.use(PROCESS_SEND_WEBHOOK_MQ_QUEUE, ({ webhookId, payload }) => processSendWebhook(webhookId, payload)?.catch(console.error));
 
 consumer.start()

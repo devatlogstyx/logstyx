@@ -15,7 +15,7 @@ const consumer = useMQConsumer({
     log
 })
 
-consumer.use(CACHE_CREATE_MQ_QUEUE, ({ key, id, data, ttl }) => createCache(key, id, data, ttl));
-consumer.use(CACHE_REMOVE_MQ_QUEUE, ({ key, id }) => removeCache(key, id));
+consumer.use(CACHE_CREATE_MQ_QUEUE, ({ key, id, data, ttl }) => createCache(key, id, data, ttl)?.catch(console.error));
+consumer.use(CACHE_REMOVE_MQ_QUEUE, ({ key, id }) => removeCache(key, id)?.catch(console.error));
 
 consumer.start()
