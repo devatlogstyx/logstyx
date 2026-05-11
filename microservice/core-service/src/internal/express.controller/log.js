@@ -44,10 +44,21 @@ module.exports = {
 
         const { projectId, appid } = req?.body ?? {}
         const { deviceClientType, signature } = req?.headers ?? {}
+        const onError = (e) => {
+            // log the payload, do not throw erro cos it will trigger a queue by the fe
+            console.error({
+                ...e,
+                ip: req?.ip
+            })
+            HttpResponse(res).json({
+                error: SUCCESS_ERR_CODE,
+                message: SUCCESS_ERR_MESSAGE,
+            });
+        }
 
         const project = await getProjectFromCache(projectId)
         if (!project) {
-            throw HttpError(NOT_FOUND_ERR_CODE, NOT_FOUND_ERR_MESSAGE)
+            onError({ projectId, appid, deviceClientType, signature })
         }
 
         if (deviceClientType == BROWSER_CLIENT_TYPE) {
@@ -57,7 +68,7 @@ module.exports = {
         } else if (signature) {
             validateSignature(project, req?.headers, req?.body)
         } else {
-            throw HttpError(INVALID_INPUT_ERR_CODE, INVALID_INPUT_ERR_MESSAGE)
+            onError({ projectId, appid, deviceClientType, signature })
         }
 
         submitWriteLog({

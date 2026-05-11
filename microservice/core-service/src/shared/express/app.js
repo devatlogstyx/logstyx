@@ -10,6 +10,7 @@ const { ExpressNotFoundHandler, ExpressSuccessHandler, ValidateSignature, Valida
 const app = express();
 app.disable('x-powered-by');
 
+app.set('trust proxy', true);
 app.use(morgan("dev"))
 app.use(bodyParser.json({ limit: '200mb' }));
 app.use(bodyParser.urlencoded({ limit: '200mb', extended: true }));
