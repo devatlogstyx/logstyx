@@ -73,6 +73,7 @@ const updateAllowedOriginCache = async () => {
         id: "cache",
         key: ALLOWED_ORIGIN_CACHE_KEY,
         data: origin,
+        ttl: null
     })
 
     return origin

@@ -6,7 +6,7 @@ const cache = new NodeCache();
 const makeKey = (key, id) => `${key}-${id}`;
 
 exports.createCache = async (key, id, data, ttl = 5 * 60) => {
-    return cache.set(makeKey(key, id), data, ttl);
+    return cache.set(makeKey(key, id), data, ttl ?? 0);
 }
 
 exports.readCache = async (key, id) => {
