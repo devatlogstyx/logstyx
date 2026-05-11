@@ -22,7 +22,7 @@ const { submitWriteLog } = require("../../shared/provider/mq-producer");
 const { logTimelineByKey } = require("../service/logger");
 const { getBucketFromCache, getProjectFromCache } = require("../../shared/cache");
 const { validateOrigin, validateSignature } = require("../utils/helper");
-
+const DEAD_PROJECT_IDS = new Set();
 module.exports = {
 
     /**
@@ -57,9 +57,14 @@ module.exports = {
 
         }
 
+        if (DEAD_PROJECT_IDS.has(projectId)) {
+            return onError({ projectId, appid, deviceClientType, signature });
+        }
+
         const project = await getProjectFromCache(projectId)
         if (!project) {
-            return onError({ projectId, appid, deviceClientType, signature })
+            DEAD_PROJECT_IDS.add(projectId);
+            return onError({ projectId, appid, deviceClientType, signature });
         }
 
         if (deviceClientType == BROWSER_CLIENT_TYPE) {
