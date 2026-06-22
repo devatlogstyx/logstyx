@@ -2,13 +2,14 @@
 
 import { Button } from "@mantine/core";
 
-export default function PrimaryButton({ children, onClick = () => { }, className = '', ...props }) {
+export default function PrimaryButton({ children, onClick = () => { }, className = '', type = 'button', ...props }) {
     const baseStyles = 'cursor-pointer bg-gradient-to-r from-blue-500 via-cyan-500 to-teal-500 text-white rounded-lg hover:shadow-md transition-all font-medium disabled:opacity-50 disabled:cursor-not-allowed';
     const defaultStyles = 'px-3 py-2 text-sm';
 
     return (
         <Button
             {...props}
+            type={type}
             onClick={onClick}
             classNames={{
                 root: `${baseStyles} ${className || defaultStyles}`,

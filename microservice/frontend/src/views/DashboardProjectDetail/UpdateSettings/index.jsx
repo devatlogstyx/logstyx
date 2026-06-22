@@ -46,7 +46,7 @@ const UpdateSettings = ({
                         <SecondaryButton onClick={closeModal} >
                             Cancel
                         </SecondaryButton>
-                        <PrimaryButton type="submit" disabled={isSubmitting} loading={isSubmitting}>Save Changes</PrimaryButton>
+                        <PrimaryButton type="submit" disabled={isSubmitting} loading={isSubmitting} >Save Changes</PrimaryButton>
                     </div>
                 </form>
             </Modal>
