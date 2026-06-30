@@ -1,6 +1,7 @@
 const { useRepository } = require("common/hooks");
 const { isValidObjectId } = require("../../shared/mongoose");
 const { mapUser } = require("../factory/user");
+const { mapUserInvitation } = require("../factory/user.invitation");
 
 const makeRepo = (path, options = {}) => useRepository({
     Model: require(path),
@@ -11,6 +12,7 @@ const makeRepo = (path, options = {}) => useRepository({
 
 module.exports = {
     UserInvitations: makeRepo("./user.invitation.model", {
+        Mapper: mapUserInvitation,
         decrypt: true
     }),
     Users: makeRepo("./user.model", {
