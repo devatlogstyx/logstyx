@@ -35,7 +35,6 @@ const { striptags } = require("striptags")
 const { submitRemoveCache, submitCreateProject, fanoutOnUserRemoved } = require("../../shared/provider/mq-producer")
 
 const { mongoose, isValidObjectId } = require("../../shared/mongoose")
-const { verifyUserPassword } = require("../utils/helper")
 
 const { ObjectId } = mongoose.Types
 const jwt = require("jsonwebtoken")
@@ -101,7 +100,7 @@ const loginUserWithEmailPassword = async (params) => {
         throw HttpError(INVALID_INPUT_ERR_CODE, INVALID_EMAIL_PASSWORD_ERR_MESSAGE);
     }
 
-    const isValid = await verifyUserPassword(login?.credentials, params?.password)
+    const isValid = await Factory.verifyUserPassword(login?.credentials, params?.password)
     if (!isValid) {
         throw HttpError(INVALID_INPUT_ERR_CODE, INVALID_EMAIL_PASSWORD_ERR_MESSAGE);
     }
@@ -547,7 +546,7 @@ const patchUserPassword = async (id, params) => {
     }
 
     // Verify old password OUTSIDE transaction (slow operation)
-    const isValid = await verifyUserPassword(userLogin.credentials, params.oldpassword);
+    const isValid = await Factory.verifyUserPassword(userLogin.credentials, params.oldpassword);
     if (!isValid) {
         throw HttpError(INVALID_INPUT_ERR_CODE, INVALID_EMAIL_PASSWORD_ERR_MESSAGE);
     }

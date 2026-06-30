@@ -2,7 +2,7 @@
 
 const crypto = require("crypto");
 const moment = require("moment-timezone");
-const refreshTokenModel = require("../model/refresh-token.model");
+const { RefreshTokens } = require("../model");
 const { decryptSecret } = require("common/function");
 
 const REFRESH_TOKEN_SECRET = decryptSecret(process?.env?.ENC_REFRESH_TOKEN_SECRET)
@@ -26,7 +26,7 @@ const createRefreshToken = async (id) => {
         expiredAt: moment(new Date()).add(12, "hour").toDate(),
     };
 
-    await refreshTokenModel.create(payload);
+    await RefreshTokens.create(payload);
 
     return token;
 };
@@ -42,7 +42,7 @@ const validateRefreshToken = async (id, token) => {
         return null;
     }
 
-    const refreshToken = await refreshTokenModel.findOne({
+    const refreshToken = await RefreshTokens.findOne({
         token,
     });
 
@@ -76,7 +76,7 @@ const validateRefreshToken = async (id, token) => {
  * @returns 
  */
 const expireRefreshToken = async (token) => {
-    await refreshTokenModel.findOneAndDelete({ token });
+    await RefreshTokens.deleteMany({ token });
 
     return null;
 };

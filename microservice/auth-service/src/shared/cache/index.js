@@ -12,40 +12,38 @@ const { readCache } = require("./../provider/cache.service")
 const { useCache } = require("common/hooks")
 
 const { logger: Log } = require("../logger")
+const { Users, UserLogins } = require("../../internal/model")
 
 const { updateCache, getCache } = useCache({
     ReadCache: readCache,
     SubmitCache: submitCreateCache,
     Log
 })
-const userModel = require("./../../internal/model/user.model")
-const userLoginModel = require("../../internal/model/user.login.model")
-const { mapUser } = require("../../internal/utils/mapper")
 
 /**
  * 
  * @param {string} id 
  * @returns 
  */
-exports.updateUserCache = async (id) => updateCache(USER_CACHE_KEY, id, userModel).then(mapUser)
+exports.updateUserCache = async (id) => updateCache(USER_CACHE_KEY, id, Users)
 
 /**
  * 
  * @param {string} id 
  * @returns 
  */
-exports.getUserFromCache = async (id) => getCache(USER_CACHE_KEY, id, userModel).then(mapUser)
+exports.getUserFromCache = async (id) => getCache(USER_CACHE_KEY, id, Users)
 
 /**
  * 
  * @param {string} id 
  * @returns 
  */
-exports.updateUserLoginCache = async (id) => updateCache(USER_LOGIN_CACHE_KEY, id, userLoginModel)
+exports.updateUserLoginCache = async (id) => updateCache(USER_LOGIN_CACHE_KEY, id, UserLogins)
 
 /**
  * 
  * @param {string} id 
  * @returns 
  */
-exports.getUserLoginFromCache = async (id) => getCache(USER_LOGIN_CACHE_KEY, id, userLoginModel)
+exports.getUserLoginFromCache = async (id) => getCache(USER_LOGIN_CACHE_KEY, id, UserLogins)
