@@ -2,8 +2,8 @@
 
 const { FORBIDDEN_ERR_CODE, NO_ACCESS_ERR_CODE, NO_ACCESS_ERR_MESSAGE, WRITE_USER_INVITATION_USER_ROLE, SUCCESS_ERR_CODE, SUCCESS_ERR_MESSAGE, READ_USER_INVITATION_USER_ROLE } = require("common/constant")
 const { HttpError, HttpResponse } = require("common/function")
-const { CanUserDo } = require("../utils/helper")
 const { createUserInvitation, paginateUserInvitation, removeUserInvitation, updateUserInvitation, validateUserInvitation } = require("../service/user.invitation")
+const { canUserDo } = require("../factory/user")
 
 module.exports = {
     /**
@@ -16,7 +16,7 @@ module.exports = {
             throw HttpError(NO_ACCESS_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
         }
 
-        const canManage = await CanUserDo(req?.user?.id, WRITE_USER_INVITATION_USER_ROLE)
+        const canManage = await canUserDo(req?.user?.id, WRITE_USER_INVITATION_USER_ROLE)
         if (!canManage) {
             throw HttpError(FORBIDDEN_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
         }
@@ -41,7 +41,7 @@ module.exports = {
             throw HttpError(NO_ACCESS_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
         }
 
-        const canManage = await CanUserDo(req?.user?.id, READ_USER_INVITATION_USER_ROLE)
+        const canManage = await canUserDo(req?.user?.id, READ_USER_INVITATION_USER_ROLE)
         if (!canManage) {
             throw HttpError(FORBIDDEN_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
         }
@@ -76,7 +76,7 @@ module.exports = {
             throw HttpError(NO_ACCESS_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
         }
 
-        const canManage = await CanUserDo(req?.user?.id, WRITE_USER_INVITATION_USER_ROLE)
+        const canManage = await canUserDo(req?.user?.id, WRITE_USER_INVITATION_USER_ROLE)
         if (!canManage) {
             throw HttpError(FORBIDDEN_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
         }
@@ -101,7 +101,7 @@ module.exports = {
             throw HttpError(NO_ACCESS_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
         }
 
-        const canManage = await CanUserDo(req?.user?.id, WRITE_USER_INVITATION_USER_ROLE)
+        const canManage = await canUserDo(req?.user?.id, WRITE_USER_INVITATION_USER_ROLE)
         if (!canManage) {
             throw HttpError(FORBIDDEN_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
         }

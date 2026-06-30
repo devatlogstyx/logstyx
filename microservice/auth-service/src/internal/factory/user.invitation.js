@@ -4,7 +4,10 @@ const { INVALID_INPUT_ERR_CODE } = require("common/constant");
 const { HttpError, sanitizeObject, hashString } = require("common/function");
 const { Validator } = require("node-input-validator");
 
-
+/**
+ * 
+ * @param {*} params 
+ */
 const validateCreateInput = async (params) => {
     const v = new Validator(params, {
         email: "required|email",
@@ -19,6 +22,11 @@ const validateCreateInput = async (params) => {
     }
 }
 
+/**
+ * 
+ * @param {*} json 
+ * @returns 
+ */
 const mapUserInvitation = (json) => {
     return sanitizeObject({
         id: json?.id || json?._id?.toString(),

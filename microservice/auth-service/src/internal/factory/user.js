@@ -36,6 +36,11 @@ const buildUserSearchQuery = (params = {}) => {
 
 }
 
+/**
+ * 
+ * @param {*} json 
+ * @returns 
+ */
 const mapUser = (json) => {
     return {
         id: json?.id || json?._id?.toString(),

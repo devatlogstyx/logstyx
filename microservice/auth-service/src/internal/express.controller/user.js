@@ -24,8 +24,8 @@ const {
 const { paginateUser, removeUser, handleUserLogin, createUserToken, patchUserPermission, updateUserProfile, patchUserPassword, seedUser } = require("../service/user");
 const { createRefreshToken, expireRefreshToken } = require("../service/auth");
 const { listUsersProject, listUsersBucket, getUserBucketStats, getUserProjectStats } = require("../../shared/provider/core.service");
-const { CanUserDo, getLastLogin } = require("../utils/helper");
 const { getUserFromCache } = require("../../shared/cache");
+const { canUserDo, getLastLogin } = require("../factory/user");
 
 module.exports = {
     /**
@@ -56,7 +56,7 @@ module.exports = {
             throw HttpError(NO_ACCESS_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
         }
 
-        const canManage = await CanUserDo(req?.user?.id, READ_USER_USER_ROLE)
+        const canManage = await canUserDo(req?.user?.id, READ_USER_USER_ROLE)
         if (!canManage) {
             throw HttpError(FORBIDDEN_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
         }
@@ -93,7 +93,7 @@ module.exports = {
             throw HttpError(NO_ACCESS_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
         }
 
-        const canManage = await CanUserDo(req?.user?.id, WRITE_USER_USER_ROLE)
+        const canManage = await canUserDo(req?.user?.id, WRITE_USER_USER_ROLE)
         if (!canManage) {
             throw HttpError(FORBIDDEN_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
         }
@@ -119,7 +119,7 @@ module.exports = {
             throw HttpError(NO_ACCESS_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
         }
 
-        const canManage = await CanUserDo(req?.user?.id, WRITE_USER_USER_ROLE)
+        const canManage = await canUserDo(req?.user?.id, WRITE_USER_USER_ROLE)
         if (!canManage) {
             throw HttpError(FORBIDDEN_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
         }
@@ -208,6 +208,11 @@ module.exports = {
             data
         });
     },
+    /**
+     * 
+     * @param {*} req 
+     * @param {*} res 
+     */
     async UserGetMyBucketStats(req, res) {
         if (!req?.user) {
             throw HttpError(NO_ACCESS_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
@@ -240,6 +245,11 @@ module.exports = {
             data
         });
     },
+    /**
+     * 
+     * @param {*} req 
+     * @param {*} res 
+     */
     async UserListBucket(req, res) {
         if (!req?.user) {
             throw HttpError(NO_ACCESS_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
