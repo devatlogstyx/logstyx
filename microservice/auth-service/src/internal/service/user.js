@@ -32,18 +32,19 @@ const {
 } = require("common/constant")
 
 const { striptags } = require("striptags")
-const userLoginModel = require("../model/user.login.model")
 const { submitRemoveCache, submitCreateProject, fanoutOnUserRemoved } = require("../../shared/provider/mq-producer")
 
 const { mongoose, isValidObjectId } = require("../../shared/mongoose")
-const userModel = require("../model/user.model")
 const { verifyUserPassword } = require("../utils/helper")
 
 const { ObjectId } = mongoose.Types
 const jwt = require("jsonwebtoken")
 const bcrypt = require("bcryptjs")
+const { UserLogins, Users } = require("../model")
 
 const USER_AUTHENTICATION_JWT_SECRET = decryptSecret(process?.env?.ENC_USER_AUTHENTICATION_JWT_SECRET)
+const Factory = require("./../factory/user")
+const userModel = require("../model/user.model")
 
 /**
  * 
@@ -86,7 +87,7 @@ const loginUserWithEmailPassword = async (params) => {
 
     let email = striptags(params.email.toString()).trim().toLowerCase();
     const hashedEmail = hashString(email)
-    const login = await userLoginModel.findOne({
+    const login = await UserLogins.findOne({
         "hash.key": hashedEmail,
         type: EMAIL_PASSWORD_LOGIN_TYPE
     });
@@ -105,7 +106,7 @@ const loginUserWithEmailPassword = async (params) => {
         throw HttpError(INVALID_INPUT_ERR_CODE, INVALID_EMAIL_PASSWORD_ERR_MESSAGE);
     }
 
-    await userLoginModel.findByIdAndUpdate(login?._id, {
+    await UserLogins.findByIdAndUpdate(login?.id, {
         $set: {
             lastLogin: params?.lastLogin
         }
@@ -131,44 +132,15 @@ const handleUserLogin = async (params) => {
     throw HttpError(INVALID_INPUT_ERR_CODE, `Unknown command`)
 }
 
-/**
- * 
- * @param {object} [params]
- * @param {string} [params.search]
- * @param {string} [params.group]
- * @returns 
- */
-const buildUserSearchQuery = (params = {}) => {
-
-    let query = {}
-    if (params?.search && typeof params.search === "string") {
-        query.$or = [
-            {
-                fullname: {
-                    $regex: params?.search?.toString(),
-                    $options: "i"
-                }
-            }
-        ]
-    }
-
-    if (params?.group && isValidObjectId(params?.group)) {
-        query.group = ObjectId.createFromHexString(params?.group?.toString())
-    }
-
-    return query
-
-}
-
 const paginateUser = async (query = {}, sortBy = "createdAt:desc", limit = 10, page = 1) => {
 
-    const queryParams = buildUserSearchQuery(query)
+    const queryParams = Factory.buildUserSearchQuery(query)
     limit = num2Ceil(num2Floor(limit, 1), 50)
     page = num2Floor(page, 1)
 
     const sort = parseSortBy(sortBy)
 
-    const aggregate = userModel.aggregate([
+    const pipeline = [
         {
             $match: queryParams
         },
@@ -204,16 +176,16 @@ const paginateUser = async (query = {}, sortBy = "createdAt:desc", limit = 10, p
             }
         }
 
-    ])
+    ]
 
-    let res = await userModel.aggregatePaginate(aggregate, { limit, page });
+    let res = await Users.aggregatePaginate(pipeline, { limit, page });
 
     let list = {
         results: res?.docs?.map((doc) => {
-            let n = userModel.hydrate(doc);
+            let n = new userModel(doc);
             n.decryptFieldsSync();
             return {
-                ...mapUser(n.toObject()),
+                ...Factory.mapUser(n.toObject()),
                 lastLogin: doc?.userlogin?.lastLogin
             }
         }),
@@ -237,8 +209,6 @@ const removeUser = async (id) => {
         throw HttpError(INVALID_INPUT_ERR_CODE, INVALID_ID_ERR_MESSAGE)
     }
 
-    id = id?.toString()
-
     const user = await getUserFromCache(id)
     if (!user) {
         throw HttpError(NOT_FOUND_ERR_CODE, NOT_FOUND_ERR_MESSAGE)
@@ -248,16 +218,16 @@ const removeUser = async (id) => {
     await userModel.findByIdAndDelete(id);
 
     // get all related logins
-    const logins = await userLoginModel.find({ user: id }, { _id: 1 });
+    const logins = await UserLogins.find({ user: new ObjectId(id) });
 
     // delete them in one go
-    await userLoginModel.deleteMany({ user: id });
+    await UserLogins.deleteMany({ user: new ObjectId(id) });
 
     // clear login caches
     for (const login of logins) {
         submitRemoveCache({
             key: USER_LOGIN_CACHE_KEY,
-            id: login._id.toString(),
+            id: login.id,
         });
     }
 
@@ -294,9 +264,6 @@ const patchUserPermission = async (id, permissions) => {
         $set: {
             permissions
         }
-    }, {
-        new: true,
-        runValidators: true
     })
 
     return updateUserCache(id)
@@ -360,15 +327,14 @@ const seedUser = async (params) => {
 
     try {
 
-        const userCount = await userModel.countDocuments({})
+        const userCount = await Users.count({})
         if (userCount > 0) {
             throw HttpError(FORBIDDEN_ERR_CODE, NO_ACCESS_ERR_MESSAGE)
         }
 
-        const existingUser = await userModel.findOne(
+        const existingUser = await Users.findOne(
             { 'hash.email': hashedEmail },
-            null,
-            { session }
+            session
         );
 
         if (existingUser) {
@@ -377,7 +343,7 @@ const seedUser = async (params) => {
         }
 
 
-        const [newUser] = await userModel.create([sanitizeObject({
+        const newUser = await Users.create(sanitizeObject({
             fullname: striptags(params?.fullname),
             email,
             permissions: [
@@ -397,18 +363,18 @@ const seedUser = async (params) => {
                 READ_BUCKET_USER_ROLE
             ],
             hash: { email: hashedEmail }
-        })], { session });
+        }), session);
 
         const salt = bcrypt.genSaltSync(10);
         const passwordHash = bcrypt.hashSync(params?.password, salt);
 
-        await userLoginModel.create([{
-            user: newUser._id,
+        await UserLogins.create({
+            user: new ObjectId(newUser.id),
             key: email,
             type: EMAIL_PASSWORD_LOGIN_TYPE,
             credentials: encrypt(JSON.stringify({ password: passwordHash })),
             hash: { key: hashedEmail }
-        }], { session });
+        }, session);
 
         await session.commitTransaction();
         console.log("✓ User created successfully");
@@ -426,11 +392,11 @@ const seedUser = async (params) => {
             console.error("  Failed to create slug from project title");
             return newUser.toJSON()
         }
-        
+
         submitCreateProject({
             title: projectTitle,
             slug: projectSlug,
-            creator: newUser._id.toString(),
+            creator: newUser.id,
             settings: {
                 indexes: [
                     "context.service",
@@ -489,41 +455,41 @@ const updateUserProfile = async (id, params) => {
 
     try {
         // Check for email conflicts within transaction
-        const conflictingLogin = await userLoginModel.findOne({
+        const conflictingLogin = await UserLogins.findOne({
             "hash.key": hashedEmail,
             type: EMAIL_PASSWORD_LOGIN_TYPE,
             user: { $ne: user.id }
-        }).session(session);
+        }, session);
 
         if (conflictingLogin) {
             throw HttpError(INVALID_INPUT_ERR_CODE, `${email} is used by someone else`);
         }
 
         // Find user's own login document
-        const userLogin = await userLoginModel.findOne({
+        const userLogin = await UserLogins.findOne({
             user: user.id,
             type: EMAIL_PASSWORD_LOGIN_TYPE
-        }).session(session);
+        }, session);
 
         if (!userLogin) {
             throw HttpError(NOT_FOUND_ERR_CODE, 'User login not found');
         }
 
         // Update both documents
-        await userModel.findByIdAndUpdate(user.id, {
+        await Users.findByIdAndUpdate(user.id, {
             $set: sanitizeObject({
                 fullname: striptags(params.fullname),
                 email,
                 hash: { email: hashedEmail }
             })
-        }).session(session);
+        }, session);
 
-        await userLoginModel.findByIdAndUpdate(userLogin._id, {
+        await UserLogins.findByIdAndUpdate(userLogin._id, {
             $set: {
                 key: email,
                 hash: { key: hashedEmail }
             }
-        }).session(session);
+        }, session);
 
         await session.commitTransaction();
 
@@ -571,7 +537,7 @@ const patchUserPassword = async (id, params) => {
     }
 
     // Find user's login document OUTSIDE transaction
-    const userLogin = await userLoginModel.findOne({
+    const userLogin = await UserLogins.findOne({
         user: user.id,
         type: EMAIL_PASSWORD_LOGIN_TYPE
     });
@@ -597,11 +563,11 @@ const patchUserPassword = async (id, params) => {
 
     try {
         // Quick update operation
-        await userLoginModel.findByIdAndUpdate(userLogin._id, {
+        await UserLogins.findByIdAndUpdate(userLogin.id, {
             $set: {
                 credentials: encryptedCredentials,
             }
-        }).session(session);
+        }, session);
 
         await session.commitTransaction();
 
