@@ -256,58 +256,12 @@ const useMiddleware = ({
             return ValidateDevice(req, res, next, Detector, Log)
         },
         ExpressSuccessHandler: (req, res, next) => {
-            const methods = ["send", "json", "end"];
-            const originals = {};
-            let logged = false;
-
-            methods.forEach((m) => {
-                originals[m] = res[m];
-                res[m] = ((method) => {
-                    return function (...args) {
-                        // Sanitize response data before sending
-                        if (args.length > 0 && (method === "json" || method === "send")) {
-                            if (args[0] !== null && args[0] !== undefined) {
-                                try {
-                                    args[0] = sanitizeForHTML(args[0], Striptags);
-                                } catch (error) {
-                                    console.error('Sanitization error:', error);
-                                }
-                            }
-                        }
-
-                        // Existing logging logic
-                        if (
-                            !logged &&
-                            res.statusCode >= 200 &&
-                            res.statusCode < 300 &&
-                            ["POST", "PUT", "PATCH", "DELETE"].includes(req.method)
-                        ) {
-                            logged = true;
-                            if (typeof Log.custom === "function") {
-                                Log?.custom?.(SUCCESS_LOG_LEVEL, {
-                                    title: `${req.method} ${req.path}`,
-                                    message: "Request completed successfully",
-                                    query: redactObject(req.query),
-                                    body: redactObject(req.body),
-                                    admin: redactObject(req.admin),
-                                    user: redactObject(req.user),
-                                    response: method === "json" || method === "send" ? redactObject(args[0]) : null
-                                });
-                            }
-                        }
-
-                        return originals[method].apply(this, args);
-                    };
-                })(m);
-            });
-
             next();
         },
         ExpressNotFoundHandler: (req, res, next) => {
             next({ error: NOT_FOUND_ERR_CODE, message: NOT_FOUND_ERR_MESSAGE });
         },
         ExpressErrorHandler: (err, req, res, next) => {
-            console.log(err)
             HttpResponse(res).error(err);
             Log?.custom?.(ERROR_LOG_LEVEL, {
                 title: `${req.method} ${req.path}`,

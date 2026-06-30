@@ -2,7 +2,7 @@ const { ALLOWED_HTML_TAGS } = require("../constant");
 
 const sanitizeEmail = (email = "") => {
 
-    let [name, domain] = email?.toString()?.split("@");
+    let [name, domain] = email?.toString()?.toLowerCase()?.split("@");
     let [realname, extra] = name?.toString()?.split("+")
     return `${realname}@${domain}`
 }
@@ -142,7 +142,7 @@ const extractMustacheVars = (templateStr) => {
 const evaluateCondition = (data, filter) => {
     const { field, operator, value } = filter;
     const fieldValue = getNestedValue(data, field);
-    
+
     // Handle null/undefined field values
     if (fieldValue === undefined || fieldValue === null) {
         return false;
@@ -241,6 +241,8 @@ const parseMustacheTemplate = (template, data) => {
     return parseValue(template, data);
 };
 
+const isObject = (value) => value !== null && typeof value === "object" && !Array.isArray(value)
+const isArray = (value) => Array.isArray(value)
 
 module.exports = {
     parseSortBy,
@@ -253,5 +255,7 @@ module.exports = {
     getNestedValue,
     evaluateCondition,
     extractMustacheVars,
-    parseMustacheTemplate
+    parseMustacheTemplate,
+    isObject,
+    isArray
 }

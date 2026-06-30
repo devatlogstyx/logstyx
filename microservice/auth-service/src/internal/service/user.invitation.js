@@ -1,19 +1,20 @@
 //@ts-check
 
 const { INVALID_INPUT_ERR_CODE, EMAIL_PASSWORD_LOGIN_TYPE, NOT_FOUND_ERR_CODE, NOT_FOUND_ERR_MESSAGE, WRITE_USER_INVITATION_USER_ROLE, NO_ACCESS_ERR_CODE, FORBIDDEN_ERR_CODE, INVALID_ID_ERR_MESSAGE } = require("common/constant");
-const { HttpError, hashString, num2Ceil, num2Floor, sanitizeObject, encrypt } = require("common/function");
+const { HttpError, hashString, num2Ceil, num2Floor, sanitizeObject, encrypt, sanitizeEmail } = require("common/function");
 const { Validator } = require("node-input-validator");
 const { default: striptags } = require("striptags");
-const userInvitationModel = require("../model/user.invitation.model");
-const userModel = require("../model/user.model");
-const userLoginModel = require("../model/user.login.model");
-const { mapUserInvitation, mapUser } = require("../utils/mapper");
+const { mapUser } = require("../utils/mapper");
 const { mongoose, isValidObjectId } = require("../../shared/mongoose");
 const bcrypt = require("bcryptjs");
 const { listUsersProject } = require("../../shared/provider/core.service");
 const { getUserFromCache } = require("../../shared/cache");
 const { submitAddUserToProject } = require("../../shared/provider/mq-producer");
 const { ObjectId } = mongoose.Types
+const Factory = require("./../factory/user.invitation");
+const { UserInvitations, Users, UserLogins } = require("../model");
+const userInvitationModel = require("./../model/user.invitation.model")
+
 /**
  * 
  * @param {object} params 
@@ -23,30 +24,21 @@ const { ObjectId } = mongoose.Types
  * @param {string[]} [params.projects]
  */
 const createUserInvitation = async (params) => {
-    const v = new Validator(params, {
-        email: "required|email",
-        permissions: "required|arrayUnique",
-        projects: "arrayUnique",
-        creator: params.projects && params.projects.length > 0 ? "required|string" : "string"
-    });
 
-    let match = await v.check();
-    if (!match) {
-        throw HttpError(INVALID_INPUT_ERR_CODE, v.errors);
-    }
+    await Factory.validateCreateInput(params)
 
-    let email = striptags(params.email.toString()).trim().toLowerCase();
+    let email = sanitizeEmail(params.email);
 
     const hashedEmail = hashString(email)
 
     const [invitation, user, login] = await Promise.all([
-        userInvitationModel.findOne({
+        UserInvitations.findOne({
             "hash.email": hashedEmail
         }),
-        userModel.findOne({
+        Users.findOne({
             "hash.email": hashedEmail
         }),
-        userLoginModel.findOne({
+        UserLogins.findOne({
             "hash.key": hashedEmail,
             type: EMAIL_PASSWORD_LOGIN_TYPE
         })
@@ -78,9 +70,9 @@ const createUserInvitation = async (params) => {
 
     }
 
-    const raw = await userInvitationModel.create(payload)
+    const raw = await UserInvitations.create(payload)
 
-    return mapUserInvitation(raw?.toJSON())
+    return Factory.mapUserInvitation(raw)
 
 }
 
@@ -95,12 +87,12 @@ const findInvitationById = async (id) => {
         return null
     }
 
-    const raw = await userInvitationModel.findById(id)
+    const raw = await UserInvitations.findById(id)
     if (!raw) {
         return null
     }
 
-    return mapUserInvitation(raw?.toJSON())
+    return Factory.mapUserInvitation(raw)
 
 }
 
@@ -117,7 +109,7 @@ const updateUserInvitation = async (id, params) => {
         throw HttpError(INVALID_INPUT_ERR_CODE, INVALID_ID_ERR_MESSAGE)
     }
 
-    const invitation = await userInvitationModel.findById(id)
+    const invitation = await UserInvitations.findById(id)
     if (!invitation) {
         throw HttpError(NOT_FOUND_ERR_CODE, NOT_FOUND_ERR_MESSAGE)
     }
@@ -165,14 +157,11 @@ const updateUserInvitation = async (id, params) => {
         updatePayload.projects = []
     }
 
-    const raw = await userInvitationModel.findByIdAndUpdate(id, {
+    const raw = await UserInvitations.findByIdAndUpdate(id, {
         $set: updatePayload
-    }, {
-        new: true,
-        runValidators: true
     })
 
-    return mapUserInvitation(raw?.toJSON())
+    return Factory.mapUserInvitation(raw)
 
 }
 
@@ -187,56 +176,32 @@ const removeUserInvitation = async (id) => {
         throw HttpError(INVALID_INPUT_ERR_CODE, INVALID_ID_ERR_MESSAGE)
     }
 
-    const invitation = await userInvitationModel.findById(id)
+    const invitation = await UserInvitations.findById(id)
     if (!invitation) {
         throw HttpError(NOT_FOUND_ERR_CODE, NOT_FOUND_ERR_MESSAGE)
     }
 
 
-    await userInvitationModel.findByIdAndDelete(id)
+    await UserInvitations.findByIdAndDelete(id)
 
     return null
 
 }
-/**
- * 
- * @param {object} [params] 
- * @param {string} [params.search]
- * @param {string} [params.permissions]
- * @returns 
- */
-const buildUserInvitationSearchQuery = (params) => {
-    let query = {}
-    if (params?.search && typeof params.search === "string") {
-        query.$or = [
-            {
-                "hash.email": hashString(params?.search)
-            }
-        ]
-    }
 
-    if (params?.permissions && typeof params?.permissions === "string") {
-        query.permissions = {
-            $in: params?.permissions?.split(",")
-        }
-    }
-
-    return query
-}
 
 const paginateUserInvitation = async (query = {}, sortBy = "createdAt:desc", limit = 10, page = 1) => {
 
-    const queryParams = buildUserInvitationSearchQuery(query)
+    const queryParams = Factory.buildUserInvitationSearchQuery(query)
     limit = num2Ceil(num2Floor(limit, 1), 50)
     page = num2Floor(page, 1)
 
 
-    let list = await userInvitationModel.paginate(queryParams, { sortBy, limit, page });
+    let list = await UserInvitations.paginate(queryParams, { sortBy, limit, page });
 
     list.results = list?.results?.map((/** @type {any} */ doc) => {
         let n = new userInvitationModel(doc);
         n.decryptFieldsSync();
-        return mapUserInvitation(n?.toJSON())
+        return Factory.mapUserInvitation(n?.toJSON())
     })
 
     return list
@@ -282,10 +247,10 @@ const validateUserInvitation = async (id, params) => {
     const hashedEmail = hashString(email);
 
     // Check if user already exists
-    let user = await userModel.findOne({ 'hash.email': hashedEmail });
+    let user = await Users.findOne({ 'hash.email': hashedEmail });
 
     if (user) {
-        await userInvitationModel.findByIdAndDelete(id)
+        await UserInvitations.findByIdAndDelete(id)
         throw HttpError(INVALID_INPUT_ERR_CODE, `already registered`)
     }
 
@@ -294,36 +259,36 @@ const validateUserInvitation = async (id, params) => {
     session.startTransaction();
 
     try {
-        const [newUser] = await userModel.create([sanitizeObject({
+        const newUser = await Users.create(sanitizeObject({
             fullname: striptags(params?.fullname),
             email,
             permissions: invitation?.permissions,
             hash: { email: hashedEmail }
-        })], { session });
+        }), session);
 
         const salt = bcrypt.genSaltSync(10);
         const hash = bcrypt.hashSync(params?.password, salt);
 
-        await userLoginModel.create([{
-            user: newUser._id,
+        await UserLogins.create({
+            user: new ObjectId(newUser.id),
             key: params?.email,
             type: EMAIL_PASSWORD_LOGIN_TYPE,
             credentials: encrypt(JSON.stringify({ password: hash })),
             hash: { key: hashedEmail }
-        }], { session });
+        }, session);
 
-        await userInvitationModel.findByIdAndDelete(id).session(session)
+        await UserInvitations.findByIdAndDelete(id, session)
 
         await session.commitTransaction();
 
         await Promise.all(invitation?.projects?.map((n) => {
             submitAddUserToProject({
-                userId: newUser._id?.toString(),
+                userId: newUser.id,
                 projectId: n?.toString()
             })
         }))
 
-        return mapUser(newUser?.toJSON())
+        return mapUser(newUser)
 
     } catch (e) {
         await session.abortTransaction();

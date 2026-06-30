@@ -9,4 +9,5 @@ module.exports = {
     ...require("./mq.consumer"),
     ...require("./mq.producer"),
     ...require("./rpc-websocket"),
+    ...require("./repository"),
 }

@@ -45,11 +45,6 @@ const bcrypt = require("bcryptjs")
 
 const USER_AUTHENTICATION_JWT_SECRET = decryptSecret(process?.env?.ENC_USER_AUTHENTICATION_JWT_SECRET)
 
-const USER_NAME = decryptSecret(process.env.ENC_USER_NAME)
-const USER_EMAIL = decryptSecret(process.env.ENC_USER_EMAIL)
-const USER_PASSWORD = decryptSecret(process.env.ENC_USER_PASSWORD)
-
-
 /**
  * 
  * @param {string} id 
