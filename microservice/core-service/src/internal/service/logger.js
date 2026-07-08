@@ -6,12 +6,11 @@ const { HttpError, decryptSecret, createSlug, num2Ceil, num2Floor, sanitizeForHT
 const { NOT_FOUND_ERR_CODE, NOT_FOUND_ERR_MESSAGE, BROWSER_CLIENT_TYPE, INVALID_INPUT_ERR_CODE, INVALID_INPUT_ERR_MESSAGE, INVALID_ID_ERR_MESSAGE } = require("common/constant");
 const { validateOrigin, validateSignature, generateIndexedHashes, generateRawValues, generateLogKey, evaluateBucketFilter, buildLogsSearchQuery, HToMs, mapLog } = require("../factory/log");
 const { validateCustomIndex, sanitizeFieldName } = require("../factory/bucket");
-const projectModel = require("../model/project.model");
+const { Projects, Buckets } = require("../model");
 const { compressAndEncrypt, decryptAndDecompress } = require("common/function");
 const logSchema = require("../model/log.model");
 const logstampSchema = require("../model/logstamp.model");
 const { submitProcessLogAlert } = require("../../shared/provider/mq-producer");
-const bucketModel = require("../model/bucket.model");
 const { striptags } = require("striptags");
 const Registry = {};
 const { ObjectId } = mongoose.Types
@@ -242,9 +241,9 @@ const processWriteLog = async ({ headers, body }) => {
         throw HttpError(INVALID_INPUT_ERR_CODE, INVALID_INPUT_ERR_MESSAGE)
     }
 
-    const buckets = bucketModel.find({
+    const buckets = Buckets.cursor({
         projects: ObjectId.createFromHexString(project?.id)
-    }).cursor()
+    })
 
     for await (const bucket of buckets) {
         try {
@@ -376,7 +375,7 @@ const processCreateSelfLog = async (params) => {
         return null
     }
 
-    const project = await projectModel.findOne({
+    const project = await Projects.findOne({
         slug: projectSlug
     })
 
@@ -386,9 +385,9 @@ const processCreateSelfLog = async (params) => {
         return null
     }
 
-    const buckets = bucketModel.find({
+    const buckets = Buckets.cursor({
         projects: ObjectId.createFromHexString(project?.id)
-    }).cursor()
+    })
 
     for await (const bucket of buckets) {
         try {

@@ -7,9 +7,8 @@ const { getWebhookFromCache, updateAlertCache, getAlertFromCache } = require("..
 const { mongoose, isValidObjectId } = require("../../shared/mongoose");
 const { evaluateAlertFilter, buildAlertSearchQuery } = require("../factory/alert");
 const { striptags } = require("striptags");
-const alertModel = require("../model/alert.model");
+const { Alerts, AlertDeduplications } = require("../model");
 const { submitProcessLogAlert, submitProcessSendWebhook } = require("../../shared/provider/mq-producer");
-const AlertDeduplicationModel = require("../model/alert.deduplication.model");
 const { ObjectId } = mongoose.Types
 const moment = require("moment-timezone")
 
@@ -74,9 +73,9 @@ const createAlert = async (params) => {
         }
     });
 
-    const alert = await alertModel.create(payload);
+    const alert = await Alerts.create(payload);
 
-    return updateAlertCache(alert._id.toString());
+    return updateAlertCache(alert.id);
 }
 
 /**
@@ -151,7 +150,7 @@ const updateAlert = async (id, params) => {
         }
     });
 
-    await alertModel.findByIdAndUpdate(id, {
+    await Alerts.findByIdAndUpdate(id, {
         $set: payload
     });
 
@@ -187,7 +186,7 @@ const removeAlert = async (id) => {
         throw HttpError(NOT_FOUND_ERR_CODE, NOT_FOUND_ERR_MESSAGE)
     }
 
-    await alertModel.findByIdAndDelete(id)
+    await Alerts.findByIdAndDelete(id)
 
     return null
 
@@ -206,7 +205,11 @@ const paginateAlert = async (query, sortBy = "createdAt:desc", limit = 10, page 
     page = num2Floor(page, 1);
     const sort = parseSortBy(sortBy)
 
-    const aggregate = alertModel.aggregate([
+    const options = {
+        page, limit
+    }
+
+    let res = await Alerts.aggregatePaginate([
         {
             $match: queryParams
         },
@@ -229,13 +232,7 @@ const paginateAlert = async (query, sortBy = "createdAt:desc", limit = 10, page 
                 ...sort
             }
         }
-    ])
-
-    const options = {
-        page, limit
-    }
-
-    let res = await alertModel.aggregatePaginate(aggregate, options);
+    ], options);
 
     let list = {
         results: res?.docs?.map((n) => ({
@@ -287,9 +284,9 @@ const processLogAlert = async (bucketId, alertId, params) => {
     }
 
     if (!alertId) {
-        const alerts = alertModel.find({
+        const alerts = Alerts.cursor({
             bucket: ObjectId.createFromHexString(bucketId)
-        }).cursor()
+        })
 
         for await (const alert of alerts) {
             submitProcessLogAlert({
@@ -311,7 +308,7 @@ const processLogAlert = async (bucketId, alertId, params) => {
     if (alert?.config?.deduplicateMinute > 0) {
         try {
             // Atomic insert - will fail if key already exists
-            await AlertDeduplicationModel.create({
+            await AlertDeduplications.create({
                 alert: ObjectId.createFromHexString(alertId),
                 expireAt: moment(new Date()).add(alert?.config?.deduplicateMinute || 0, "minute").toDate(),
             });

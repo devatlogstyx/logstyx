@@ -4,11 +4,10 @@ const { INVALID_INPUT_ERR_CODE, NOT_FOUND_ERR_CODE, BEARER_PROBE_AUTH_TYPE, PROJ
 const { HttpError, compressAndEncrypt, sanitizeObject, decryptAndDecompress, num2Ceil, num2Floor, parseSortBy } = require("common/function");
 const { Validator } = require("node-input-validator");
 const { getProjectFromCache, updateProbeCache, getProbeFromCache } = require("../../shared/cache");
-const probeModel = require("../model/probe.model");
 const { mongoose, isValidObjectId } = require("./../../shared/mongoose");
 const { default: striptags } = require("striptags");
 const { submitRemoveCache, submitExecuteProbeWorker, submitCreateLog, submitCreateAgendaJob } = require("../../shared/provider/mq-producer");
-const projectUserModel = require("../model/project.user.model");
+const { Probes, ProjectUsers } = require("../model");
 const { buildProbeSearchQuery, buildAuthHeaders } = require("../factory/probe");
 const { ObjectId } = mongoose.Types
 const axios = require("axios")
@@ -75,15 +74,15 @@ const createProbe = async (params) => {
             connection: connectionEncrypted
         });
 
-        const [probe] = await probeModel.create([payload], { session });
+        const probe = await Probes.create(payload, session);
 
         await session.commitTransaction();
 
         submitExecuteProbeWorker({
-            probeId: probe?._id?.toString(),
+            probeId: probe?.id,
         })
 
-        return updateProbeCache(probe?._id?.toString());
+        return updateProbeCache(probe?.id);
 
     } catch (e) {
         await session.abortTransaction();
@@ -184,10 +183,10 @@ const updateProbe = async (id, params) => {
             });
         }
 
-        await probeModel.findByIdAndUpdate(
+        await Probes.findByIdAndUpdate(
             id,
             { $set: sanitizeObject(updateData) },
-            { session }
+            session
         );
 
         await session.commitTransaction();
@@ -221,7 +220,7 @@ const removeProbe = async (id) => {
     session.startTransaction();
 
     try {
-        await probeModel.findByIdAndDelete(id, { session });
+        await Probes.findByIdAndDelete(id, session);
 
         await session.commitTransaction();
 
@@ -250,7 +249,9 @@ const paginateProbe = async (query = {}, sortBy = "createdAt:desc", limit = 10, 
     page = num2Floor(page, 1);
     const sort = parseSortBy(sortBy);
 
-    const aggregate = projectUserModel.aggregate([
+    let options = { page, limit };
+
+    let res = await ProjectUsers.aggregatePaginate([
         { $match: queryUser }, // Filter by user first
         {
             $lookup: {
@@ -277,11 +278,7 @@ const paginateProbe = async (query = {}, sortBy = "createdAt:desc", limit = 10, 
                 ...sort
             }
         }
-    ]);
-
-    let options = { page, limit };
-
-    let res = await projectUserModel.aggregatePaginate(aggregate, options);
+    ], options);
 
     let list = {
         results: await Promise.all(res?.docs?.map(async (n) => {
@@ -446,7 +443,7 @@ const processExecuteProbeWorker = async (probeId, createLogFunc) => {
 };
 
 const startAllProbes = async () => {
-    const probes = probeModel.find({}).cursor();
+    const probes = Probes.cursor({});
 
     for await (const probe of probes) {
         // Schedule immediate execution for each probe

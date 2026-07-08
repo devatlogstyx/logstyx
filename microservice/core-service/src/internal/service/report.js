@@ -5,13 +5,13 @@ const { HttpError, createSlug, parseSortBy, num2Ceil, num2Floor } = require("com
 const { getWidgetFromCache, getReportFromCache, updateWidgetDataCache, updateWidgetCache, updateReportCache, getBucketFromCache } = require("../../shared/cache");
 const reportModel = require("../model/report.model");
 const widgetModel = require("../model/widget.model");
+const { Reports, Widgets, Buckets } = require("../model");
 const { buildMongoFilterQuery, validateWidgetConfig, buildTimeRangeFilter, bucketForInterval, formatTimeLabel, resolveGroupByField } = require("../factory/report");
 const { sanitizeFieldName } = require("../factory/bucket");
 const { decryptAndDecompress } = require("common/function");
 const { NOT_FOUND_ERR_CODE, NOT_FOUND_ERR_MESSAGE, INVALID_INPUT_ERR_CODE, FORBIDDEN_ERR_CODE, WIDGET_TEMPLATES, PRIVATE_REPORT_VISIBILITY, WIDGET_CACHE_KEY, INVALID_ID_ERR_MESSAGE } = require("common/constant");
 const { isValidObjectId } = require("../../shared/mongoose");
 const { submitRemoveCache } = require("../../shared/provider/mq-producer");
-const bucketModel = require("../model/bucket.model");
 
 const { ObjectId } = mongoose.Types;
 
@@ -33,19 +33,19 @@ const createReport = async (userId, params) => {
   }
 
   const slug = createSlug(params.title);
-  const exists = await reportModel.findOne({ slug });
+  const exists = await Reports.findOne({ slug });
   if (exists) {
     throw HttpError(INVALID_INPUT_ERR_CODE, "Report slug already exists");
   }
 
-  const report = await reportModel.create({
+  const report = await Reports.create({
     title: params.title,
     description: params.description,
     visibility: params.visibility || PRIVATE_REPORT_VISIBILITY,
     slug,
     createdBy: ObjectId.createFromHexString(userId)
   });
-  return updateReportCache(report?._id?.toString());
+  return updateReportCache(report?.id);
 }
 
 /**
@@ -71,7 +71,7 @@ const paginateReports = async (query = {}, sortBy = "createdAt:desc", limit = 10
 
   const [results, totalResults] = await Promise.all([
     reportModel.find(filter).sort(sort).skip((page - 1) * limit).limit(limit),
-    reportModel.countDocuments(filter)
+    Reports.count(filter)
   ]);
 
   return {
@@ -96,9 +96,8 @@ const paginateReports = async (query = {}, sortBy = "createdAt:desc", limit = 10
  * @returns 
  */
 const getReportBySlug = async (slug) => {
-  const rpt = await reportModel.findOne({ slug });
-  if (!rpt) return null;
-  return rpt.toJSON();
+  const rpt = await Reports.findOne({ slug });
+  return rpt;
 }
 
 /**
@@ -129,7 +128,7 @@ const updateReport = async (id, params) => {
     throw HttpError(INVALID_INPUT_ERR_CODE, INVALID_ID_ERR_MESSAGE)
   }
 
-  const rpt = await reportModel.findById(id);
+  const rpt = await Reports.findById(id);
   if (!rpt) throw HttpError(NOT_FOUND_ERR_CODE, NOT_FOUND_ERR_MESSAGE);
 
 
@@ -149,7 +148,7 @@ const updateReport = async (id, params) => {
   if (params.visibility) payload.visibility = params.visibility;
   if (params.title) payload.slug = createSlug(params.title);
 
-  await reportModel.findByIdAndUpdate(id, { $set: payload });
+  await Reports.findByIdAndUpdate(id, { $set: payload });
 
   return updateReportCache(id)
 }
@@ -170,8 +169,8 @@ const deleteReport = async (id) => {
   const session = await mongoose.startSession();
   session.startTransaction();
   try {
-    await widgetModel.deleteMany({ report: new ObjectId(rpt?.id) }).session(session);
-    await reportModel.findByIdAndDelete(id).session(session);
+    await Widgets.deleteMany({ report: new ObjectId(rpt?.id) }, session);
+    await Reports.findByIdAndDelete(id, session);
     await session.commitTransaction();
     submitRemoveCache({
       key: WIDGET_CACHE_KEY,
@@ -219,14 +218,14 @@ const createWidget = async (reportId, payload) => {
   const ok = await v.check();
   if (!ok) throw HttpError(INVALID_INPUT_ERR_CODE, v.errors);
 
-  const bucket = await bucketModel.findById(payload.bucket);
+  const bucket = await Buckets.findById(payload.bucket);
   if (!bucket) throw HttpError(NOT_FOUND_ERR_CODE, NOT_FOUND_ERR_MESSAGE);
 
   if (!validateWidgetConfig(payload.template, payload.config)) {
     throw HttpError(INVALID_INPUT_ERR_CODE, "Invalid widget config");
   }
 
-  const created = await widgetModel.create({
+  const created = await Widgets.create({
     report: ObjectId.createFromHexString(reportId),
     bucket: ObjectId.createFromHexString(payload.bucket),
     template: payload.template,
@@ -235,7 +234,7 @@ const createWidget = async (reportId, payload) => {
     config: payload.config,
     position: payload?.position
   });
-  return updateWidgetCache(created?._id?.toString());
+  return updateWidgetCache(created?.id);
 }
 
 /**
@@ -321,7 +320,7 @@ const updateWidget = async (widgetId, payload, getLogModelFunc) => {
   if (payload.bucket) update.bucket = ObjectId.createFromHexString(payload.bucket);
   if (payload?.position) update.position = payload?.position
 
-  await widgetModel.findByIdAndUpdate(widgetId, { $set: update });
+  await Widgets.findByIdAndUpdate(widgetId, { $set: update });
 
   const updatedWidget = await updateWidgetCache(widgetId)
   const data = await executeWidgetQuery(updatedWidget, getLogModelFunc)
@@ -346,7 +345,7 @@ const deleteWidget = async (widgetId) => {
   const rpt = await getReportFromCache(w?.report?.toString());
   if (!rpt) throw HttpError(NOT_FOUND_ERR_CODE, NOT_FOUND_ERR_MESSAGE);
 
-  await widgetModel.findByIdAndDelete(widgetId);
+  await Widgets.findByIdAndDelete(widgetId);
 
   submitRemoveCache({
     key: WIDGET_CACHE_KEY,

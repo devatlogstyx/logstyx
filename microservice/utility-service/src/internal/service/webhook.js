@@ -4,7 +4,7 @@ const { HttpError, compressAndEncrypt, sanitizeObject, decryptAndDecompress, num
 const { Validator } = require("node-input-validator");
 const { mongoose, isValidObjectId } = require("../../shared/mongoose");
 const { striptags } = require("striptags");
-const webhookModel = require("../model/webhook.model");
+const { Webhooks } = require("../model");
 const { updateWebhookCache, getWebhookFromCache } = require("../../shared/cache");
 const { submitRemoveCache } = require("../../shared/provider/mq-producer");
 const { buildWebhookSearchQuery } = require("../factory/webhook");
@@ -86,11 +86,11 @@ const createWebhook = async (params) => {
             connection: connectionEncrypted,
         });
 
-        const [webhook] = await webhookModel.create([payload], { session });
+        const webhook = await Webhooks.create(payload, session);
 
         await session.commitTransaction();
 
-        return updateWebhookCache(webhook._id.toString());
+        return updateWebhookCache(webhook.id);
 
     } catch (e) {
         await session.abortTransaction();
@@ -166,10 +166,10 @@ const updateWebhook = async (id, params) => {
             });
         }
 
-        await webhookModel.findByIdAndUpdate(
+        await Webhooks.findByIdAndUpdate(
             id,
             { $set: sanitizeObject(updateData) },
-            { session }
+            session
         );
 
         await session.commitTransaction();
@@ -203,7 +203,7 @@ const removeWebhook = async (id) => {
     session.startTransaction();
 
     try {
-        await webhookModel.findByIdAndDelete(id, { session });
+        await Webhooks.findByIdAndDelete(id, session);
 
         await session.commitTransaction();
 
@@ -257,11 +257,11 @@ const paginateWebhook = async (query = {}, sortBy = "createdAt:desc", limit = 10
 
     const queryParam = buildWebhookSearchQuery(query)
 
-    let res = await webhookModel.paginate(queryParam, { sortBy, limit, page });
+    let res = await Webhooks.paginate(queryParam, { sortBy, limit, page });
 
     let list = {
         results: res?.results?.map((n) => ({
-            id: n?._id?.toString(),
+            id: n?.id,
             title: n?.title,
             createdAt: n?.createdAt,
             updatedAt: n?.updatedAt,
