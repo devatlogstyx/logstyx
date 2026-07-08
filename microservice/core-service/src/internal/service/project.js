@@ -10,8 +10,9 @@ const { striptags } = require("striptags")
 const randomstring = require("randomstring");
 const projectUserModel = require("../model/project.user.model");
 const { updateProjectCache, getProjectFromCache, updateAllowedOriginCache } = require("../../shared/cache");
-const { mapProjectUser, mapProject } = require("../utils/mapper");
-const { validateCustomIndex, isRecent } = require("../utils/helper");
+const { mapProjectUser, mapProject, buildProjectSearchQuery } = require("../factory/project");
+const { validateCustomIndex } = require("../factory/bucket");
+const { isRecent } = require("../factory/log");
 const moment = require("moment-timezone");
 const { isValidObjectId } = require("../../shared/mongoose");
 const bucketModel = require("../model/bucket.model");
@@ -289,43 +290,6 @@ const removeProject = async (id, { getLogModel }) => {
     }
 
     return null
-}
-
-/**
- * 
- * @param {object} [params]
- * @param {string} [params.search]
- * @param {string} [params.user]
- * @returns 
- */
-const buildProjectSearchQuery = (params = {}) => {
-    let queryProject = {}
-    let queryUser = {}
-    if (params.search && typeof params.search === "string") {
-        queryProject.$or = [
-            {
-                title: {
-                    $regex: params?.search,
-                    $options: "i"
-                }
-            }
-        ]
-    }
-
-    if (params.ids && Array.isArray(params.ids)) {
-        queryProject._id = {
-            $in: params?.ids?.map((n) => ObjectId.createFromHexString(n))
-        }
-    }
-
-    if (params?.user && typeof params.user === "string") {
-        queryUser["user.userId"] = ObjectId.createFromHexString(params?.user)
-    }
-
-    return {
-        queryUser,
-        queryProject
-    }
 }
 
 const paginateProject = async (query = {}, sortBy = "createdAt:desc", limit = 10, page = 1) => {

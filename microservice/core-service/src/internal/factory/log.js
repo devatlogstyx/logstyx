@@ -1,44 +1,16 @@
 //@ts-check
 
-const { NO_ACCESS_ERR_CODE, NO_ACCESS_ERR_MESSAGE, FULL_PAYLOAD_DEDUPLICATION_STRATEGY, NONE_DEDUPLICATION_STRATEGY, INDEX_ONLY_DEDUPLICATION_STRATEGY, INVALID_INPUT_ERR_CODE } = require("common/constant");
-const { HttpError, num2Int, getNestedValue, hashString, evaluateCondition } = require("common/function");
-const { default: striptags } = require("striptags")
+const { NO_ACCESS_ERR_CODE, NO_ACCESS_ERR_MESSAGE, FULL_PAYLOAD_DEDUPLICATION_STRATEGY, NONE_DEDUPLICATION_STRATEGY, INDEX_ONLY_DEDUPLICATION_STRATEGY } = require("common/constant");
+const { HttpError, num2Int, getNestedValue, hashString, evaluateCondition, decryptAndDecompress } = require("common/function");
+const { validateCustomIndex, sanitizeFieldName } = require("./bucket");
 const crypto = require("crypto");
 
 /**
- * 
- * @param {string} field 
- * @returns 
- */
-const validateCustomIndex = (field, maxDepth = 5) => {
-    const cleaned = striptags(field);
-
-    // Must start with context or data
-    if (!/^(context|data)\./.test(cleaned)) {
-        return false;
-    }
-
-    // Check valid identifier pattern
-    if (!/^(context|data)(\.[a-zA-Z_$][\w$]*)+$/.test(cleaned)) {
-        return false;
-    }
-
-    // Limit depth (prevent data.a.b.c.d.e.f.g.h.i.j...)
-    const depth = cleaned.split('.').length - 1; // -1 because first is context/data
-    if (depth > maxDepth) {
-        return false;
-    }
-
-    return true;
-}
-
-
-/**
- * 
- * @param {object} project 
+ *
+ * @param {object} project
  * @param {object} project.settings
  * @param {string[]} project.settings.allowedOrigin
- * @param {string} origin 
+ * @param {string} origin
  */
 const validateOrigin = (project, origin) => {
 
@@ -51,10 +23,10 @@ const validateOrigin = (project, origin) => {
 }
 
 /**
- * 
- * @param {*} project 
- * @param {*} headers 
- * @param {*} body 
+ *
+ * @param {*} project
+ * @param {*} headers
+ * @param {*} body
  */
 const validateSignature = (project, headers, body) => {
     const { level, projectId, device, context, data } = body
@@ -86,10 +58,10 @@ const validateSignature = (project, headers, body) => {
 }
 
 /**
- * 
- * @param {*} log 
- * @param {*} project 
- * @returns 
+ *
+ * @param {*} log
+ * @param {*} bucket
+ * @returns
  */
 const generateIndexedHashes = (log, bucket) => {
     const hashes = {};
@@ -117,10 +89,10 @@ const generateIndexedHashes = (log, bucket) => {
 }
 
 /**
- * 
- * @param {*} data 
- * @param {*} bucket 
- * @returns 
+ *
+ * @param {*} data
+ * @param {*} bucket
+ * @returns
  */
 const generateRawValues = (data, bucket) => {
 
@@ -143,12 +115,11 @@ const generateRawValues = (data, bucket) => {
     return rawValues;
 };
 
-
 /**
- * 
- * @param {number} date 
- * @param {number} thresholdHours 
- * @returns 
+ *
+ * @param {number} date
+ * @param {number} thresholdHours
+ * @returns
  */
 function isRecent(date, thresholdHours = 24) {
     const hoursSince = (new Date() - date) / (1000 * 60 * 60);
@@ -156,10 +127,10 @@ function isRecent(date, thresholdHours = 24) {
 }
 
 /**
- * 
- * @param {*} params 
- * @param {*} bucket 
- * @returns 
+ *
+ * @param {*} params
+ * @param {*} bucket
+ * @returns
  */
 const generateLogKey = (params, bucket) => {
     const strategy = bucket?.settings?.deduplicationStrategy || FULL_PAYLOAD_DEDUPLICATION_STRATEGY;
@@ -211,88 +182,110 @@ const generateLogKey = (params, bucket) => {
     }
 };
 
-
-const buildMongoFilterQuery = (filters = {}, project = null) => {
-    /**
-     * 
-     * @param {*} field 
-     * @param {*} operator 
-     * @param {*} val 
-     * @returns 
-     */
-    const makeCond = (field, operator, val) => {
-        if (field === 'level') {
-            if (operator === 'ne') return { level: { $ne: val } };
-            if (operator === 'contains' && typeof val === 'string') return { level: { $regex: String(val), $options: 'i' } };
-            return { level: val };
-        }
-        const path = sanitizeFieldName(field);
-        const hashKey = `hash.${path}`;
-        const rawKey = `raw.${path}`;
-        const isRaw = project?.settings?.rawIndexes?.includes(field);
-
-        if (isRaw) {
-            if (['gt', 'gte', 'lt', 'lte'].includes(operator)) {
-                const num = isNaN(Number(val)) ? val : Number(val);
-                return { [rawKey]: { [`$${operator}`]: num } };
-            }
-            if (operator === 'ne') return { [rawKey]: { $ne: val } };
-            if (operator === 'contains' && typeof val === 'string') return { [rawKey]: { $regex: String(val), $options: 'i' } };
-            return { [rawKey]: val };
-        } else {
-            const hashed = hashString(String(val), field);
-            if (operator === 'ne') return { [hashKey]: { $ne: hashed } };
-            return { [hashKey]: hashed };
-        }
-    };
-
-    if (Array.isArray(filters)) {
-        const andConds = [];
-        for (const f of filters) {
-            if (!f || !f.field) continue;
-            const operator = f.operator || 'eq';
-            andConds.push(makeCond(f.field, operator, f.value));
-        }
-        return andConds.length ? { $and: andConds } : {};
-    }
-
-    const query = {};
-    if (!filters || typeof filters !== 'object') return query;
-    for (const [key, value] of Object.entries(filters)) {
-        Object.assign(query, makeCond(key, 'eq', value));
-    }
-    return query;
-}
-
 /**
- * 
- * @param {*} data 
- * @param {*} filters 
- * @returns 
+ *
+ * @param {*} data
+ * @param {*} filters
+ * @returns
  */
 const evaluateBucketFilter = (data, filters) => {
     return filters.every(filter => evaluateCondition(data, filter));
 };
 
+/**
+ *
+ * @param {object} [params]
+ * @param {string[]} [params.filterFields]
+ * @param {string[]} [params.filterValues]
+ * @param {string[]} [params.filterOperators]
+ * @param {object} [bucket]
+ * @returns
+ */
+const buildLogsSearchQuery = (params = {}, bucket) => {
+    let query = {}
 
-const sanitizeFieldName = (field) => {
-    if (!/^[a-zA-Z0-9_.]+$/.test(field)) {
-        throw HttpError(INVALID_INPUT_ERR_CODE, 'Invalid field name');
+    if (params.filterFields && params.filterValues &&
+        params.filterFields.length > 0 &&
+        params.filterFields.length === params.filterValues.length) {
+
+        params.filterFields.forEach((field, index) => {
+            const value = params?.filterValues?.[index]
+            const operator = params?.filterOperators?.[index] || 'eq' // Default to equals
+
+            if (field && value !== undefined && value !== null) {
+
+                // Check if field is in rawIndexes
+                if (bucket?.settings?.rawIndexes?.includes(field)) {
+                    const safeFieldName = sanitizeFieldName(field)
+                    const queryField = `raw.${safeFieldName}`
+
+                    // Support range operators for numeric fields
+                    switch (operator) {
+                        case 'gt':
+                            query[queryField] = { $gt: Number(value) }
+                            break
+                        case 'gte':
+                            query[queryField] = { $gte: Number(value) }
+                            break
+                        case 'lt':
+                            query[queryField] = { $lt: Number(value) }
+                            break
+                        case 'lte':
+                            query[queryField] = { $lte: Number(value) }
+                            break
+                        case 'eq':
+                        default:
+                            query[queryField] = Number(value)
+                    }
+
+                } else if (validateCustomIndex(field)) {
+                    // Hashed fields only support exact match
+                    query[`hash.${sanitizeFieldName(field)}`] = hashString(
+                        String(value),
+                        field
+                    )
+                } else {
+                    // Regular fields
+                    query[field] = value
+                }
+            }
+        })
     }
-    return field.replace(/\./g, '_');
-};
+
+    return query
+}
+
+/**
+ *
+ * @param {*} json
+ * @returns
+ */
+const mapLog = async (json) => {
+    return {
+        id: json?.id || json?._id?.toString(),
+        key: json?.key,
+        level: json?.level,
+        device: json?.device,
+        context: await decryptAndDecompress(json?.context),
+        data: await decryptAndDecompress(json?.data),
+        hash: json?.hash,
+        count: json?.count,
+        createdAt: json?.createdAt,
+        updatedAt: json?.updatedAt,
+    }
+}
 
 const HToMs = (num) => num2Int(num) * 60 * 60 * 1000;
+
 module.exports = {
-    validateCustomIndex,
     validateOrigin,
     validateSignature,
     generateIndexedHashes,
-    isRecent,
     generateRawValues,
+    isRecent,
     generateLogKey,
-    buildMongoFilterQuery,
     evaluateBucketFilter,
-    sanitizeFieldName,
+    buildLogsSearchQuery,
+    mapLog,
     HToMs
 }

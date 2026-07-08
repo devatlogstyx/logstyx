@@ -7,13 +7,13 @@ const { findUserById } = require("../../shared/provider/auth.service");
 const { mongoose, isValidObjectId } = require("./../../shared/mongoose");
 const { striptags } = require("striptags");
 const projectModel = require("../model/project.model");
-const { validateCustomIndex, isRecent } = require("../utils/helper");
+const { validateCustomIndex, mapBucket, buildBucketSearchQuery } = require("../factory/bucket");
+const { isRecent, mapLog } = require("../factory/log");
 const bucketModel = require("../model/bucket.model");
 const { updateBucketCache, getBucketFromCache } = require("../../shared/cache");
 const probeModel = require("../model/probe.model");
 const widgetModel = require("../model/widget.model");
 const projectUserModel = require("../model/project.user.model");
-const { mapBucket, mapLog } = require("../utils/mapper");
 const { ObjectId } = mongoose.Types
 const moment = require("moment-timezone")
 
@@ -203,41 +203,6 @@ const removeBucket = async (id, { getLogModel }) => {
     return null
 
 }
-
-/**
- * 
- * @param {*} params 
- * @returns 
- */
-const buildBucketSearchQuery = (params = {}) => {
-    let queryBucket = {};
-    let queryUser = {};
-
-    if (params.search && typeof params.search === "string") {
-        queryBucket.$or = [
-            {
-                title: {
-                    $regex: params?.search,
-                    $options: "i"
-                }
-            }
-        ];
-    }
-
-    if (params?.project && isValidObjectId(params?.project)) {
-        queryBucket.projects = ObjectId.createFromHexString(params?.project);
-    }
-
-    if (params?.user && isValidObjectId(params?.user)) {
-        queryUser["user.userId"] = ObjectId.createFromHexString(params?.user);
-    }
-
-    return {
-        queryUser,
-        queryBucket
-    };
-};
-
 
 const paginateBucket = async (query = {}, sortBy = "createdAt:desc", limit = 10, page = 1) => {
     const {

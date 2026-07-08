@@ -1,13 +1,13 @@
 //@ts-check
 const { INVALID_INPUT_ERR_CODE, NOT_FOUND_ERR_CODE, NOT_FOUND_ERR_MESSAGE, WEBHOOK_CACHE_KEY, BEARER_WEBHOOK_AUTH_TYPE, BASIC_WEBHOOK_AUTH_TYPE, API_KEY_WEBHOOK_AUTH_TYPE } = require("common/constant");
-const { HttpError, compressAndEncrypt, sanitizeObject, decryptAndDecompress, num2Ceil, num2Floor, parseSortBy } = require("common/function");
+const { HttpError, compressAndEncrypt, sanitizeObject, decryptAndDecompress, num2Ceil, num2Floor, parseSortBy, parseMustacheTemplate } = require("common/function");
 const { Validator } = require("node-input-validator");
 const { mongoose, isValidObjectId } = require("../../shared/mongoose");
 const { striptags } = require("striptags");
 const webhookModel = require("../model/webhook.model");
 const { updateWebhookCache, getWebhookFromCache } = require("../../shared/cache");
 const { submitRemoveCache } = require("../../shared/provider/mq-producer");
-const { parseMustacheTemplate } = require("../utils/helper");
+const { buildWebhookSearchQuery } = require("../factory/webhook");
 const axios = require("axios")
 
 /**
@@ -243,31 +243,12 @@ const findWebhookById = async (id) => {
 };
 
 /**
- * 
- * @param {*} params 
- */
-const buildWebhookSearchQuery = (params = {}) => {
-    let query = {}
-
-    if (params?.search && typeof params?.search === "string") {
-        query.$or = [
-            {
-                title: {
-                    $regex: params.search,
-                    $options: "i"
-                }
-            }
-        ]
-    }
-}
-
-/**
- * 
- * @param {*} query 
- * @param {*} sortBy 
- * @param {*} limit 
- * @param {*} page 
- * @returns 
+ *
+ * @param {*} query
+ * @param {*} sortBy
+ * @param {*} limit
+ * @param {*} page
+ * @returns
  */
 const paginateWebhook = async (query = {}, sortBy = "createdAt:desc", limit = 10, page = 1) => {
 

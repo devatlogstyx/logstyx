@@ -4,7 +4,7 @@ const { INVALID_INPUT_ERR_CODE, EMAIL_PASSWORD_LOGIN_TYPE, NOT_FOUND_ERR_CODE, N
 const { HttpError, hashString, num2Ceil, num2Floor, sanitizeObject, encrypt, sanitizeEmail } = require("common/function");
 const { Validator } = require("node-input-validator");
 const { default: striptags } = require("striptags");
-const { mapUser } = require("../utils/mapper");
+const { mapUser } = require("../factory/user");
 const { mongoose, isValidObjectId } = require("../../shared/mongoose");
 const bcrypt = require("bcryptjs");
 const { listUsersProject } = require("../../shared/provider/core.service");

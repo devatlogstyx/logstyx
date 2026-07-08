@@ -2,7 +2,6 @@
 
 const { HttpError, hashString, num2Ceil, num2Floor, sanitizeObject, encrypt, decryptSecret, createSlug, parseSortBy, sanitizeEmail } = require("common/function")
 const { getUserFromCache, updateUserCache } = require("../../shared/cache")
-const { mapUser, } = require("../utils/mapper")
 const { Validator } = require("node-input-validator")
 const {
     INVALID_INPUT_ERR_CODE,

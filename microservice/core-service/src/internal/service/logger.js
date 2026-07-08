@@ -2,11 +2,11 @@
 
 const { mongoose, isValidObjectId } = require("./../../shared/mongoose");
 const { getProjectFromCache, getBucketFromCache } = require("../../shared/cache");
-const { HttpError, hashString, decryptSecret, createSlug, num2Ceil, num2Floor, sanitizeForHTML } = require("common/function");
+const { HttpError, decryptSecret, createSlug, num2Ceil, num2Floor, sanitizeForHTML } = require("common/function");
 const { NOT_FOUND_ERR_CODE, NOT_FOUND_ERR_MESSAGE, BROWSER_CLIENT_TYPE, INVALID_INPUT_ERR_CODE, INVALID_INPUT_ERR_MESSAGE, INVALID_ID_ERR_MESSAGE } = require("common/constant");
-const { validateOrigin, validateSignature, generateIndexedHashes, validateCustomIndex, generateRawValues, generateLogKey, evaluateBucketFilter, HToMs, sanitizeFieldName } = require("../utils/helper");
+const { validateOrigin, validateSignature, generateIndexedHashes, generateRawValues, generateLogKey, evaluateBucketFilter, buildLogsSearchQuery, HToMs, mapLog } = require("../factory/log");
+const { validateCustomIndex, sanitizeFieldName } = require("../factory/bucket");
 const projectModel = require("../model/project.model");
-const { mapLog } = require("../utils/mapper");
 const { compressAndEncrypt, decryptAndDecompress } = require("common/function");
 const logSchema = require("../model/log.model");
 const logstampSchema = require("../model/logstamp.model");
@@ -406,70 +406,6 @@ const processCreateSelfLog = async (params) => {
     return null
 
 }
-
-/**
- * 
- * @param {object} [params] 
- * @param {string[]} [params.filterFields]
- * @param {string[]} [params.filterValues]
- * @param {string[]} [params.filterOperators]
- * @param {object} [bucket] 
- * @returns 
- */
-const buildLogsSearchQuery = (params = {}, bucket) => {
-    let query = {}
-
-    if (params.filterFields && params.filterValues &&
-        params.filterFields.length > 0 &&
-        params.filterFields.length === params.filterValues.length) {
-
-        params.filterFields.forEach((field, index) => {
-            const value = params?.filterValues?.[index]
-            const operator = params?.filterOperators?.[index] || 'eq' // Default to equals
-
-            if (field && value !== undefined && value !== null) {
-
-                // Check if field is in rawIndexes
-                if (bucket?.settings?.rawIndexes?.includes(field)) {
-                    const safeFieldName = sanitizeFieldName(field)
-                    const queryField = `raw.${safeFieldName}`
-
-                    // Support range operators for numeric fields
-                    switch (operator) {
-                        case 'gt':
-                            query[queryField] = { $gt: Number(value) }
-                            break
-                        case 'gte':
-                            query[queryField] = { $gte: Number(value) }
-                            break
-                        case 'lt':
-                            query[queryField] = { $lt: Number(value) }
-                            break
-                        case 'lte':
-                            query[queryField] = { $lte: Number(value) }
-                            break
-                        case 'eq':
-                        default:
-                            query[queryField] = Number(value)
-                    }
-
-                } else if (validateCustomIndex(field)) {
-                    // Hashed fields only support exact match
-                    query[`hash.${sanitizeFieldName(field)}`] = hashString(
-                        String(value),
-                        field
-                    )
-                } else {
-                    // Regular fields
-                    query[field] = value
-                }
-            }
-        })
-    }
-
-    return query
-}
-
 
 /**
  * 

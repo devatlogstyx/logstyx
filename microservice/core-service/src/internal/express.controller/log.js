@@ -21,7 +21,7 @@ const {
 const { submitWriteLog } = require("../../shared/provider/mq-producer");
 const { logTimelineByKey } = require("../service/logger");
 const { getBucketFromCache, getProjectFromCache } = require("../../shared/cache");
-const { validateOrigin, validateSignature } = require("../utils/helper");
+const { validateOrigin, validateSignature } = require("../factory/log");
 const DEAD_PROJECT_IDS = new Set();
 module.exports = {
 

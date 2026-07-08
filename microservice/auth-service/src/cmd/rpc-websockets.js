@@ -5,7 +5,7 @@ const {
     CAN_USER_DO_WSROUTE,
 } = require("common/routes/rpc-websockets");
 const { findUserById } = require("../internal/service/user");
-const { CanUserDo } = require("../internal/utils/helper");
+const { canUserDo } = require("../internal/factory/user");
 
 /**
  * 
@@ -20,7 +20,7 @@ exports.init = (rpc) => {
 
     // @ts-ignore
     rpc.use(CAN_USER_DO_WSROUTE, async ({ userId, access }) => {
-        return CanUserDo(userId, access)
+        return canUserDo(userId, access)
     });
 
 };

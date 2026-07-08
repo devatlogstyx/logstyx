@@ -5,7 +5,7 @@ const { Validator } = require("node-input-validator");
 const { findBucketById, listAllBucket } = require("../../shared/provider/core.service");
 const { getWebhookFromCache, updateAlertCache, getAlertFromCache } = require("../../shared/cache");
 const { mongoose, isValidObjectId } = require("../../shared/mongoose");
-const { evaluateAlertFilter } = require("../utils/helper");
+const { evaluateAlertFilter, buildAlertSearchQuery } = require("../factory/alert");
 const { striptags } = require("striptags");
 const alertModel = require("../model/alert.model");
 const { submitProcessLogAlert, submitProcessSendWebhook } = require("../../shared/provider/mq-producer");
@@ -194,32 +194,11 @@ const removeAlert = async (id) => {
 }
 
 /**
- * 
- * @param {*} params 
- */
-const buildAlertSearchQuery = (params = {}) => {
-    let query = {}
-
-    if (params?.search && typeof params?.search === "string") {
-        query.$or = [
-            {
-                title: {
-                    $regex: params.search,
-                    $options: "i"
-                }
-            }
-        ]
-    }
-
-    return query
-}
-
-/**
- * 
- * @param {*} query 
- * @param {string} sortBy 
- * @param {number} limit 
- * @param {number} page 
+ *
+ * @param {*} query
+ * @param {string} sortBy
+ * @param {number} limit
+ * @param {number} page
  */
 const paginateAlert = async (query, sortBy = "createdAt:desc", limit = 10, page = 1) => {
     const queryParams = buildAlertSearchQuery(query)
