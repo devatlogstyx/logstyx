@@ -4,18 +4,16 @@ const { HttpError, num2Ceil, num2Floor, parseSortBy, sanitizeObject, createSlug 
 const { Validator } = require("node-input-validator");
 const { findUserById } = require("../../shared/provider/auth.service");
 const mongoose = require("mongoose");
-const projectModel = require("../model/project.model");
 const { ObjectId } = mongoose.Types
 const { striptags } = require("striptags")
 const randomstring = require("randomstring");
-const projectUserModel = require("../model/project.user.model");
+const { Projects, ProjectUsers, Buckets } = require("../model");
 const { updateProjectCache, getProjectFromCache, updateAllowedOriginCache } = require("../../shared/cache");
 const { mapProjectUser, mapProject, buildProjectSearchQuery } = require("../factory/project");
 const { validateCustomIndex } = require("../factory/bucket");
 const { isRecent } = require("../factory/log");
 const moment = require("moment-timezone");
 const { isValidObjectId } = require("../../shared/mongoose");
-const bucketModel = require("../model/bucket.model");
 
 /**
  * 
@@ -26,7 +24,7 @@ const generateUniqueSlug = async (baseSlug) => {
     let slug = baseSlug?.toString()
     let counter = 1
 
-    while (await projectModel.exists({ slug })) {
+    while (await Projects.exists({ slug })) {
         slug = `${baseSlug}-${counter}`
         counter++
     }
@@ -86,11 +84,11 @@ const createProject = async (params, {
         }
     }
 
-    const existingProject = await projectModel.findOne({
+    const existingProject = await Projects.findOne({
         slug: createSlug(params?.slug || params?.title),
     })
     if (existingProject) {
-        return existingProject?.toJSON()
+        return existingProject
     }
 
     const session = await mongoose.startSession();
@@ -110,19 +108,15 @@ const createProject = async (params, {
             }
         })
 
-        const [newProject] = await projectModel.create([
-            payload
-        ], { session })
+        const newProject = await Projects.create(payload, session)
 
-        await projectUserModel.create([
-            {
-                project: newProject?._id,
-                user: {
-                    userId: ObjectId.createFromHexString(creator?.id),
-                    fullname: creator?.fullname,
-                },
-            }
-        ])
+        await ProjectUsers.create({
+            project: ObjectId.createFromHexString(newProject.id),
+            user: {
+                userId: ObjectId.createFromHexString(creator?.id),
+                fullname: creator?.fullname,
+            },
+        })
 
         createdProject = newProject;
 
@@ -135,7 +129,7 @@ const createProject = async (params, {
         session.endSession()
     }
 
-    const project = await updateProjectCache(createdProject?._id?.toString())
+    const project = await updateProjectCache(createdProject?.id)
 
     updateAllowedOriginCache()?.catch(console.error)
 
@@ -189,7 +183,7 @@ const updateProject = async (id, params) => {
     const session = await mongoose.startSession();
     session.startTransaction();
 
-    await projectModel.findByIdAndUpdate(id,
+    await Projects.findByIdAndUpdate(id,
         {
             $set: sanitizeObject({
                 title: striptags(params?.title),
@@ -225,7 +219,7 @@ const canUserModifyProject = async (userId, projectId) => {
         return false
     }
 
-    return projectUserModel.exists({
+    return ProjectUsers.exists({
         project: ObjectId.createFromHexString(projectId?.toString()),
         "user.userId": ObjectId.createFromHexString(userId?.toString())
     });
@@ -243,7 +237,7 @@ const canUserReadProject = async (userId, projectId) => {
         return false
     }
 
-    return projectUserModel.exists({
+    return ProjectUsers.exists({
         project: ObjectId.createFromHexString(projectId?.toString()),
         "user.userId": ObjectId.createFromHexString(userId?.toString())
     });
@@ -265,9 +259,9 @@ const removeProject = async (id, { getLogModel }) => {
     const projectObjId = ObjectId.createFromHexString(id.toString());
 
     await Promise.all([
-        projectModel.findByIdAndDelete(id),
-        projectUserModel.deleteMany({ project: projectObjId, }),
-        bucketModel.updateMany({
+        Projects.findByIdAndDelete(id),
+        ProjectUsers.deleteMany({ project: projectObjId, }),
+        Buckets.updateMany({
             projects: projectObjId
         }, {
             $pull: {
@@ -276,16 +270,16 @@ const removeProject = async (id, { getLogModel }) => {
         })
     ])
 
-    const emptyBuckets = bucketModel.find({
+    const emptyBuckets = Buckets.cursor({
         projects: { $size: 0 }
-    }).cursor();
+    });
 
     for await (const bucket of emptyBuckets) {
         const { log, logstamp } = await getLogModel(bucket._id.toString())
         await Promise.all([
             log.collection.drop(),
             logstamp.collection.drop(),
-            bucketModel.findByIdAndDelete(bucket._id)
+            Buckets.findByIdAndDelete(bucket._id)
         ])
     }
 
@@ -302,7 +296,9 @@ const paginateProject = async (query = {}, sortBy = "createdAt:desc", limit = 10
     page = num2Floor(page, 1)
     const sort = parseSortBy(sortBy)
 
-    const aggregate = projectUserModel.aggregate([
+    let options = { page, limit };
+
+    let res = await ProjectUsers.aggregatePaginate([
         { $match: queryUser },
         {
             $lookup: {
@@ -320,11 +316,7 @@ const paginateProject = async (query = {}, sortBy = "createdAt:desc", limit = 10
                 ...sort
             }
         }
-    ]);
-
-    let options = { page, limit };
-
-    let res = await projectUserModel.aggregatePaginate(aggregate, options);
+    ], options);
 
     let list = {
         results: res?.docs?.map((n) => {
@@ -362,7 +354,7 @@ const addUserToProject = async (userId, projectId) => {
     const projectObjId = ObjectId.createFromHexString(projectId.toString());
     const userObjId = ObjectId.createFromHexString(userId.toString());
 
-    const exists = await projectUserModel.exists({
+    const exists = await ProjectUsers.exists({
         project: projectObjId,
         "user.userId": userObjId
     });
@@ -373,7 +365,7 @@ const addUserToProject = async (userId, projectId) => {
     if (!user)
         throw HttpError(NOT_FOUND_ERR_CODE, USER_NOT_FOUND_ERR_MESSAGE);
 
-    await projectUserModel.create({
+    await ProjectUsers.create({
         project: projectObjId,
         user: {
             userId: userObjId,
@@ -404,7 +396,7 @@ const removeUserFromProject = async (userId, projectId) => {
     const projectObjId = ObjectId.createFromHexString(projectId.toString());
     const userObjId = ObjectId.createFromHexString(userId.toString());
 
-    const isMember = await projectUserModel.exists({
+    const isMember = await ProjectUsers.exists({
         project: projectObjId,
         "user.userId": userObjId
     });
@@ -412,7 +404,7 @@ const removeUserFromProject = async (userId, projectId) => {
     if (!isMember)
         throw HttpError(INVALID_INPUT_ERR_CODE, NOT_A_MEMBER_ERR_MESSAGE);
 
-    await projectUserModel.deleteMany({
+    await ProjectUsers.deleteMany({
         project: projectObjId,
         "user.userId": userObjId
     });
@@ -435,7 +427,7 @@ const listUserFromProject = async (projectId) => {
         throw HttpError(NOT_FOUND_ERR_CODE, PROJECT_NOT_FOUND_ERR_MESSAGE);
 
     const projectObjId = ObjectId.createFromHexString(projectId.toString());
-    const list = await projectUserModel.find({
+    const list = await ProjectUsers.find({
         project: projectObjId
     })
 
@@ -453,7 +445,7 @@ const getUsersProjectsStats = async (userId, getLogModelFunc) => {
         throw HttpError(INVALID_INPUT_ERR_CODE, INVALID_ID_ERR_MESSAGE);
     }
     // Get all user projects with project details in one query
-    const usersProjects = await projectUserModel.aggregate([
+    const usersProjects = await ProjectUsers.aggregate([
         {
             $match: {
                 'user.userId': ObjectId.createFromHexString(userId)
@@ -490,7 +482,7 @@ const getUsersProjectsStats = async (userId, getLogModelFunc) => {
     const projectIds = usersProjects.map((n) => n?.project?._id);
 
     // Get buckets for all projects
-    const buckets = await bucketModel.find({
+    const buckets = await Buckets.find({
         projects: {
             $in: projectIds
         }
@@ -505,14 +497,14 @@ const getUsersProjectsStats = async (userId, getLogModelFunc) => {
                 projectToBucketsMap.set(projectIdStr, []);
             }
             projectToBucketsMap.get(projectIdStr).push({
-                id: bucket._id.toString(),
+                id: bucket.id,
                 title: bucket.title
             });
         });
     });
 
     // Get all unique log models
-    const uniqueBucketIds = [...new Set(buckets.map(b => b._id.toString()))];
+    const uniqueBucketIds = [...new Set(buckets.map(b => b.id))];
 
     const logModelPromises = uniqueBucketIds.map(bucketId =>
         getLogModelFunc(bucketId)
@@ -674,7 +666,7 @@ const listUserProject = async (userId) => {
         throw HttpError(INVALID_INPUT_ERR_CODE, INVALID_ID_ERR_MESSAGE)
     }
 
-    const projects = await projectUserModel.aggregate([
+    const projects = await ProjectUsers.aggregate([
         {
             $match: { 'user.userId': ObjectId.createFromHexString(userId) }
         },
@@ -720,12 +712,12 @@ const findProjectById = async (id) => {
  * @returns 
  */
 const findProjectBySlug = async (slug) => {
-    const raw = await projectModel.findOne({ slug })
+    const raw = await Projects.findOne({ slug })
     if (!raw) {
         return null
     }
 
-    return updateProjectCache(raw?._id?.toString())
+    return updateProjectCache(raw?.id)
 }
 
 /**
@@ -738,7 +730,7 @@ const processRemoveUserFromAllProject = async (userId) => {
         throw HttpError(INVALID_INPUT_ERR_CODE, INVALID_ID_ERR_MESSAGE)
     }
 
-    await projectUserModel.deleteMany({
+    await ProjectUsers.deleteMany({
         "user.userId": ObjectId.createFromHexString(userId)
     });
 
@@ -757,7 +749,7 @@ const getProjectLogStats = async (projectId, getLogModelFunc) => {
     }
 
     // Find all buckets that contain this project
-    const buckets = await bucketModel.find({
+    const buckets = await Buckets.find({
         projects: ObjectId.createFromHexString(projectId)
     });
 
@@ -767,8 +759,8 @@ const getProjectLogStats = async (projectId, getLogModelFunc) => {
 
     // Get log models for all buckets
     const logModelPromises = buckets.map(bucket =>
-        getLogModelFunc(bucket._id.toString())
-            .then(logModel => ({ bucketId: bucket._id.toString(), logModel }))
+        getLogModelFunc(bucket.id)
+            .then(logModel => ({ bucketId: bucket.id, logModel }))
             .catch(() => null)
     );
     const logModelsArray = await Promise.all(logModelPromises);

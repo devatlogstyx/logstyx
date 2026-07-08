@@ -6,14 +6,10 @@ const { Validator } = require("node-input-validator");
 const { findUserById } = require("../../shared/provider/auth.service");
 const { mongoose, isValidObjectId } = require("./../../shared/mongoose");
 const { striptags } = require("striptags");
-const projectModel = require("../model/project.model");
 const { validateCustomIndex, mapBucket, buildBucketSearchQuery } = require("../factory/bucket");
 const { isRecent, mapLog } = require("../factory/log");
-const bucketModel = require("../model/bucket.model");
+const { Buckets, Projects, ProjectUsers, Probes, Widgets } = require("../model");
 const { updateBucketCache, getBucketFromCache } = require("../../shared/cache");
-const probeModel = require("../model/probe.model");
-const widgetModel = require("../model/widget.model");
-const projectUserModel = require("../model/project.user.model");
 const { ObjectId } = mongoose.Types
 const moment = require("moment-timezone")
 
@@ -54,7 +50,7 @@ const createBucket = async (params, { initLogger, canUserModifyProject }) => {
         }
     }
 
-    const projects = await projectModel.find({
+    const projects = await Projects.find({
         _id: { $in: params?.projects?.map((n) => ObjectId.createFromHexString(n?.toString())) }
     })
 
@@ -62,7 +58,7 @@ const createBucket = async (params, { initLogger, canUserModifyProject }) => {
         throw HttpError(INVALID_INPUT_ERR_CODE, `No valid project is provided`)
     }
 
-    const canModify = await Promise.all(projects.map((n) => canUserModifyProject(creator?.id, n?._id?.toString())))
+    const canModify = await Promise.all(projects.map((n) => canUserModifyProject(creator?.id, n?.id)))
     if (canModify.some(allowed => !allowed)) {
         throw HttpError(FORBIDDEN_ERR_CODE, `You don't have permission to modify one or more of the provided projects`)
     }
@@ -75,7 +71,7 @@ const createBucket = async (params, { initLogger, canUserModifyProject }) => {
 
         const payload = sanitizeObject({
             title: striptags(params?.title),
-            projects: projects.map((n) => n?._id),
+            projects: projects.map((n) => n?.id),
             settings: {
                 filter: params?.settings?.filter,
                 indexes: params?.settings?.indexes?.filter((n) => validateCustomIndex(n)),
@@ -85,11 +81,7 @@ const createBucket = async (params, { initLogger, canUserModifyProject }) => {
             }
         })
 
-        const [rawBucket] = await bucketModel.create([
-            payload
-        ], { session })
-
-        bucket = rawBucket?.toJSON()
+        bucket = await Buckets.create(payload, session)
 
         await session.commitTransaction()
 
@@ -153,7 +145,7 @@ const updateBucket = async (id, params, { initLogger }) => {
     const session = await mongoose.startSession();
     session.startTransaction();
 
-    await bucketModel.findByIdAndUpdate(id,
+    await Buckets.findByIdAndUpdate(id,
         {
             $set: sanitizeObject({
                 title: striptags(params?.title),
@@ -193,11 +185,11 @@ const removeBucket = async (id, { getLogModel }) => {
     const { log, logstamp } = await getLogModel(id)
 
     await Promise.all([
-        bucketModel.findByIdAndDelete(id),
+        Buckets.findByIdAndDelete(id),
         log.collection.drop(),
         logstamp.collection.drop(),
-        probeModel.deleteMany({ bucket: bucketObjectId }),
-        widgetModel.deleteMany({ bucket: bucketObjectId })
+        Probes.deleteMany({ bucket: bucketObjectId }),
+        Widgets.deleteMany({ bucket: bucketObjectId })
     ])
 
     return null
@@ -214,7 +206,9 @@ const paginateBucket = async (query = {}, sortBy = "createdAt:desc", limit = 10,
     page = num2Floor(page, 1);
     const sort = parseSortBy(sortBy);
 
-    const aggregate = projectUserModel.aggregate([
+    let options = { page, limit };
+
+    let res = await ProjectUsers.aggregatePaginate([
         { $match: queryUser }, // Filter by user first
         {
             $lookup: {
@@ -241,11 +235,7 @@ const paginateBucket = async (query = {}, sortBy = "createdAt:desc", limit = 10,
                 ...sort
             }
         }
-    ]);
-
-    let options = { page, limit };
-
-    let res = await projectUserModel.aggregatePaginate(aggregate, options);
+    ], options);
 
     let list = {
         results: await Promise.all(res?.docs?.map(async (n) => {
@@ -276,7 +266,7 @@ const listUserBucket = async (userId) => {
         throw HttpError(INVALID_INPUT_ERR_CODE, INVALID_ID_ERR_MESSAGE)
     }
 
-    const bucket = await projectUserModel.aggregate([
+    const bucket = await ProjectUsers.aggregate([
         {
             $match: { 'user.userId': ObjectId.createFromHexString(userId) }
         },
@@ -317,7 +307,7 @@ const getUsersBucketStats = async (userId, getLogModel) => {
     const activityCutoff = new Date(Date.now() - HOURS_TO_TRACK * MILLISECONDS_PER_HOUR);
 
     // Get all user buckets with bucket details in one query
-    const usersBuckets = await projectUserModel.aggregate([
+    const usersBuckets = await ProjectUsers.aggregate([
         {
             $match: {
                 'user.userId': ObjectId.createFromHexString(userId)
