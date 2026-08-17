@@ -4,7 +4,7 @@ const { INVALID_INPUT_ERR_CODE, EMAIL_PASSWORD_LOGIN_TYPE, NOT_FOUND_ERR_CODE, N
 const { HttpError, hashString, num2Ceil, num2Floor, sanitizeObject, encrypt, sanitizeEmail } = require("common/function");
 const { Validator } = require("node-input-validator");
 const { default: striptags } = require("striptags");
-const { mapUser } = require("../factory/user");
+const { mapUser, mapUserInvitation } = require("../utils/mapper");
 const { mongoose, isValidObjectId } = require("../../shared/mongoose");
 const bcrypt = require("bcryptjs");
 const { listUsersProject } = require("../../shared/provider/core.service");
@@ -72,7 +72,7 @@ const createUserInvitation = async (params) => {
 
     const raw = await UserInvitations.create(payload)
 
-    return Factory.mapUserInvitation(raw)
+    return mapUserInvitation(raw)
 
 }
 
@@ -92,7 +92,7 @@ const findInvitationById = async (id) => {
         return null
     }
 
-    return Factory.mapUserInvitation(raw)
+    return mapUserInvitation(raw)
 
 }
 
@@ -161,7 +161,7 @@ const updateUserInvitation = async (id, params) => {
         $set: updatePayload
     })
 
-    return Factory.mapUserInvitation(raw)
+    return mapUserInvitation(raw)
 
 }
 
@@ -201,7 +201,7 @@ const paginateUserInvitation = async (query = {}, sortBy = "createdAt:desc", lim
     list.results = list?.results?.map((/** @type {any} */ doc) => {
         let n = new userInvitationModel(doc);
         n.decryptFieldsSync();
-        return Factory.mapUserInvitation(n?.toJSON())
+        return mapUserInvitation(n?.toJSON())
     })
 
     return list

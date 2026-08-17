@@ -45,21 +45,6 @@ const buildBucketSearchQuery = (params = {}) => {
 
 /**
  *
- * @param {*} json
- * @returns
- */
-const mapBucket = (json) => {
-    return {
-        id: json?.id || json?._id?.toString(),
-        title: json?.title,
-        projects: json?.projects,
-        settings: json?.settings,
-        createdAt: json?.createdAt
-    }
-}
-
-/**
- *
  * @param {string} field
  * @returns
  */
@@ -99,7 +84,6 @@ const sanitizeFieldName = (field) => {
 
 module.exports = {
     buildBucketSearchQuery,
-    mapBucket,
     validateCustomIndex,
     sanitizeFieldName
 }

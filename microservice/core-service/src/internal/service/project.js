@@ -9,9 +9,10 @@ const { striptags } = require("striptags")
 const randomstring = require("randomstring");
 const { Projects, ProjectUsers, Buckets } = require("../model");
 const { updateProjectCache, getProjectFromCache, updateAllowedOriginCache } = require("../../shared/cache");
-const { mapProjectUser, mapProject, buildProjectSearchQuery } = require("../factory/project");
+const { buildProjectSearchQuery } = require("../factory/project");
 const { validateCustomIndex } = require("../factory/bucket");
 const { isRecent } = require("../factory/log");
+const { mapProjectUser, mapProject } = require("../utils/mapper");
 const moment = require("moment-timezone");
 const { isValidObjectId } = require("../../shared/mongoose");
 

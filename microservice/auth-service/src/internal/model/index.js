@@ -1,7 +1,6 @@
 const { useRepository } = require("common/hooks");
 const { isValidObjectId } = require("../../shared/mongoose");
-const { mapUser } = require("../factory/user");
-const { mapUserInvitation } = require("../factory/user.invitation");
+const { mapUser, mapUserInvitation } = require("../utils/mapper");
 
 const makeRepo = (path, options = {}) => useRepository({
     Model: require(path),

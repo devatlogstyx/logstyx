@@ -5,37 +5,6 @@ const { ObjectId } = mongoose.Types
 
 /**
  *
- * @param {*} json
- * @returns
- */
-const mapProjectUser = (json) => {
-    return {
-        id: json?.user?.userId?.toString(),
-        fullname: json?.user?.fullname,
-        createdAt: json?.createdAt
-    }
-}
-
-/**
- *
- * @param {*} json
- * @returns
- */
-const mapProject = (json) => {
-    return {
-        id: json?.id || json?._id?.toString(),
-        title: json?.title,
-        slug: json?.slug,
-        secret: json?.secret,
-        settings: {
-            allowedOrigin: json?.settings?.allowedOrigin,
-        },
-        createdAt: json?.createdAt
-    }
-}
-
-/**
- *
  * @param {object} [params]
  * @param {string} [params.search]
  * @param {string[]} [params.ids]
@@ -73,7 +42,5 @@ const buildProjectSearchQuery = (params = {}) => {
 }
 
 module.exports = {
-    mapProjectUser,
-    mapProject,
     buildProjectSearchQuery
 }

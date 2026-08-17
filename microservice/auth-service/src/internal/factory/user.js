@@ -38,23 +38,6 @@ const buildUserSearchQuery = (params = {}) => {
 
 /**
  * 
- * @param {*} json 
- * @returns 
- */
-const mapUser = (json) => {
-    return {
-        id: json?.id || json?._id?.toString(),
-        email: json?.email,
-        fullname: json?.fullname,
-        image: json?.image,
-        permissions: json?.permissions,
-    }
-}
-
-
-
-/**
- * 
  * @param {string} credentials 
  * @param {string} inputPassword 
  * @returns 
@@ -111,7 +94,6 @@ const getLastLogin = (req) => {
 
 module.exports = {
     buildUserSearchQuery,
-    mapUser,
     getLastLogin,
     canUserDo,
     verifyUserPassword

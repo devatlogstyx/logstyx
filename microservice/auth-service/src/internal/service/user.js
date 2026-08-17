@@ -34,6 +34,7 @@ const { striptags } = require("striptags")
 const { submitRemoveCache, submitCreateProject, fanoutOnUserRemoved } = require("../../shared/provider/mq-producer")
 
 const { mongoose, isValidObjectId } = require("../../shared/mongoose")
+const { mapUser } = require("../utils/mapper")
 
 const { ObjectId } = mongoose.Types
 const jwt = require("jsonwebtoken")
@@ -183,7 +184,7 @@ const paginateUser = async (query = {}, sortBy = "createdAt:desc", limit = 10, p
             let n = new userModel(doc);
             n.decryptFieldsSync();
             return {
-                ...Factory.mapUser(n.toObject()),
+                ...mapUser(n.toObject()),
                 lastLogin: doc?.userlogin?.lastLogin
             }
         }),

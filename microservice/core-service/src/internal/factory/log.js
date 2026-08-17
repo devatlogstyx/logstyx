@@ -1,7 +1,7 @@
 //@ts-check
 
 const { NO_ACCESS_ERR_CODE, NO_ACCESS_ERR_MESSAGE, FULL_PAYLOAD_DEDUPLICATION_STRATEGY, NONE_DEDUPLICATION_STRATEGY, INDEX_ONLY_DEDUPLICATION_STRATEGY } = require("common/constant");
-const { HttpError, num2Int, getNestedValue, hashString, evaluateCondition, decryptAndDecompress } = require("common/function");
+const { HttpError, num2Int, getNestedValue, hashString, evaluateCondition } = require("common/function");
 const { validateCustomIndex, sanitizeFieldName } = require("./bucket");
 const crypto = require("crypto");
 
@@ -255,26 +255,6 @@ const buildLogsSearchQuery = (params = {}, bucket) => {
     return query
 }
 
-/**
- *
- * @param {*} json
- * @returns
- */
-const mapLog = async (json) => {
-    return {
-        id: json?.id || json?._id?.toString(),
-        key: json?.key,
-        level: json?.level,
-        device: json?.device,
-        context: await decryptAndDecompress(json?.context),
-        data: await decryptAndDecompress(json?.data),
-        hash: json?.hash,
-        count: json?.count,
-        createdAt: json?.createdAt,
-        updatedAt: json?.updatedAt,
-    }
-}
-
 const HToMs = (num) => num2Int(num) * 60 * 60 * 1000;
 
 module.exports = {
@@ -286,6 +266,5 @@ module.exports = {
     generateLogKey,
     evaluateBucketFilter,
     buildLogsSearchQuery,
-    mapLog,
     HToMs
 }

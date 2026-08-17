@@ -21,29 +21,29 @@ const { updateCache, getCache } = useCache({
 })
 
 /**
- * 
- * @param {string} id 
- * @returns 
+ *
+ * @param {string} id
+ * @returns
  */
 exports.updateUserCache = async (id) => updateCache(USER_CACHE_KEY, id, Users)
 
 /**
- * 
- * @param {string} id 
- * @returns 
+ *
+ * @param {string} id
+ * @returns
  */
 exports.getUserFromCache = async (id) => getCache(USER_CACHE_KEY, id, Users)
 
 /**
- * 
- * @param {string} id 
- * @returns 
+ *
+ * @param {string} id
+ * @returns
  */
 exports.updateUserLoginCache = async (id) => updateCache(USER_LOGIN_CACHE_KEY, id, UserLogins)
 
 /**
- * 
- * @param {string} id 
- * @returns 
+ *
+ * @param {string} id
+ * @returns
  */
 exports.getUserLoginFromCache = async (id) => getCache(USER_LOGIN_CACHE_KEY, id, UserLogins)

@@ -1,7 +1,7 @@
 //@ts-check
 
 const { INVALID_INPUT_ERR_CODE } = require("common/constant");
-const { HttpError, sanitizeObject, hashString } = require("common/function");
+const { HttpError, hashString } = require("common/function");
 const { Validator } = require("node-input-validator");
 
 /**
@@ -20,20 +20,6 @@ const validateCreateInput = async (params) => {
     if (!match) {
         throw HttpError(INVALID_INPUT_ERR_CODE, v.errors);
     }
-}
-
-/**
- * 
- * @param {*} json 
- * @returns 
- */
-const mapUserInvitation = (json) => {
-    return sanitizeObject({
-        id: json?.id || json?._id?.toString(),
-        email: json?.email,
-        permissions: json?.permissions,
-        projects: json?.projects
-    })
 }
 
 /**
@@ -64,6 +50,5 @@ const buildUserInvitationSearchQuery = (params) => {
 
 module.exports = {
     validateCreateInput,
-    mapUserInvitation,
     buildUserInvitationSearchQuery
 }
