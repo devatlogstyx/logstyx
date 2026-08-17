@@ -83,7 +83,10 @@ module.exports = {
    */
   async createCache(key, id, data, ttl = 5 * 60) {
     try {
-      const result = await redis.set(makeKey(key, id), JSON.stringify(data), 'EX', ttl);
+      const value = JSON.stringify(data);
+      const result = ttl
+        ? await redis.set(makeKey(key, id), value, 'EX', ttl)
+        : await redis.set(makeKey(key, id), value);
       return result === 'OK';
     } catch (err) {
       console.error(`Failed to create cache for ${makeKey(key, id)}:`, err.message);

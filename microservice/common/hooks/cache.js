@@ -1,12 +1,11 @@
 //@ts-check
 
 const updateCache = async (key, id, model, submitCacheFunc, logger, ttl) => {
-    let raw = await model.findById(id)
-    if (!raw) {
+    let data = await model.findById(id)
+    if (!data) {
         return null
     }
 
-    const data = raw?.toJSON()
     submitCacheFunc({
         key,
         id,

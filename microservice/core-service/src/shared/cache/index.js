@@ -8,12 +8,7 @@ const { readCache } = require("../provider/cache.service")
 const { useCache } = require("common/hooks")
 
 const { logger: Log } = require("../logger")
-const projectModel = require("../../internal/model/project.model")
-const probeModel = require("../../internal/model/probe.model")
-
-const widgetModel = require("../../internal/model/widget.model")
-const reportModel = require("../../internal/model/report.model")
-const bucketModel = require("../../internal/model/bucket.model")
+const { Buckets, Projects, Probes, Reports, Widgets } = require("../../internal/model")
 
 const { updateCache, getCache } = useCache({
     ReadCache: readCache,
@@ -21,22 +16,22 @@ const { updateCache, getCache } = useCache({
     Log
 })
 
-const updateBucketCache = async (id) => updateCache(BUCKET_CACHE_KEY, id, bucketModel)
-const getBucketFromCache = async (id) => getCache(BUCKET_CACHE_KEY, id, bucketModel)
+const updateBucketCache = async (id) => updateCache(BUCKET_CACHE_KEY, id, Buckets)
+const getBucketFromCache = async (id) => getCache(BUCKET_CACHE_KEY, id, Buckets)
 
-const updateProjectCache = async (id) => updateCache(PROJECT_CACHE_KEY, id, projectModel)
-const getProjectFromCache = async (id) => getCache(PROJECT_CACHE_KEY, id, projectModel)
+const updateProjectCache = async (id) => updateCache(PROJECT_CACHE_KEY, id, Projects)
+const getProjectFromCache = async (id) => getCache(PROJECT_CACHE_KEY, id, Projects)
 
-const updateProbeCache = async (id) => updateCache(PROBE_CACHE_KEY, id, probeModel)
-const getProbeFromCache = async (id) => getCache(PROBE_CACHE_KEY, id, probeModel)
-
-
-const updateWidgetCache = async (id) => updateCache(WIDGET_CACHE_KEY, id, widgetModel)
-const getWidgetFromCache = async (id) => getCache(WIDGET_CACHE_KEY, id, widgetModel, null)
+const updateProbeCache = async (id) => updateCache(PROBE_CACHE_KEY, id, Probes)
+const getProbeFromCache = async (id) => getCache(PROBE_CACHE_KEY, id, Probes)
 
 
-const updateReportCache = async (id) => updateCache(REPORT_CACHE_KEY, id, reportModel)
-const getReportFromCache = async (id) => getCache(REPORT_CACHE_KEY, id, reportModel)
+const updateWidgetCache = async (id) => updateCache(WIDGET_CACHE_KEY, id, Widgets)
+const getWidgetFromCache = async (id) => getCache(WIDGET_CACHE_KEY, id, Widgets, null)
+
+
+const updateReportCache = async (id) => updateCache(REPORT_CACHE_KEY, id, Reports)
+const getReportFromCache = async (id) => getCache(REPORT_CACHE_KEY, id, Reports)
 
 
 /**
@@ -66,7 +61,7 @@ const getWidgetDataCache = async (id) => {
 }
 
 const updateAllowedOriginCache = async () => {
-    const list = await projectModel.distinct("settings.allowedOrigin");
+    const list = await Projects.distinct("settings.allowedOrigin", {});
     const origin = (list || []).filter(item => typeof item === 'string' && item.length > 0);
 
     submitCreateCache({

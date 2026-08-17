@@ -8,8 +8,7 @@ const { readCache } = require("./../provider/cache.service")
 const { useCache } = require("common/hooks")
 
 const { logger: Log } = require("../logger")
-const webhookModel = require("../../internal/model/webhook.model")
-const alertModel = require("../../internal/model/alert.model")
+const { Webhooks, Alerts } = require("../../internal/model")
 
 const { updateCache, getCache } = useCache({
     ReadCache: readCache,
@@ -17,9 +16,9 @@ const { updateCache, getCache } = useCache({
     Log
 })
 
-exports.updateWebhookCache = async (id) => updateCache(WEBHOOK_CACHE_KEY, id, webhookModel)
-exports.getWebhookFromCache = async (id) => getCache(WEBHOOK_CACHE_KEY, id, webhookModel)
+exports.updateWebhookCache = async (id) => updateCache(WEBHOOK_CACHE_KEY, id, Webhooks)
+exports.getWebhookFromCache = async (id) => getCache(WEBHOOK_CACHE_KEY, id, Webhooks)
 
-exports.updateAlertCache = async (id) => updateCache(ALERT_CACHE_KEY, id, alertModel)
-exports.getAlertFromCache = async (id) => getCache(ALERT_CACHE_KEY, id, alertModel)
+exports.updateAlertCache = async (id) => updateCache(ALERT_CACHE_KEY, id, Alerts)
+exports.getAlertFromCache = async (id) => getCache(ALERT_CACHE_KEY, id, Alerts)
 
