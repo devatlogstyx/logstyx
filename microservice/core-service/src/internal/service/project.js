@@ -12,7 +12,7 @@ const { updateProjectCache, getProjectFromCache, updateAllowedOriginCache } = re
 const { buildProjectSearchQuery } = require("../factory/project");
 const { validateCustomIndex } = require("../factory/bucket");
 const { isRecent } = require("../factory/log");
-const { mapProjectUser, mapProject } = require("../utils/mapper");
+const { mapProject } = require("../utils/mapper");
 const moment = require("moment-timezone");
 const { isValidObjectId } = require("../../shared/mongoose");
 
@@ -428,11 +428,9 @@ const listUserFromProject = async (projectId) => {
         throw HttpError(NOT_FOUND_ERR_CODE, PROJECT_NOT_FOUND_ERR_MESSAGE);
 
     const projectObjId = ObjectId.createFromHexString(projectId.toString());
-    const list = await ProjectUsers.find({
+    return ProjectUsers.find({
         project: projectObjId
-    })
-
-    return list?.map(mapProjectUser);
+    });
 };
 
 /**
