@@ -474,8 +474,23 @@ const testConnection = async (connection) => {
 
     clearTimeout(timeout);
 
-    // Parse response
-    return response.json();
+    const contentType = response.headers.get('content-type') || '';
+    const text = await response.text();
+
+    if (contentType.includes('application/json')) {
+        try {
+            return JSON.parse(text);
+        } catch (e) {
+            // fall through to raw text response below
+        }
+    }
+
+    return {
+        status_code: response.status,
+        content_type: contentType,
+        response_body: text.substring(0, 1000),
+        body_length: text.length
+    };
 
 }
 
