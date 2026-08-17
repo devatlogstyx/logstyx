@@ -7,7 +7,7 @@ const { getProjectFromCache, updateProbeCache, getProbeFromCache } = require("..
 const { mongoose, isValidObjectId } = require("./../../shared/mongoose");
 const { default: striptags } = require("striptags");
 const { submitRemoveCache, submitExecuteProbeWorker, submitCreateLog, submitCreateAgendaJob } = require("../../shared/provider/mq-producer");
-const { Probes, ProjectUsers } = require("../model");
+const { Probes, ProjectUsers, Buckets } = require("../model");
 const { buildProbeSearchQuery, buildAuthHeaders } = require("../factory/probe");
 const { ObjectId } = mongoose.Types
 const axios = require("axios")
@@ -311,10 +311,31 @@ const paginateProbe = async (query = {}, sortBy = "createdAt:desc", limit = 10, 
 };
 
 /**
+ * Write a probe log into every bucket linked to the project
+ *
+ * @param {*} createLogFunc
+ * @param {*} project
+ * @param {*} params
+ */
+const writeProbeLog = async (createLogFunc, project, params) => {
+    const buckets = Buckets.cursor({
+        projects: ObjectId.createFromHexString(project?.id)
+    });
+
+    for await (const bucket of buckets) {
+        try {
+            await createLogFunc(bucket.toJSON(), params);
+        } catch (e) {
+            logger.error(e);
+        }
+    }
+};
+
+/**
  * Execute a single probe - fetch data and log it
- * 
- * @param {string} probeId 
- * @returns 
+ *
+ * @param {string} probeId
+ * @returns
  */
 const processExecuteProbeWorker = async (probeId, createLogFunc) => {
 
@@ -366,7 +387,7 @@ const processExecuteProbeWorker = async (probeId, createLogFunc) => {
         }
 
         // Log successful fetch
-        await createLogFunc(project, {
+        await writeProbeLog(createLogFunc, project, {
             level: INFO_LOG_LEVEL,
             timestamp: Date.now(),
             device: {},
@@ -411,7 +432,7 @@ const processExecuteProbeWorker = async (probeId, createLogFunc) => {
                     }
                 }
 
-                await createLogFunc(project, {
+                await writeProbeLog(createLogFunc, project, {
                     level: ERROR_LOG_LEVEL,
                     timestamp: Date.now(),
                     device: {},
