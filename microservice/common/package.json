@@ -8,6 +8,12 @@
     "email": "angga2oioi@gmail.com"
   },
   "license": "MIT",
+  "scripts": {
+    "test": "jest --coverage --forceExit"
+  },
+  "devDependencies": {
+    "jest": "^30.0.2"
+  },
   "exports": {
     "./constant": "./constant/index.js",
     "./function": "./function/index.js",

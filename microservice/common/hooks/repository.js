@@ -101,8 +101,8 @@ const useRepository = ({
 
     const paginate = async (query, { sortBy, limit, page, session = null }) => {
         if (!isObject(query)) throw HttpError(INVALID_INPUT_ERR_CODE, INVALID_INPUT_ERR_MESSAGE)
-        page = num2Floor(page)
-        limit = num2Floor(num2Ceil(limit))
+        page = num2Floor(page, 1)
+        limit = num2Floor(num2Ceil(limit, 50), 1)
         let list = await Model.paginate(query, { sortBy, limit, page, session })
         list.results = list?.results?.map((doc) => {
             if (decrypt) {

@@ -1,19 +1,13 @@
 //@ts-check
 
 exports.num2Float = (number) => {
-    if (isNaN(number)) {
-        return 0;
-    }
-
-    return parseFloat(number);
+    const parsed = parseFloat(number);
+    return isNaN(parsed) ? 0 : parsed;
 };
 
 exports.num2Int = (number) => {
-    if (isNaN(number)) {
-        return 0;
-    }
-
-    return parseInt(number);
+    const parsed = parseInt(number);
+    return isNaN(parsed) ? 0 : parsed;
 };
 
 exports.num2Floor = (number, floor = 0) => {

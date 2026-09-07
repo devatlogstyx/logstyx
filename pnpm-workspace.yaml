@@ -2,6 +2,7 @@ packages:
   - 'microservice/auth-service/src'
   - 'microservice/cache-service/src'
   - 'microservice/core-service/src'
+  - 'microservice/utility-service/src'
   - 'microservice/gateway-service'
   - 'microservice/common'
   - 'microservice/frontend'
