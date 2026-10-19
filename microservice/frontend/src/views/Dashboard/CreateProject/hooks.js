@@ -26,7 +26,10 @@ const useCreateProject = ({
             indexes: [],
             rawIndexes: [],
             allowedOrigin: [],
-            deduplicationStrategy: FULL_PAYLOAD_DEDUPLICATION_STRATEGY
+            deduplicationStrategy: FULL_PAYLOAD_DEDUPLICATION_STRATEGY,
+            retentionValue: 0,
+            retentionUnit: "hours",
+            retentionHours: 0
         },
         validate: {
 
@@ -146,13 +149,27 @@ const useCreateProject = ({
                 }
             }
             await api.post(payload)
+            setIsModalVisible(false)
+            setStep(0)
+            form.reset()
             onUpdate()
         } catch (e) {
             ErrorMessage(e)
         } finally {
             setIsSubmitting(false)
         }
-    }, [ErrorMessage, api, onUpdate])
+    }, [ErrorMessage, api, onUpdate, form])
+
+    // Fields on the first step are unmounted while on step 2, so their
+    // validation errors would be invisible. Jump back and surface the message.
+    const handleValidationError = React.useCallback((errors) => {
+        const [field, message] = Object.entries(errors)[0] || []
+        if (!field) return
+        if (field === "title" || field === "allowedOrigin") {
+            setStep(0)
+        }
+        ErrorMessage(new Error(String(message)))
+    }, [ErrorMessage])
 
     return {
         form,
@@ -164,6 +181,7 @@ const useCreateProject = ({
             setStep(0)
         },
         handleSubmit,
+        handleValidationError,
         step,
         setStep
     }

@@ -146,6 +146,31 @@ describe("findById", () => {
     });
 });
 
+describe("custom Mapper on a missing document", () => {
+    // A mapper like mapProject returns an object even for undefined input,
+    // which used to make findOne look like it found something.
+    const mapper = (json) => ({ id: json?.id, title: json?.title });
+
+    beforeEach(() => {
+        repo = useRepository({ Model, Mapper: mapper, ObjectIdValidator: isValidObjectId });
+    });
+
+    it("findOne resolves undefined instead of a mapped empty object", async () => {
+        Model.findOne.mockReturnValue(query(null));
+        await expect(repo.findOne({ slug: "missing" })).resolves.toBeUndefined();
+    });
+
+    it("findById resolves undefined instead of a mapped empty object", async () => {
+        Model.findById.mockReturnValue(query(null));
+        await expect(repo.findById(VALID_ID)).resolves.toBeUndefined();
+    });
+
+    it("findByIdAndUpdate resolves undefined when nothing matched", async () => {
+        Model.findByIdAndUpdate.mockResolvedValue(null);
+        await expect(repo.findByIdAndUpdate(VALID_ID, { title: "x" })).resolves.toBeUndefined();
+    });
+});
+
 describe("findOne / find", () => {
     it("maps a single document", async () => {
         Model.findOne.mockReturnValue(query(doc({ _id: VALID_ID })));

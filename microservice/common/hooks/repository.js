@@ -12,11 +12,15 @@ const useRepository = ({
     decrypt = false
 }) => {
 
+    // Mappers build a fresh object even from undefined, so a missing document
+    // must short-circuit here or callers will see a truthy "found" result.
+    const mapDoc = (raw) => raw ? Mapper(raw.toJSON()) : undefined
+
     const create = async (payload, session = null) => {
         if (!isObject(payload)) throw HttpError(INVALID_INPUT_ERR_CODE, INVALID_INPUT_ERR_MESSAGE)
         const options = session ? { session } : {}
         const raw = await Model.create([sanitizeObject(payload)], options)
-        return Mapper(raw[0]?.toJSON())
+        return mapDoc(raw?.[0])
     }
 
     const insertMany = async (payload, session = null) => {
@@ -32,7 +36,7 @@ const useRepository = ({
         const query = Model.findById(id)
         if (session) query.session(session)
         const raw = await query
-        return Mapper(raw?.toJSON())
+        return mapDoc(raw)
     }
 
 
@@ -41,7 +45,7 @@ const useRepository = ({
         const q = Model.findOne(query)
         if (session) q.session(session)
         const raw = await q
-        return Mapper(raw?.toJSON())
+        return mapDoc(raw)
     }
 
 
@@ -81,7 +85,7 @@ const useRepository = ({
         if (!ObjectIdValidator(id) || !isObject(payload)) throw HttpError(INVALID_INPUT_ERR_CODE, INVALID_INPUT_ERR_MESSAGE)
         const options = session ? { new: true, session } : { new: true }
         const raw = await Model.findByIdAndUpdate(id, payload, options)
-        return Mapper(raw?.toJSON())
+        return mapDoc(raw)
     }
 
 
@@ -96,7 +100,7 @@ const useRepository = ({
         if (!isObject(query) || !isObject(payload)) throw HttpError(INVALID_INPUT_ERR_CODE, INVALID_INPUT_ERR_MESSAGE)
         const options = session ? { session, new: true } : { new: true }
         const raw = await Model.findOneAndUpdate(query, payload, options)
-        return Mapper(raw?.toJSON())
+        return mapDoc(raw)
     }
 
     const paginate = async (query, { sortBy, limit, page, session = null }) => {
@@ -157,7 +161,7 @@ const useRepository = ({
             ? { new: true, upsert: true, session }
             : { new: true, upsert: true }
         const raw = await Model.findOneAndUpdate(query, payload, options)
-        return Mapper(raw?.toJSON())
+        return mapDoc(raw)
     }
 
     const bulkWrite = async (operations, session = null) => {

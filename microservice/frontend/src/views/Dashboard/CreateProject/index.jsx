@@ -17,6 +17,7 @@ const CreateProject = ({
         isSubmitting,
         isModalVisible,
         handleSubmit,
+        handleValidationError,
         openModal,
         closeModal,
         step,
@@ -44,7 +45,7 @@ const CreateProject = ({
                     className="min-w-xl"
                 >
 
-                    <form className="space-y-4" onSubmit={form.onSubmit(handleSubmit)}>
+                    <form className="space-y-4" onSubmit={form.onSubmit(handleSubmit, handleValidationError)}>
 
                         <Stepper active={step} >
                             <Stepper.Step label="Basic connection" >
