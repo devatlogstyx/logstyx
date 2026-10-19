@@ -2,7 +2,8 @@ FROM node:20-alpine AS frontend-builder
 WORKDIR /app
 
 # Install pnpm
-RUN npm install -g pnpm
+RUN corepack enable && \
+    corepack prepare pnpm@10.7.0 --activate
 
 # Copy workspace configuration files from root
 COPY pnpm-workspace.yaml ./
