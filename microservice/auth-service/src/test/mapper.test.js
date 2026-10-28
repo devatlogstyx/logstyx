@@ -18,6 +18,7 @@ describe("mapUser", () => {
             fullname: "Ada Lovelace",
             image: "https://cdn.example.com/ada.png",
             permissions: ["READ_PROJECT"],
+            mfaEnabled: false,
         });
     });
 
@@ -34,6 +35,7 @@ describe("mapUser", () => {
             fullname: undefined,
             image: undefined,
             permissions: undefined,
+            mfaEnabled: false,
         });
     });
 });

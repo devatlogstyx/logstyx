@@ -14,6 +14,7 @@ exports.mapUser = (json) => {
         fullname: json?.fullname,
         image: json?.image,
         permissions: json?.permissions,
+        mfaEnabled: !!json?.mfaEnabled,
     }
 }
 

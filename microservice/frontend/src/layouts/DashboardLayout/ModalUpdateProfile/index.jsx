@@ -2,7 +2,8 @@
 
 import { Modal, Tabs, Text, TextInput } from "@mantine/core"
 import useModalUpdateProfile from "./hook"
-import { IoKey, IoPerson } from "react-icons/io5"
+import { IoKey, IoPerson, IoShieldCheckmark } from "react-icons/io5"
+import TwoFactor from "./TwoFactor"
 import SecondaryButton from "../../../component/button/SecondaryButton"
 import PrimaryButton from "../../../component/button/PrimaryButton"
 
@@ -44,6 +45,9 @@ const ModalUpdateProfile = ({
                         <Tabs.Tab value="passwords" leftSection={<IoKey className="w-3.5 h-3.5" />}>
                             Password
                         </Tabs.Tab>
+                        <Tabs.Tab value="2fa" leftSection={<IoShieldCheckmark className="w-3.5 h-3.5" />}>
+                            Two-factor
+                        </Tabs.Tab>
                     </Tabs.List>
                     <Tabs.Panel value="profile" className="pt-8">
                         <FormProfile
@@ -60,6 +64,9 @@ const ModalUpdateProfile = ({
                             handleSubmit={handleSubmitPassword}
                             isSubmitting={isSubmitting}
                         />
+                    </Tabs.Panel>
+                    <Tabs.Panel value="2fa" className="pt-8">
+                        <TwoFactor />
                     </Tabs.Panel>
                 </Tabs>
             </Modal >

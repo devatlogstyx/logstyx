@@ -46,5 +46,8 @@ module.exports = {
     },
     BROWSER_CLIENT_TYPE: "browser",
 
-    EMAIL_PASSWORD_LOGIN_TYPE: "EMAIL_PASSWORD"
+    EMAIL_PASSWORD_LOGIN_TYPE: "EMAIL_PASSWORD",
+
+    // the short-lived token between the password and the two-factor code
+    MFA_TOKEN_PURPOSE: "MFA",
 }

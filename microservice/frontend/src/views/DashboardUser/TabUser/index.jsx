@@ -6,6 +6,7 @@ import { useUser } from "../../../context/useUser"
 import useTabUser from "./hooks"
 import UpdateUser from "../UpdateUser"
 import { IoTrash } from "react-icons/io5"
+import { MdLockReset } from "react-icons/md"
 import moment from "moment-timezone"
 
 const TabUser = ({
@@ -17,9 +18,11 @@ const TabUser = ({
     const { user: currentUser } = useUser()
     const {
         handleRemove,
+        handleResetMfa,
         ConfirmDialogComponent
     } = useTabUser({
-        onDelete
+        onDelete,
+        onUpdate
     })
 
     return (
@@ -37,7 +40,10 @@ const TabUser = ({
                                         className="w-12 h-12 rounded-full"
                                     />
                                     <div>
-                                        <Text className="font-semibold text-gray-900">{user.fullname} {currentUser?.id === user?.id ? "(You)" : ""}</Text>
+                                        <Text className="font-semibold text-gray-900">
+                                            {user.fullname} {currentUser?.id === user?.id ? "(You)" : ""}
+                                            {user?.mfaEnabled && <Badge color="green" variant="light" className="ml-2">2FA</Badge>}
+                                        </Text>
                                         <div className="flex flex-wrap gap-2 mt-2">
                                             {user.permissions.map(perm => (
                                                 <Badge
@@ -60,6 +66,19 @@ const TabUser = ({
                                                 user={user}
                                                 onUpdate={onUpdate}
                                             />
+                                            {
+                                                user?.mfaEnabled &&
+                                                <ActionIcon
+                                                    variant="light"
+                                                    title="Reset two-factor authentication"
+                                                    onClick={() => {
+                                                        handleResetMfa(user?.id)
+                                                    }}
+                                                    className="!text-orange-600 hover:bg-orange-50 border border-gray-200 rounded-lg"
+                                                >
+                                                    <MdLockReset size={18} />
+                                                </ActionIcon>
+                                            }
                                             <ActionIcon
                                                 variant="light"
                                                 onClick={() => {

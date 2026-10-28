@@ -6,7 +6,8 @@ import { useErrorMessage } from "../../../hooks/useMessage";
 import useAPI from "../../../hooks/useAPI";
 
 const useTabUser = ({
-    onDelete
+    onDelete,
+    onUpdate
 }) => {
 
     const { openConfirmDialog, ConfirmDialogComponent } = useConfirmDialog();
@@ -33,8 +34,27 @@ const useTabUser = ({
         })
     }, [ErrorMessage, api, openConfirmDialog, onDelete])
 
+    // for a user who lost both the phone and the recovery codes
+    const handleResetMfa = React.useCallback(async (id) => {
+        openConfirmDialog({
+            title: 'Reset Two-factor Authentication',
+            message: 'This turns two-factor authentication off for this user. They can sign in with their password only until they set it up again.',
+            confirmLabel: 'Reset',
+            cancelLabel: 'Cancel',
+            onConfirm: async () => {
+                try {
+                    await api.delete(`${id}/2fa`)
+                    onUpdate()
+                } catch (e) {
+                    ErrorMessage(e)
+                }
+            },
+        })
+    }, [ErrorMessage, api, openConfirmDialog, onUpdate])
+
     return {
         handleRemove,
+        handleResetMfa,
         ConfirmDialogComponent,
     }
 }

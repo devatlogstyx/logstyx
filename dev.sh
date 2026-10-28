@@ -16,15 +16,10 @@ echo ""
 
 # Check if .env.encrypted exists
 if [ ! -f ".env.encrypted" ]; then
-    echo -e "${YELLOW}No .env.encrypted found. Running installer...${NC}"
+    echo -e "${YELLOW}No .env.encrypted found. Creating it with the installer...${NC}"
     echo ""
-    ./install.sh
-    
-    # Check if user already started services
-    if docker compose ps | grep -q "Up"; then
-        echo -e "${YELLOW}Services are already running. Stopping them for local development...${NC}"
-        docker compose down
-    fi
+    # only writes the settings; the installer does not deploy anything with `configure`
+    ./install.sh configure
 fi
 
 # Step 1: Start external dependencies

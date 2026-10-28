@@ -51,3 +51,8 @@ Thumbs.db
 *.mov
 *.wmv
 
+
+# install.sh state
+.env.encrypted.*
+.install.lock
+/gateway/

@@ -252,13 +252,15 @@ Install and run Logstyx using the official installer:
 curl -fsSL https://raw.githubusercontent.com/devatlogstyx/logstyx/main/install.sh | bash
 ```
 
-The installer will:
+The installer needs only Docker, openssl and curl. It will:
 
 * Check Docker prerequisites
-* Collect project configuration (title, CORS settings)
-* Generate encryption and JWT secrets
-* Create encrypted configuration files
-* Optionally start all services
+* Read an existing `.env.encrypted` and **keep it**: only settings that are missing are asked for
+  (a file from an older installer is picked up as is, including bundled or external services)
+* On a first run, ask for the project title, CORS origins, port, and for MongoDB, RabbitMQ and Redis
+  whether to run them here as containers or use existing servers (Redis can also be left out: in-memory cache)
+* Generate the encryption and JWT secrets once (they are never replaced)
+* Deploy every service, blue/green: a new version must pass its health check before it takes traffic
 
 Once running, access Logstyx at:
 
@@ -266,11 +268,40 @@ Once running, access Logstyx at:
 http://localhost:5000
 ```
 
+Run it again any time to update; unchanged services are left alone.
+
+```bash
+./install.sh                 # check the settings, then deploy everything
+./install.sh auth core       # deploy only these (gateway auth cache utility core)
+./install.sh configure       # ask every question again (enter keeps the current value)
+./install.sh status          # what is running and which colour is live
+./install.sh --force core    # recreate even when nothing changed
+./install.sh rotate-key      # new MASTER_KEY: re-encrypt the settings (a backup is kept), then redeploy
+./install.sh down            # stop everything; data volumes and settings are kept
+```
+
+> Keep `.env.encrypted` backed up: without its `MASTER_KEY` and secrets the data cannot be decrypted.
+
+Upgrading from the docker compose setup: run `./install.sh` in the same directory. It reuses the existing
+MongoDB, RabbitMQ and Redis containers (and their data) and replaces the application containers.
+
 ### Initial Setup
 
 On first access, you need to go to the `/setup` page where you can create your user account. This page will only be accessible when no user accounts exist in the system.
 
 After completing setup, you can log in with your credentials to start using Logstyx.
+
+### Two-Factor Authentication
+
+Every user can turn on two-factor authentication in **Profile → Two-factor**: scan the QR code with an
+authenticator app (Google Authenticator, Microsoft Authenticator, 1Password, ...), confirm a code, and save the
+recovery codes. After that, signing in asks for the 6 digit code after the password.
+
+* A recovery code signs in once instead of an app code; new ones can be generated from the profile
+* Five wrong codes lock the sign in for 15 minutes
+* A user with `WRITE_USER` can reset another user's two-factor authentication (lost phone and recovery codes)
+* To require it for everyone, answer `true` to the installer question or set `MFA_REQUIRED=true` in
+  `.env.encrypted` and run `./install.sh`. Users without it then set it up at their next sign in
 
 ---
 
@@ -322,10 +353,10 @@ For local development with hot reload:
    pnpm install
    ```
 
-3. Run installer
+3. Create the settings (without deploying)
 
    ```bash
-   ./install.sh
+   ./install.sh configure
    ```
 
 4. Start development services
@@ -342,27 +373,22 @@ Access the app at `http://localhost:5000`.
 
 ## Production Deployment
 
-To deploy in production:
-
-```bash
-docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
-```
+To deploy or update in production, run `./install.sh` (see [Quick Start](#quick-start)).
 
 ### Common Commands
 
 ```bash
-# View logs
-docker compose logs -f
+# View logs of a service (the live colour is in ./install.sh status)
+docker logs -f logstyx_core_service_blue
 
-# Stop services
-docker compose down
+# Stop everything (data volumes and settings are kept)
+./install.sh down
 
-# Update services
-docker compose pull
-docker compose up -d
+# Update to the latest images
+./install.sh
 
-# Remove everything including data
-docker compose down -v
+# Remove the data too (cannot be undone)
+./install.sh down --yes && docker volume rm logstyx-mongo-data logstyx-rabbitmq-data logstyx-redis-data
 ```
 
 ---
@@ -381,11 +407,18 @@ docker compose down -v
 * `SELF_PROJECT_TITLE` - Project title displayed in the UI
 * `ALLOWED_ORIGIN` - (Optional) Comma-separated list of allowed CORS origins (e.g., `https://app.example.com:3000,https://admin.example.com:3000`)
 
-### Optional (External Services)
+### Services (Installer)
 
+* `MONGO_MODE`, `RABBITMQ_MODE`, `REDIS_MODE` - `container` (run here) or `url` (existing server); Redis also `memory`
 * `AMQP_HOST` - RabbitMQ connection URL
-* `REDIS_URL` - Redis connection URL
-* `MONGODB_HOST` - MongoDB connection URL
+* `REDIS_URL` - Redis connection URL (empty = in-memory cache)
+* `MONGODB_HOST` - MongoDB server URL, without a database name (must be a replica set)
+
+### Deployment (Installer)
+
+* `BIND_ADDRESS`, `GATEWAY_PORT` - where the site is published (default `0.0.0.0:5000`)
+* `REGISTRY`, `IMAGE_TAG` - which images to run (default `devatlogstyx/logstyx-*-service:latest`)
+* `MFA_REQUIRED` - `true` to require two-factor authentication for every user
 
 Sensitive values are prefixed with `ENC_` and stored encrypted in the `.env.encrypted` file.
 

@@ -61,6 +61,11 @@ const userSchema = new mongoose.Schema(
         hash: {
             type: hashSchema,
         },
+        // two-factor authentication is on; the secret itself lives on the userLogin
+        mfaEnabled: {
+            type: Boolean,
+            default: false,
+        },
     },
     {
         timestamps: true,

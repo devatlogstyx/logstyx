@@ -36,6 +36,11 @@ const userLoginSchema = new mongoose.Schema(
         hash: {
             type: hashSchema,
         },
+        // two-factor authentication: { secret, pendingSecret } encrypted like credentials, recoveryCodes as
+        // hashes, lastStep (the last accepted 30 second step, so a code works once), failedAttempts, lockedUntil
+        mfa: {
+            type: Mixed,
+        },
         lastLogin: {
             at: {
                 type: Date,
