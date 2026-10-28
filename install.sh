@@ -748,8 +748,24 @@ deploy_gateway() {
 
 status() {
     section "Containers"
-    docker ps -a --filter "network=$NETWORK" --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}' 2>/dev/null ||
-        docker ps -a --format 'table {{.Names}}\t{{.Status}}' | grep -E 'NAMES|logstyx'
+    # by name, not network: containers from the old docker compose setup are on compose's own network
+    local listing
+    listing=$(docker ps -a --filter "name=^logstyx_" --format '{{.Names}}\t{{.Status}}\t{{.Ports}}')
+    if [[ -z $listing ]]; then
+        echo "  nothing is running. Start it with: ./install.sh"
+    else
+        { echo -e "NAMES\tSTATUS\tPORTS"; echo "$listing"; } | column -t -s $'\t' 2>/dev/null || { echo -e "NAMES\tSTATUS\tPORTS"; echo "$listing"; }
+    fi
+
+    local name legacy=()
+    for name in "${LEGACY_APP_CONTAINERS[@]}"; do
+        exists "$name" && legacy+=("$name")
+    done
+    if [[ ${#legacy[@]} -gt 0 ]]; then
+        echo
+        warn "${legacy[*]} are from the old docker compose setup. ./install.sh replaces them (MongoDB, RabbitMQ and Redis keep their data)."
+    fi
+
     if [[ -d $INCLUDE_DIR ]]; then
         section "Live colours"
         local svc

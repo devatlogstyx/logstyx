@@ -91,6 +91,7 @@ If you just want to **deploy your app and see its logs**, Logstyx is built for t
 * **Encrypted Configuration Support**: Environment variables can be stored in encrypted form
 * **Hashed Indexing**: Log indices are hashed to reduce exposure of raw log values
 * **Self-Hosted by Design**: No third-party data access or telemetry
+* **Two-Factor Authentication**: Authenticator app codes with one-time recovery codes; can be required for every user
 
 ### 📊 Logging & Processing
 
@@ -102,8 +103,8 @@ If you just want to **deploy your app and see its logs**, Logstyx is built for t
 ### ⚙️ Deployment & Operations
 
 * **Docker-First**: Fully containerized services
-* **Docker Compose** configurations for development and production
-* **One-Step Installer** for secure initial setup
+* **One-Step Installer** for setup and updates: keeps existing settings, asks only for what is missing
+* **Zero-Downtime API Updates**: Blue/green deploys; a new version takes traffic only after its health check passes
 * **External Service Support**: Use bundled or external Redis, MongoDB, and RabbitMQ
 
 ### ⚡ Performance
@@ -331,7 +332,7 @@ Each service has its own Dockerfile and dependency definitions.
 * **MongoDB** – Persistent storage
 * **RabbitMQ** – Message queue
 * **Redis** – Caching layer
-* **Docker & Docker Compose** – Containerization
+* **Docker** – Containerization (Docker Compose for local development)
 * **React + Vite** – Frontend UI
 
 ---
